@@ -1,0 +1,147 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@layer base {
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-background-light dark:bg-background-dark text-neutral-900 dark:text-neutral-100 transition-colors duration-200;
+  }
+
+  /* Improved text contrast */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply text-neutral-900 dark:text-neutral-50;
+  }
+
+  p {
+    @apply text-neutral-700 dark:text-neutral-300;
+  }
+}
+
+@layer components {
+
+  /* Button styles */
+  .btn {
+    @apply font-semibold py-3 px-6 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-primary {
+    @apply btn bg-primary text-white hover:bg-primary-dark shadow-button hover:shadow-button-hover active:scale-95 focus:ring-primary;
+  }
+
+  .btn-secondary {
+    @apply btn bg-secondary text-white hover:bg-secondary-dark shadow-button hover:shadow-button-hover active:scale-95 focus:ring-secondary;
+  }
+
+  .btn-accent {
+    @apply btn bg-accent text-white hover:bg-accent-dark shadow-button hover:shadow-button-hover active:scale-95 focus:ring-accent;
+  }
+
+  .btn-outline {
+    @apply btn bg-transparent border-2 border-neutral-300 dark:border-neutral-600 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 active:scale-95 focus:ring-neutral-500;
+  }
+
+  .btn-ghost {
+    @apply btn bg-transparent text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 active:scale-95;
+  }
+
+  /* Card styles */
+  .card {
+    @apply bg-surface-light dark:bg-surface-dark rounded-2xl border border-neutral-200 dark:border-neutral-700 p-6 shadow-card hover:shadow-card-hover transition-all duration-200;
+  }
+
+  .card-interactive {
+    @apply card cursor-pointer hover:border-primary dark:hover:border-primary-light hover:-translate-y-0.5;
+  }
+
+  /* Input styles */
+  .input-field {
+    @apply w-full px-4 py-3 rounded-xl border-2 border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 dark:placeholder-neutral-500 focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 outline-none font-medium;
+  }
+
+  /* Tab navigation */
+  .tab-item {
+    @apply flex flex-col items-center justify-center p-3 text-neutral-500 dark:text-neutral-400 hover:text-primary dark:hover:text-primary-light transition-colors cursor-pointer relative;
+  }
+
+  .tab-item.active {
+    @apply text-primary dark:text-primary-light;
+  }
+
+  .tab-item.active::after {
+    content: '';
+    @apply absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-primary dark:bg-primary-light rounded-full;
+  }
+
+  /* Badge styles */
+  .badge {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold;
+  }
+
+  .badge-primary {
+    @apply badge bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary-light;
+  }
+
+  .badge-secondary {
+    @apply badge bg-secondary/10 text-secondary dark:bg-secondary/20 dark:text-secondary-light;
+  }
+
+  .badge-accent {
+    @apply badge bg-accent/10 text-accent dark:bg-accent/20 dark:text-accent-light;
+  }
+
+  /* Status indicators */
+  .status-dot {
+    @apply w-2.5 h-2.5 rounded-full;
+  }
+
+  .status-new {
+    @apply bg-blue-500 dark:bg-blue-400;
+  }
+
+  .status-learning {
+    @apply bg-amber-500 dark:bg-amber-400;
+  }
+
+  .status-mastered {
+    @apply bg-green-500 dark:bg-green-400;
+  }
+}
+
+/* Scrollbar styling */
+@layer utilities {
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    @apply bg-neutral-100 dark:bg-neutral-800 rounded-full;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    @apply bg-neutral-300 dark:bg-neutral-600 rounded-full hover:bg-neutral-400 dark:hover:bg-neutral-500;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}

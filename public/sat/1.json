@@ -1,0 +1,322 @@
+[
+    {
+      "word": "contend",
+      "ru": "утверждать, настаивать (в споре)",
+      "synonyms": ["claim", "maintain"],
+      "simple_examples": [
+        "Some critics contend that the plan is unfair.",
+        "The author contends that technology must be used carefully."
+      ],
+      "advanced_example": "While many historians contend that the reforms were necessary, others argue that they deepened existing inequalities.",
+      "confusions": ["argue", "impose", "insist"]
+    },
+    {
+      "word": "dogmatic",
+      "ru": "жёстко навязывающий взгляды, доктринёрский",
+      "synonyms": ["authoritarian", "rigid"],
+      "simple_examples": [
+        "His dogmatic tone made discussion difficult.",
+        "The teacher was less dogmatic and allowed different opinions."
+      ],
+      "advanced_example": "Unlike her more dogmatic contemporaries, the researcher revises her theories whenever new evidence emerges.",
+      "confusions": ["assertive", "authoritative", "rigorous"]
+    },
+    {
+      "word": "ambiguous",
+      "ru": "двусмысленный, неясный",
+      "synonyms": ["unclear", "vague"],
+      "simple_examples": [
+        "The instructions were ambiguous and confused the students.",
+        "His answer was so ambiguous that no one knew his real opinion."
+      ],
+      "advanced_example": "The politician’s ambiguous statement allowed supporters and critics alike to project their own views onto his position.",
+      "confusions": ["vague", "equivocal", "obscure"]
+    },
+    {
+      "word": "reconcile",
+      "ru": "примирить, совместить",
+      "synonyms": ["harmonize", "resolve"],
+      "simple_examples": [
+        "They tried to reconcile their different schedules.",
+        "The scientist could not reconcile the new data with the old theory."
+      ],
+      "advanced_example": "The author attempts to reconcile individual freedom with the demands of social responsibility throughout the essay.",
+      "confusions": ["resolve", "merge", "unite"]
+    },
+    {
+      "word": "undermine",
+      "ru": "подрывать, ослаблять",
+      "synonyms": ["weaken", "erode"],
+      "simple_examples": [
+        "Constant criticism can undermine a person’s confidence.",
+        "The scandal undermined public trust in the institution."
+      ],
+      "advanced_example": "By highlighting inconsistencies in the data, the article subtly undermines the authority of earlier studies.",
+      "confusions": ["challenge", "contradict", "threaten"]
+    },
+    {
+      "word": "bolster",
+      "ru": "поддерживать, усиливать",
+      "synonyms": ["strengthen", "support"],
+      "simple_examples": [
+        "The new results bolster his argument.",
+        "Extra evidence bolstered the lawyer’s case."
+      ],
+      "advanced_example": "The inclusion of historical examples serves to bolster the author’s claim that the conflict was inevitable.",
+      "confusions": ["reinforce", "support", "confirm"]
+    },
+    {
+      "word": "mitigate",
+      "ru": "смягчать, уменьшать (негатив)",
+      "synonyms": ["alleviate", "reduce"],
+      "simple_examples": [
+        "New laws were introduced to mitigate pollution.",
+        "Good preparation can mitigate exam stress."
+      ],
+      "advanced_example": "The policy aims to mitigate the long-term economic damage without halting progress entirely.",
+      "confusions": ["lessen", "modify", "limit"]
+    },
+    {
+      "word": "refute",
+      "ru": "опровергать",
+      "synonyms": ["disprove", "debunk"],
+      "simple_examples": [
+        "The scientist refuted the earlier theory with new data.",
+        "No one could refute her clear, logical argument."
+      ],
+      "advanced_example": "By presenting detailed statistical evidence, the author refutes the common belief that the reforms had no measurable effect.",
+      "confusions": ["reject", "deny", "counter"]
+    },
+    {
+      "word": "concede",
+      "ru": "признавать (неохотно)",
+      "synonyms": ["admit", "acknowledge"],
+      "simple_examples": [
+        "He finally conceded that he was wrong.",
+        "The coach conceded that the other team played better."
+      ],
+      "advanced_example": "Although the author concedes that the policy brought short-term benefits, she insists that its long-term costs were severe.",
+      "confusions": ["admit", "surrender", "yield"]
+    },
+    {
+      "word": "assert",
+      "ru": "утверждать уверенно",
+      "synonyms": ["claim", "maintain"],
+      "simple_examples": [
+        "The writer asserts that education should be free.",
+        "She asserted her right to speak in the meeting."
+      ],
+      "advanced_example": "The passage asserts that technological progress, while disruptive, ultimately expands human possibilities.",
+      "confusions": ["declare", "contend", "state"]
+    },
+    {
+      "word": "skeptical",
+      "ru": "скептически настроенный, сомневающийся",
+      "synonyms": ["doubtful", "suspicious"],
+      "simple_examples": [
+        "Many students were skeptical about the new rule.",
+        "Scientists are skeptical of results that cannot be repeated."
+      ],
+      "advanced_example": "Given the lack of supporting evidence, the historian remains skeptical of claims that the legend reflects actual events.",
+      "confusions": ["cynical", "critical", "suspicious"]
+    },
+    {
+      "word": "pragmatic",
+      "ru": "прагматичный, ориентированный на практику",
+      "synonyms": ["practical", "realistic"],
+      "simple_examples": [
+        "They took a pragmatic approach and focused on what was possible.",
+        "Her plan is more pragmatic than his idealistic vision."
+      ],
+      "advanced_example": "The mayor adopts a pragmatic stance, favoring incremental improvements over sweeping but uncertain reforms.",
+      "confusions": ["practical", "utilitarian", "realistic"]
+    },
+    {
+      "word": "idealistic",
+      "ru": "идеалистичный, ориентированный на высокие принципы",
+      "synonyms": ["visionary", "impractical"],
+      "simple_examples": [
+        "His idealistic goals inspired many people.",
+        "The plan is noble but too idealistic for real politics."
+      ],
+      "advanced_example": "The novelist contrasts the protagonist’s idealistic hopes with the harsh realities of industrial life.",
+      "confusions": ["naive", "optimistic", "utopian"]
+    },
+    {
+      "word": "superficial",
+      "ru": "поверхностный",
+      "synonyms": ["shallow", "surface-level"],
+      "simple_examples": [
+        "Their understanding of the topic was superficial.",
+        "The review offers only a superficial summary of the book."
+      ],
+      "advanced_example": "Although the debate appears intense, the disagreements are largely superficial and leave deeper assumptions unchallenged.",
+      "confusions": ["shallow", "trivial", "minor"]
+    },
+    {
+      "word": "profound",
+      "ru": "глубокий, серьёзный",
+      "synonyms": ["deep", "significant"],
+      "simple_examples": [
+        "The speech had a profound effect on the audience.",
+        "She felt profound sadness after the news."
+      ],
+      "advanced_example": "The author argues that seemingly minor policy changes can have profound consequences for future generations.",
+      "confusions": ["deep", "intense", "radical"]
+    },
+    {
+      "word": "advocate",
+      "ru": "отстаивать, публично защищать",
+      "synonyms": ["support", "champion"],
+      "simple_examples": [
+        "She advocates for better working conditions.",
+        "Many scientists advocate using cleaner energy sources."
+      ],
+      "advanced_example": "The author does not simply describe the problem but actively advocates policies that could address it.",
+      "confusions": ["promote", "endorse", "defend"]
+    },
+    {
+      "word": "endorse",
+      "ru": "поддерживать публично, одобрять",
+      "synonyms": ["approve", "support"],
+      "simple_examples": [
+        "Several experts endorsed the new guidelines.",
+        "The organization refused to endorse the proposal."
+      ],
+      "advanced_example": "Though the committee stops short of fully endorsing the plan, it recognizes its potential benefits.",
+      "confusions": ["advocate", "support", "approve"]
+    },
+    {
+      "word": "dismiss",
+      "ru": "отмахиваться, не принимать всерьёз",
+      "synonyms": ["reject", "disregard"],
+      "simple_examples": [
+        "The manager dismissed his concerns as unimportant.",
+        "We should not dismiss her idea without discussion."
+      ],
+      "advanced_example": "Rather than dismissing the opposing view outright, the author carefully explains its limitations.",
+      "confusions": ["reject", "ignore", "downplay"]
+    },
+    {
+      "word": "underscore",
+      "ru": "подчёркивать важность",
+      "synonyms": ["emphasize", "highlight"],
+      "simple_examples": [
+        "The results underscore the need for more research.",
+        "This mistake underscores how difficult the task is."
+      ],
+      "advanced_example": "The repetition of key phrases underscores the urgency of the author’s warning.",
+      "confusions": ["stress", "emphasize", "reinforce"]
+    },
+    {
+      "word": "highlight",
+      "ru": "выделять, подчеркивать",
+      "synonyms": ["emphasize", "spotlight"],
+      "simple_examples": [
+        "The report highlights several major problems.",
+        "The teacher highlighted the most important points."
+      ],
+      "advanced_example": "By highlighting the voices of marginalized groups, the article challenges the traditional narrative.",
+      "confusions": ["underscore", "feature", "showcase"]
+    },
+    {
+      "word": "contrast",
+      "ru": "противопоставлять, сравнивать различия",
+      "synonyms": ["differ", "set against"],
+      "simple_examples": [
+        "The author contrasts rural and urban life.",
+        "The painting contrasts bright colors with dark shades."
+      ],
+      "advanced_example": "The passage contrasts the researcher’s cautious method with her colleague’s more speculative approach.",
+      "confusions": ["compare", "oppose", "distinguish"]
+    },
+    {
+      "word": "reinforce",
+      "ru": "усиливать, подкреплять",
+      "synonyms": ["strengthen", "support"],
+      "simple_examples": [
+        "The new data reinforce the earlier findings.",
+        "Daily practice reinforces good study habits."
+      ],
+      "advanced_example": "Each example reinforces the central claim that small choices can accumulate into major social change.",
+      "confusions": ["bolster", "support", "confirm"]
+    },
+    {
+      "word": "justify",
+      "ru": "оправдывать, обосновывать",
+      "synonyms": ["defend", "explain"],
+      "simple_examples": [
+        "He tried to justify his decision to leave early.",
+        "Nothing can justify such rude behavior."
+      ],
+      "advanced_example": "The author uses historical evidence to justify her argument that the policy was both deliberate and discriminatory.",
+      "confusions": ["defend", "excuse", "rationalize"]
+    },
+    {
+      "word": "qualify",
+      "ru": "смягчать или уточнять утверждение",
+      "synonyms": ["modify", "limit"],
+      "simple_examples": [
+        "He qualified his praise by mentioning a few problems.",
+        "I should qualify that statement, because it is not always true."
+      ],
+      "advanced_example": "After praising the artist’s innovation, the critic qualifies this approval by noting the work’s uneven execution.",
+      "confusions": ["limit", "moderate", "clarify"]
+    },
+    {
+      "word": "acknowledge",
+      "ru": "признавать (факт, заслуги)",
+      "synonyms": ["recognize", "admit"],
+      "simple_examples": [
+        "The author acknowledges the study’s limitations.",
+        "She acknowledged that she had made a mistake."
+      ],
+      "advanced_example": "While the essay acknowledges the movement’s failures, it emphasizes its lasting cultural influence.",
+      "confusions": ["concede", "admit", "recognize"]
+    },
+    {
+      "word": "address",
+      "ru": "заняться проблемой, обратить внимание",
+      "synonyms": ["deal with", "tackle"],
+      "simple_examples": [
+        "The article addresses the issue of climate change.",
+        "The teacher promised to address the students’ concerns."
+      ],
+      "advanced_example": "The researcher not only identifies the gap in the literature but also proposes a study to address it.",
+      "confusions": ["discuss", "solve", "confront"]
+    },
+    {
+      "word": "challenge",
+      "ru": "ставить под сомнение, оспаривать",
+      "synonyms": ["question", "contest"],
+      "simple_examples": [
+        "The findings challenge the traditional view of the disease.",
+        "She challenged his claim with strong evidence."
+      ],
+      "advanced_example": "By presenting contradictory data, the passage challenges the assumption that economic growth always improves quality of life.",
+      "confusions": ["oppose", "dispute", "criticize"]
+    },
+    {
+      "word": "validate",
+      "ru": "подтверждать правильность",
+      "synonyms": ["confirm", "support"],
+      "simple_examples": [
+        "The experiment validated the earlier results.",
+        "Additional tests are needed to validate the method."
+      ],
+      "advanced_example": "Only long-term studies can validate the author’s claim that these policies lead to lasting change.",
+      "confusions": ["confirm", "verify", "authenticate"]
+    },
+    {
+      "word": "imply",
+      "ru": "подразумевать, намекать",
+      "synonyms": ["suggest", "hint"],
+      "simple_examples": [
+        "Her tone implied that she was not happy.",
+        "The text implies that the story is based on real events."
+      ],
+      "advanced_example": "The author does not state her opinion directly but implies her skepticism through careful word choice.",
+      "confusions": ["suggest", "infer", "indicate"]
+    }
+  ]
+  

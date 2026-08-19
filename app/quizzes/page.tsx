@@ -1,0 +1,904 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { Plus, Sparkles, BookOpen, Check, Users, Play, Globe, Lock, Share2, Copy, Twitter, Facebook, MessageCircle, X } from 'lucide-react'
+import BottomNav from '../components/BottomNav'
+import { useAuth } from '../contexts/AuthContext'
+import { getQuizSets, getCustomQuizzes, getPublicQuizzes, createCustomQuiz } from '../lib/db'
+import { useQuizStore } from '../lib/quizStore'
+import { assetPath, BASE_PATH } from '../lib/paths'
+import { motion, AnimatePresence } from 'framer-motion'
+
+export default function QuizzesPage() {
+    const [quizSets, setQuizSets] = useState<any[]>([])
+    const [customQuizzes, setCustomQuizzes] = useState<any[]>([])
+    const [peerQuizzes, setPeerQuizzes] = useState<any[]>([])
+    const [showCreateModal, setShowCreateModal] = useState(false)
+    const [showShareModal, setShowShareModal] = useState(false)
+    const [shareQuiz, setShareQuiz] = useState<any>(null)
+    const [wordCounts, setWordCounts] = useState<Record<string, number>>({})
+    const { user } = useAuth()
+    const router = useRouter()
+    const { selectedQuizPath, setSelectedQuizPath } = useQuizStore()
+
+    useEffect(() => {
+        if (!user) {
+            router.push('/auth')
+            return
+        }
+
+        loadQuizzes()
+    }, [user, router])
+
+    const loadWordCount = async (filePath: string): Promise<number> => {
+        try {
+            const response = await fetch(assetPath(filePath))
+            const data = await response.json()
+            return Array.isArray(data) ? data.length : 0
+        } catch {
+            return 0
+        }
+    }
+
+    const loadQuizzes = async () => {
+        if (!user) return
+
+        const [sets, custom, peers] = await Promise.all([
+            getQuizSets(),
+            getCustomQuizzes(user.id),
+            getPublicQuizzes(user.id)
+        ])
+
+        setQuizSets(sets)
+        setCustomQuizzes(custom)
+        setPeerQuizzes(peers)
+
+        // Load word counts for all quiz sets
+        const counts: Record<string, number> = {}
+        for (const set of sets) {
+            counts[set.file_path] = await loadWordCount(set.file_path)
+        }
+        setWordCounts(counts)
+    }
+
+    const handleQuizSelect = (filePath: string) => {
+        setSelectedQuizPath(filePath)
+    }
+
+    const handleStartQuiz = (filePath: string) => {
+        setSelectedQuizPath(filePath)
+        router.push('/session/learn')
+    }
+
+    const handleShare = (quiz: any, isCustom: boolean = false) => {
+        setShareQuiz({ ...quiz, isCustom })
+        setShowShareModal(true)
+    }
+
+    const getShareUrl = (quiz: any) => {
+        const origin = window.location.origin
+        if (quiz.isCustom) {
+            // Embed the whole quiz in the URL so the link works on any static host
+            const data = encodeURIComponent(JSON.stringify({
+                id: quiz.id,
+                name: quiz.name,
+                description: quiz.description,
+                author_name: quiz.author_name || null,
+                words: quiz.words || []
+            }))
+            return `${origin}${BASE_PATH}/quiz/share?data=${data}`
+        } else {
+            // For official quizzes, create a shareable link
+            // Normalize file_path: remove leading slash if present, ensure it starts with /
+            const filePath = (quiz.file_path || selectedQuizPath || '').trim()
+            const normalizedPath = filePath.startsWith('/') ? filePath : `/${filePath}`
+            return `${origin}${BASE_PATH}/quiz/share?path=${encodeURIComponent(normalizedPath)}`
+        }
+    }
+
+    const copyShareLink = async (quiz: any) => {
+        const url = getShareUrl(quiz)
+        try {
+            await navigator.clipboard.writeText(url)
+            // Show toast or feedback
+            alert('Link copied to clipboard!')
+        } catch (err) {
+            console.error('Failed to copy:', err)
+        }
+    }
+
+    const shareToSocial = (platform: 'twitter' | 'facebook' | 'telegram', quiz: any) => {
+        const url = getShareUrl(quiz)
+        // Get proper quiz name - use name from database or fallback
+        const quizName = quiz.name || (quiz.file_path ? `SAT Vocabulary Set ${quiz.file_path.split('/').pop()?.replace('.json', '') || ''}` : 'SAT Vocabulary Quiz')
+        const text = `Check out this SAT vocabulary quiz: ${quizName}`
+        const encodedUrl = encodeURIComponent(url)
+        const encodedText = encodeURIComponent(text)
+
+        let shareUrl = ''
+        switch (platform) {
+            case 'twitter':
+                shareUrl = `https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`
+                break
+            case 'facebook':
+                shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`
+                break
+            case 'telegram':
+                shareUrl = `https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`
+                break
+        }
+
+        window.open(shareUrl, '_blank', 'width=600,height=400')
+    }
+
+    return (
+        <div className="min-h-screen bg-background-light dark:bg-background-dark pb-24">
+            <div className="p-6 space-y-6">
+                <div className="flex justify-between items-center">
+                    <div>
+                        <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary-dark bg-clip-text text-transparent">
+                            Quizzes
+                        </h1>
+                        <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
+                            Choose a quiz and start learning
+                        </p>
+                    </div>
+                    <button
+                        onClick={() => setShowCreateModal(true)}
+                        className="btn-primary flex items-center gap-2"
+                    >
+                        <Plus className="w-5 h-5" /> Create
+                    </button>
+                </div>
+
+                {/* Official Quiz Sets */}
+                <div>
+                    <h2 className="text-lg font-bold text-neutral-900 dark:text-neutral-100 mb-4">Official Sets</h2>
+                    <div className="grid gap-4 md:grid-cols-2">
+                        {quizSets.map((set) => {
+                            const isSelected = selectedQuizPath === set.file_path
+
+                            return (
+                                <div
+                                    key={set.id}
+                                    className={`card-interactive group relative ${isSelected ? 'border-primary dark:border-primary-light ring-2 ring-primary/20' : ''
+                                        }`}
+                                >
+                                    {isSelected && (
+                                        <div className="absolute top-4 right-4 w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+                                            <Check className="w-4 h-4 text-white" />
+                                        </div>
+                                    )}
+
+                                    <div className="text-left mb-4">
+                                        <div className="flex items-start justify-between mb-3 pr-8">
+                                            <h3 className="font-bold text-xl text-neutral-900 dark:text-neutral-100 group-hover:text-primary dark:group-hover:text-primary-light transition-colors">
+                                                {set.name}
+                                            </h3>
+                                            <div className="badge-primary">Official</div>
+                                        </div>
+                                        <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">{set.description}</p>
+                                        <div className="flex items-center gap-4 text-xs text-neutral-500 dark:text-neutral-400 mb-4">
+                                            <span className="flex items-center gap-1">
+                                                <BookOpen className="w-4 h-4" />
+                                                {wordCounts[set.file_path] || '...'} words
+                                            </span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => router.push(`/quiz-detail/?path=${encodeURIComponent(set.file_path)}`)}
+                                            className="px-4 py-2 bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 rounded-xl hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+                                            title="View details"
+                                        >
+                                            <BookOpen className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                            onClick={() => handleQuizSelect(set.file_path)}
+                                            className={`flex-1 py-2 px-4 rounded-xl font-semibold text-sm transition-all ${
+                                                isSelected
+                                                    ? 'bg-primary/10 text-primary border-2 border-primary'
+                                                    : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700'
+                                            }`}
+                                        >
+                                            {isSelected ? 'Selected' : 'Select'}
+                                        </button>
+                                        <button
+                                            onClick={() => handleStartQuiz(set.file_path)}
+                                            className="flex-1 btn-primary py-2 px-4 flex items-center justify-center gap-2 text-sm"
+                                        >
+                                            <Play className="w-4 h-4" />
+                                            Start
+                                        </button>
+                                    </div>
+                                </div>
+                            )
+                        })}
+                    </div>
+                </div>
+
+                {/* Peer Sets */}
+                {peerQuizzes.length > 0 && (
+                    <div>
+                        <h2 className="text-lg font-bold text-neutral-900 dark:text-neutral-100 mb-4 flex items-center gap-2">
+                            <Users className="w-5 h-5 text-primary" />
+                            Peer Sets
+                        </h2>
+                        <div className="grid gap-4 md:grid-cols-2">
+                            {peerQuizzes.map((quiz) => {
+                                const quizPath = `/custom-quiz/${quiz.id}`
+                                const isSelected = selectedQuizPath === quizPath
+                                
+                                return (
+                                    <div
+                                        key={quiz.id}
+                                        className={`card-interactive group relative ${isSelected ? 'border-primary dark:border-primary-light ring-2 ring-primary/20' : ''
+                                            }`}
+                                    >
+                                        {isSelected && (
+                                            <div className="absolute top-4 right-4 w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+                                                <Check className="w-4 h-4 text-white" />
+                                            </div>
+                                        )}
+
+                                        <div className="text-left mb-4">
+                                            <div className="flex items-start justify-between mb-3 pr-8">
+                                                <h3 className="font-bold text-xl text-neutral-900 dark:text-neutral-100 group-hover:text-primary dark:group-hover:text-primary-light transition-colors">
+                                                    {quiz.name}
+                                                </h3>
+                                                <div className="badge-secondary flex items-center gap-1">
+                                                    <Globe className="w-3 h-3" />
+                                                    Public
+                                                </div>
+                                            </div>
+                                            <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-3">{quiz.description}</p>
+                                            <div className="flex items-center gap-4 text-xs text-neutral-500 dark:text-neutral-400 mb-2">
+                                                <span className="flex items-center gap-1">
+                                                    <BookOpen className="w-4 h-4" />
+                                                    {Array.isArray(quiz.words) ? quiz.words.length : 0} words
+                                                </span>
+                                                {quiz.author_name && (
+                                                    <span className="flex items-center gap-1">
+                                                        <Users className="w-3 h-3" />
+                                                        {quiz.author_name}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={() => router.push(`/quiz-detail/?id=${quiz.id}`)}
+                                                className="px-4 py-2 bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 rounded-xl hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+                                                title="View details"
+                                            >
+                                                <BookOpen className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                                onClick={() => handleQuizSelect(quizPath)}
+                                                className={`flex-1 py-2 px-4 rounded-xl font-semibold text-sm transition-all ${
+                                                    isSelected
+                                                        ? 'bg-primary/10 text-primary border-2 border-primary'
+                                                        : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700'
+                                                }`}
+                                            >
+                                                {isSelected ? 'Selected' : 'Select'}
+                                            </button>
+                                            <button
+                                                onClick={() => handleStartQuiz(quizPath)}
+                                                className="flex-1 btn-primary py-2 px-4 flex items-center justify-center gap-2 text-sm"
+                                            >
+                                                <Play className="w-4 h-4" />
+                                                Start
+                                            </button>
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    </div>
+                )}
+
+                {/* Custom Quizzes */}
+                <div>
+                    <h2 className="text-lg font-bold text-neutral-900 dark:text-neutral-100 mb-4">My Custom Quizzes</h2>
+                    {customQuizzes.length === 0 ? (
+                        <div className="card text-center py-8">
+                            <Sparkles className="w-12 h-12 text-neutral-300 dark:text-neutral-600 mx-auto mb-3" />
+                            <p className="text-neutral-500 dark:text-neutral-400">No custom quizzes yet</p>
+                            <button
+                                onClick={() => setShowCreateModal(true)}
+                                className="btn-primary mt-4 mx-auto"
+                            >
+                                Create Your First Quiz
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="grid gap-4 md:grid-cols-2">
+                            {customQuizzes.map((quiz) => {
+                                const quizPath = `/custom-quiz/${quiz.id}`
+                                const isSelected = selectedQuizPath === quizPath
+                                
+                                return (
+                                    <div
+                                        key={quiz.id}
+                                        className={`card-interactive group relative ${isSelected ? 'border-primary dark:border-primary-light ring-2 ring-primary/20' : ''
+                                            }`}
+                                    >
+                                        {isSelected && (
+                                            <div className="absolute top-4 right-4 w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+                                                <Check className="w-4 h-4 text-white" />
+                                            </div>
+                                        )}
+
+                                        <div className="text-left mb-4">
+                                            <div className="flex items-start justify-between mb-3 pr-8">
+                                                <h3 className="font-bold text-xl text-neutral-900 dark:text-neutral-100 group-hover:text-primary dark:group-hover:text-primary-light transition-colors">
+                                                    {quiz.name}
+                                                </h3>
+                                                <div className={`badge-secondary flex items-center gap-1 ${quiz.is_public ? '' : 'opacity-60'}`}>
+                                                    {quiz.is_public ? (
+                                                        <>
+                                                            <Globe className="w-3 h-3" />
+                                                            Public
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Lock className="w-3 h-3" />
+                                                            Private
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-3">{quiz.description}</p>
+                                            <div className="flex items-center gap-4 text-xs text-neutral-500 dark:text-neutral-400 mb-2">
+                                                <span className="flex items-center gap-1">
+                                                    <BookOpen className="w-4 h-4" />
+                                                    {Array.isArray(quiz.words) ? quiz.words.length : 0} words
+                                                </span>
+                                                {quiz.author_name && (
+                                                    <span className="flex items-center gap-1">
+                                                        <Users className="w-3 h-3" />
+                                                        {quiz.author_name}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={() => router.push(`/quiz-detail/?id=${quiz.id}`)}
+                                                className="px-4 py-2 bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 rounded-xl hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+                                                title="View details"
+                                            >
+                                                <BookOpen className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                                onClick={() => handleQuizSelect(quizPath)}
+                                                className={`flex-1 py-2 px-4 rounded-xl font-semibold text-sm transition-all ${
+                                                    isSelected
+                                                        ? 'bg-primary/10 text-primary border-2 border-primary'
+                                                        : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700'
+                                                }`}
+                                            >
+                                                {isSelected ? 'Selected' : 'Select'}
+                                            </button>
+                                            <button
+                                                onClick={() => handleStartQuiz(quizPath)}
+                                                className="flex-1 btn-primary py-2 px-4 flex items-center justify-center gap-2 text-sm"
+                                            >
+                                                <Play className="w-4 h-4" />
+                                                Start
+                                            </button>
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            <AnimatePresence>
+                {showCreateModal && (
+                    <CreateQuizModal
+                        onClose={() => setShowCreateModal(false)}
+                        onCreated={loadQuizzes}
+                    />
+                )}
+                {showShareModal && shareQuiz && (
+                    <ShareQuizModal
+                        quiz={shareQuiz}
+                        onClose={() => {
+                            setShowShareModal(false)
+                            setShareQuiz(null)
+                        }}
+                        onCopyLink={() => copyShareLink(shareQuiz)}
+                        onShareSocial={(platform: 'twitter' | 'facebook' | 'telegram') => shareToSocial(platform, shareQuiz)}
+                    />
+                )}
+            </AnimatePresence>
+
+            <BottomNav />
+        </div>
+    )
+}
+
+function CreateQuizModal({ onClose, onCreated }: { onClose: () => void, onCreated: () => void }) {
+    const [step, setStep] = useState<'info' | 'paste'>('info')
+    const [name, setName] = useState('')
+    const [description, setDescription] = useState('')
+    const [authorName, setAuthorName] = useState('')
+    const [isPublic, setIsPublic] = useState(false)
+    const [jsonText, setJsonText] = useState('')
+    const [error, setError] = useState('')
+    const [loading, setLoading] = useState(false)
+    const { user } = useAuth()
+
+    const promptText = `You are building an SAT vocabulary trainer.
+
+Your job:
+Given a list of entries with
+
+* Word
+* Definition (in English or bilingual)
+* Example sentence
+
+you must return a JSON array of objects in the following format (use straight quotes " only):
+
+[
+  {
+    "word": "string",
+    "ru": "string",
+    "synonyms": ["string", ...],
+    "simple_examples": ["string", ...],
+    "advanced_example": "string",
+    "confusions": ["string", ...]
+  }
+]
+
+### GLOBAL JSON RULES (VERY STRICT)
+
+1. Output format
+
+* Return ONLY valid JSON, no explanations, no markdown, no comments.
+* Top level must be a JSON array [...].
+* Use EXACT keys: word, ru, synonyms, simple_examples, advanced_example, confusions.
+
+2. Quotes and characters
+
+* Use ONLY straight ASCII double quotes " (U+0022) in JSON.
+* DO NOT use any "smart quotes" or "curly quotes".
+* Inside JSON string values:
+  * DO NOT use double quotes " at all.
+  * If you need quotes in English text, replace them with single quotes ' instead.
+* Use ONLY the straight ASCII apostrophe ' (U+0027) in words like 'tis, ne'er, etc.
+* Do NOT use any other lookalike apostrophes.
+* Do NOT use backticks.
+
+3. Safety for JSON parsing
+
+* Do NOT include line breaks inside a single string value; each sentence must be on one line.
+* Do NOT add trailing commas.
+* Do NOT add comments.
+* Make sure the JSON would pass a strict JSON parser.
+
+4. "ru" field
+
+* The ru field must contain the original definition text EXACTLY as given in the input.
+* Do NOT translate, shorten, or paraphrase the definition.
+* Keep punctuation as in the original, but convert any smart quotes to straight quotes.
+
+---
+
+### SYNONYMS
+
+* synonyms must be an array of 2–5 real English words or short phrases.
+* Same part of speech as the target word (verb/adj/noun/adv).
+* Similar meaning and similar register (formal/informal).
+* Do NOT include the target word itself.
+* Prefer test-relevant academic vocabulary when possible.
+
+Example:
+For abate → "synonyms": ["diminish", "decrease", "subside"]
+
+---
+
+### SIMPLE EXAMPLES
+
+* simple_examples = array of 1–3 sentences.
+* CEFR B1 level: clear, short sentences.
+* At least one simple example should be close to the original example sentence, but you may edit for clarity.
+* No slang.
+* No double quotes. If you need quoting, use single quotes.
+
+---
+
+### ADVANCED_EXAMPLE (SAT CLOZE SENTENCE)
+
+* advanced_example must be:
+  * Exactly ONE sentence.
+  * Contains EXACTLY ONE blank, written as four underscores: ____
+  * No other blanks.
+  * No double quotes at all in this sentence.
+* The blank must be the position where the TARGET WORD (in the correct grammatical form) is logically and grammatically the BEST answer.
+
+**Very important grammar rule:**
+
+For each word:
+
+1. Choose the grammatical form for the blank (base verb, past tense, adjective, noun, adverb, etc.).
+2. All words in confusions must:
+   * Be the SAME part of speech as the target word.
+   * Fit grammatically into the same blank position in the sentence.
+3. Only the TARGET WORD should make the overall meaning clearly correct and precise in context.
+
+Tone and style:
+
+* The sentence should sound like it comes from a humanities or social-science SAT passage.
+* Use context clues that favor the correct word over the distractors.
+
+Example pattern:
+
+* "advanced_example": "For reformers, protecting public safety was important, but ensuring equal access to justice was even more ____."
+  Here the correct answer might be paramount, and confusions could be ["significant", "visible", "apparent", "basic"].
+
+---
+
+### CONFUSIONS (DISTRACTOR WORDS)
+
+* confusions must be an array of 3–7 words.
+* They are NOT random.
+* They MUST:
+  * Be the SAME part of speech as the target word.
+  * Be in the SAME morphological form required by the blank in advanced_example.
+    * If the blank needs a base-form verb, all confusions must be base-form verbs.
+    * If the blank needs an adjective, all confusions must be adjectives, etc.
+  * Be realistically confusable with the target word in an SAT sentence-completion question.
+* They should be:
+  * Near-synonyms with slightly different meaning, tone, or precision, OR
+  * Words that feel plausible in the sentence but are subtly wrong in meaning.
+* Do NOT include the target word itself.
+* Do NOT repeat any word inside confusions.
+
+---
+
+### INPUT FORMAT
+
+You will receive a block like:
+
+Word
+Definition
+Example Sentence
+Abate
+v. to become less active, less intense, or less in amount
+As I began my speech, my feelings of nervousness quickly abated.
+Abrupt
+adj. Sudden and unexpected.
+His abrupt departure surprised everyone.
+...
+
+You must silently parse this structure:
+
+* Every set of three lines:
+  1. Word
+  2. Definition
+  3. Example Sentence
+     is one entry.
+* For each entry, produce one JSON object in the format above.
+* Return one JSON array containing all objects, and nothing else.
+
+Remember:
+
+* No markdown.
+* No explanations.
+* No smart quotes.
+* No double quotes inside text values. Use single quotes ' instead.
+`
+
+
+    const handleCreate = async () => {
+        if (!user) return
+        setError('')
+        setLoading(true)
+
+        try {
+            const words = JSON.parse(jsonText)
+
+            if (!Array.isArray(words)) {
+                throw new Error('JSON must be an array')
+            }
+
+            await createCustomQuiz(user.id, name, description, words, isPublic, authorName || undefined)
+            onCreated()
+            onClose()
+        } catch (err: any) {
+            setError(err.message || 'Invalid JSON format')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={onClose}
+                className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+
+            <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-white dark:bg-surface-dark w-full max-w-2xl rounded-3xl p-6 shadow-2xl relative z-10 max-h-[90vh] overflow-y-auto"
+            >
+                <h2 className="text-2xl font-bold mb-4">Create Custom Quiz</h2>
+
+                {step === 'info' ? (
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-2">
+                                Quiz Name
+                            </label>
+                            <input
+                                type="text"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                className="input-field"
+                                placeholder="e.g., My SAT Words"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-2">
+                                Description
+                            </label>
+                            <textarea
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                                className="input-field min-h-[100px]"
+                                placeholder="Brief description of your quiz"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-2">
+                                Author Name
+                            </label>
+                            <input
+                                type="text"
+                                value={authorName}
+                                onChange={(e) => setAuthorName(e.target.value)}
+                                className="input-field"
+                                placeholder="Your name (optional)"
+                            />
+                        </div>
+
+                        <div className="flex items-center gap-3 p-4 bg-neutral-100 dark:bg-neutral-800 rounded-xl">
+                            <input
+                                type="checkbox"
+                                id="isPublic"
+                                checked={isPublic}
+                                onChange={(e) => setIsPublic(e.target.checked)}
+                                className="w-5 h-5 text-primary rounded focus:ring-primary"
+                            />
+                            <label htmlFor="isPublic" className="flex-1 cursor-pointer">
+                                <div className="font-semibold text-neutral-900 dark:text-neutral-100">
+                                    Make this quiz public
+                                </div>
+                                <div className="text-xs text-neutral-600 dark:text-neutral-400">
+                                    Other users will be able to see and use your quiz
+                                </div>
+                            </label>
+                            {isPublic && (
+                                <Globe className="w-5 h-5 text-primary" />
+                            )}
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button onClick={onClose} className="btn-outline flex-1">
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => setStep('paste')}
+                                disabled={!name}
+                                className="btn-primary flex-1 disabled:opacity-50"
+                            >
+                                Next
+                            </button>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="space-y-4">
+                        <div className="bg-neutral-100 dark:bg-neutral-800 p-4 rounded-xl">
+                            <p className="text-sm font-bold mb-2 flex items-center gap-2">
+                                <Sparkles className="w-4 h-4 text-primary" />
+                                Copy this prompt to your LLM:
+                            </p>
+                            <pre className="text-xs bg-white dark:bg-neutral-900 p-3 rounded-lg overflow-x-auto whitespace-pre-wrap">
+                                {promptText}
+                            </pre>
+                            <button
+                                onClick={() => navigator.clipboard.writeText(promptText)}
+                                className="btn-secondary mt-2 text-xs py-2"
+                            >
+                                Copy Prompt
+                            </button>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-2">
+                                Paste JSON Response
+                            </label>
+                            <textarea
+                                value={jsonText}
+                                onChange={(e) => setJsonText(e.target.value)}
+                                className="input-field min-h-[200px] font-mono text-sm"
+                                placeholder='[{"word": "...", "ru": "...", ...}]'
+                            />
+                        </div>
+
+                        {error && (
+                            <div className="bg-error/10 border-2 border-error text-error-dark dark:text-error-light px-4 py-3 rounded-xl text-sm">
+                                {error}
+                            </div>
+                        )}
+
+                        <div className="flex gap-3">
+                            <button onClick={() => setStep('info')} className="btn-outline flex-1">
+                                Back
+                            </button>
+                            <button
+                                onClick={handleCreate}
+                                disabled={!jsonText || loading}
+                                className="btn-primary flex-1 disabled:opacity-50"
+                            >
+                                {loading ? 'Creating...' : 'Create Quiz'}
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </motion.div>
+        </div>
+    )
+}
+
+function ShareQuizModal({ 
+    quiz, 
+    onClose, 
+    onCopyLink, 
+    onShareSocial 
+}: { 
+    quiz: any
+    onClose: () => void
+    onCopyLink: () => void
+    onShareSocial: (platform: 'twitter' | 'facebook' | 'telegram') => void
+}) {
+    const getShareUrl = () => {
+        const origin = typeof window !== 'undefined' ? window.location.origin : ''
+        if (quiz.isCustom) {
+            const data = encodeURIComponent(JSON.stringify({
+                id: quiz.id,
+                name: quiz.name,
+                description: quiz.description,
+                author_name: quiz.author_name || null,
+                words: quiz.words || []
+            }))
+            return `${origin}${BASE_PATH}/quiz/share?data=${data}`
+        } else {
+            // Normalize file_path: ensure it starts with /
+            const filePath = (quiz.file_path || '').trim()
+            const normalizedPath = filePath.startsWith('/') ? filePath : `/${filePath}`
+            return `${origin}${BASE_PATH}/quiz/share?path=${encodeURIComponent(normalizedPath)}`
+        }
+    }
+    const shareUrl = getShareUrl()
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={onClose}
+                className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+
+            <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-white dark:bg-surface-dark rounded-3xl p-6 shadow-2xl relative z-10 max-w-md w-full"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
+                        Share Quiz
+                    </h2>
+                    <button
+                        onClick={onClose}
+                        className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 transition-colors"
+                    >
+                        <X className="w-5 h-5" />
+                    </button>
+                </div>
+
+                <div className="mb-6">
+                    <h3 className="font-bold text-lg text-neutral-900 dark:text-neutral-100 mb-2">
+                        {quiz.name}
+                    </h3>
+                    <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">
+                        {quiz.description}
+                    </p>
+
+                    {/* Share Link */}
+                    <div className="bg-neutral-100 dark:bg-neutral-800 rounded-xl p-4 mb-4">
+                        <div className="flex items-center gap-2 mb-2">
+                            <Share2 className="w-4 h-4 text-neutral-500" />
+                            <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase">
+                                Share Link
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <input
+                                type="text"
+                                value={shareUrl}
+                                readOnly
+                                className="flex-1 px-3 py-2 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-700 dark:text-neutral-300"
+                            />
+                            <button
+                                onClick={onCopyLink}
+                                className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2 text-sm font-semibold"
+                            >
+                                <Copy className="w-4 h-4" />
+                                Copy
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Social Share Buttons */}
+                    <div className="space-y-2">
+                        <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase mb-3">
+                            Share on Social Media
+                        </p>
+                        <div className="grid grid-cols-3 gap-3">
+                            <button
+                                onClick={() => onShareSocial('twitter')}
+                                className="flex flex-col items-center gap-2 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors group"
+                            >
+                                <Twitter className="w-6 h-6 text-blue-500 group-hover:scale-110 transition-transform" />
+                                <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">Twitter</span>
+                            </button>
+                            <button
+                                onClick={() => onShareSocial('facebook')}
+                                className="flex flex-col items-center gap-2 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors group"
+                            >
+                                <Facebook className="w-6 h-6 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform" />
+                                <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">Facebook</span>
+                            </button>
+                            <button
+                                onClick={() => onShareSocial('telegram')}
+                                className="flex flex-col items-center gap-2 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors group"
+                            >
+                                <MessageCircle className="w-6 h-6 text-blue-500 group-hover:scale-110 transition-transform" />
+                                <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">Telegram</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <button
+                    onClick={onClose}
+                    className="w-full py-3 px-4 bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 rounded-xl font-semibold hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+                >
+                    Close
+                </button>
+            </motion.div>
+        </div>
+    )
+}

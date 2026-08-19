@@ -1,0 +1,29 @@
+[
+  {
+    "id": "sat-set-1",
+    "name": "SAT Vocabulary - Set 1",
+    "description": "Core SAT vocabulary words with definitions, examples and confusions.",
+    "file_path": "/sat/1.json",
+    "is_public": true,
+    "created_at": "2024-01-01T00:00:00.000Z",
+    "author_name": "OpenQuiz"
+  },
+  {
+    "id": "sat-set-2",
+    "name": "SAT Vocabulary - Set 2",
+    "description": "Advanced SAT vocabulary words for high school and college prep.",
+    "file_path": "/sat/2.json",
+    "is_public": true,
+    "created_at": "2024-01-01T00:00:00.000Z",
+    "author_name": "OpenQuiz"
+  },
+  {
+    "id": "sat-archaic",
+    "name": "Archaic & Literary Words",
+    "description": "Less common SAT & literary vocabulary for advanced practice.",
+    "file_path": "/sat/archaic.json",
+    "is_public": true,
+    "created_at": "2024-01-01T00:00:00.000Z",
+    "author_name": "OpenQuiz"
+  }
+]

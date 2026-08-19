@@ -1,0 +1,884 @@
+[
+  {
+    "word": "Abate",
+    "ru": "v. to become less active, less intense, or less in amount",
+    "synonyms": ["diminish", "subside", "decrease", "lessen"],
+    "simple_examples": [
+      "As I began my speech, my feelings of nervousness quickly abated.",
+      "The storm finally abated after several hours of heavy rain."
+    ],
+    "advanced_example": "Once the initial excitement abated, the researchers were able to analyze the results more objectively.",
+    "confusions": ["alleviate", "mitigate", "wane", "decline", "recede"]
+  },
+  {
+    "word": "Abrupt",
+    "ru": "adj. Sudden and unexpected.",
+    "synonyms": ["sudden", "unexpected", "sharp", "precipitous"],
+    "simple_examples": [
+      "His abrupt departure surprised everyone.",
+      "The car came to an abrupt stop at the red light."
+    ],
+    "advanced_example": "The experiment ended in an abrupt fashion when the machinery malfunctioned.",
+    "confusions": ["brusque", "curt", "rapid", "instantaneous", "steep"]
+  },
+  {
+    "word": "Abstract",
+    "ru": "adj. existing purely in the mind; not representing actual reality",
+    "synonyms": ["theoretical", "conceptual", "intangible", "nonconcrete"],
+    "simple_examples": [
+      "Julie had trouble understanding the appeal of the abstract painting.",
+      "The teacher used a concrete example to explain the abstract idea."
+    ],
+    "advanced_example": "The philosopher’s argument relies on abstract notions of justice rather than concrete legal codes.",
+    "confusions": ["abstruse", "vague", "hypothetical", "figurative", "symbolic"]
+  },
+  {
+    "word": "Abysmal",
+    "ru": "adj. extremely bad",
+    "synonyms": ["terrible", "dreadful", "atrocious", "awful"],
+    "simple_examples": [
+      "I got an abysmal grade on my research paper!",
+      "The restaurant's service was absolutely abysmal."
+    ],
+    "advanced_example": "Critics condemned the film for its abysmal writing and wooden acting.",
+    "confusions": ["dire", "appalling", "horrendous", "lamentable", "poor"]
+  },
+  {
+    "word": "Acceptable",
+    "ru": "adj. Satisfactory or permissible.",
+    "synonyms": ["satisfactory", "adequate", "permissible", "tolerable"],
+    "simple_examples": [
+      "The teacher deemed Sara's late assignment acceptable.",
+      "Your answer is acceptable, but it could be clearer."
+    ],
+    "advanced_example": "Although not ideal, the compromise was acceptable to all parties involved.",
+    "confusions": ["sufficient", "suitable", "reasonable", "allowable"]
+  },
+  {
+    "word": "Accidental",
+    "ru": "adj. Happening by chance.",
+    "synonyms": ["unintentional", "inadvertent", "chance", "fortuitous"],
+    "simple_examples": [
+      "The oil spill was purely accidental.",
+      "Their meeting at the café was completely accidental."
+    ],
+    "advanced_example": "Investigators concluded that the damage was accidental rather than deliberate.",
+    "confusions": ["incidental", "random", "coincidental", "unplanned"]
+  },
+  {
+    "word": "Accommodate",
+    "ru": "v. To provide space or make adjustments.",
+    "synonyms": ["house", "hold", "adapt", "adjust"],
+    "simple_examples": [
+      "The Grand Hotel can accommodate up to 500 guests.",
+      "We try to accommodate students with special needs."
+    ],
+    "advanced_example": "The schedule was revised to accommodate the concerns raised by the faculty.",
+    "confusions": ["adapt", "oblige", "facilitate", "fit", "serve"]
+  },
+  {
+    "word": "Accuracy",
+    "ru": "n. The quality of being correct or precise.",
+    "synonyms": ["precision", "exactness", "correctness", "faithfulness"],
+    "simple_examples": [
+      "The accuracy of the intern's report was impressive.",
+      "Good instruments improve the accuracy of measurements."
+    ],
+    "advanced_example": "The accuracy of the historical records has been questioned by recent scholars.",
+    "confusions": ["reliability", "validity", "truthfulness", "authenticity"]
+  },
+  {
+    "word": "Acknowledge",
+    "ru": "v. To recognize or admit the truth.",
+    "synonyms": ["admit", "recognize", "concede", "accept"],
+    "simple_examples": [
+      "She refused to acknowledge her mistake.",
+      "The company finally acknowledged the problem with the product."
+    ],
+    "advanced_example": "The author acknowledges the limitations of the study before presenting her conclusions.",
+    "confusions": ["confess", "grant", "affirm", "validate", "endorse"]
+  },
+  {
+    "word": "Acquired",
+    "ru": "adj. Gained through effort or experience.",
+    "synonyms": ["obtained", "developed", "earned", "learned"],
+    "simple_examples": [
+      "Edmund had acquired a taste for fine wine.",
+      "Language is partly innate and partly an acquired skill."
+    ],
+    "advanced_example": "Her acquired expertise in data analysis made her an invaluable member of the research team.",
+    "confusions": ["inherited", "innate", "cultivated", "accumulated"]
+  },
+  {
+    "word": "Adapt",
+    "ru": "v. To adjust to new conditions.",
+    "synonyms": ["adjust", "modify", "acclimate", "adapt oneself"],
+    "simple_examples": [
+      "Newly-released animals generally adapt to their environments over time.",
+      "It can be hard to adapt to a new school."
+    ],
+    "advanced_example": "Societies must adapt their institutions to respond to rapid technological change.",
+    "confusions": ["adjust", "accommodate", "conform", "evolve", "alter"]
+  },
+  {
+    "word": "Adept",
+    "ru": "adj. having knowledge or skill (usu. in a particular area)",
+    "synonyms": ["skilled", "proficient", "expert", "talented"],
+    "simple_examples": [
+      "Beth loves playing the piano, but she’s especially adept at the violin.",
+      "He is adept at solving complex math problems."
+    ],
+    "advanced_example": "An adept negotiator, she secured favorable terms without alienating the other side.",
+    "confusions": ["adroit", "capable", "competent", "gifted"]
+  },
+  {
+    "word": "Adequate",
+    "ru": "adj. having sufficient qualifications to meet a specific task or purpose",
+    "synonyms": ["sufficient", "enough", "acceptable", "satisfactory"],
+    "simple_examples": [
+      "Though his resume was adequate, the company doubted whether he’d be a good fit.",
+      "We have adequate food for the trip."
+    ],
+    "advanced_example": "The report concludes that current funding is barely adequate to maintain existing services.",
+    "confusions": ["competent", "appropriate", "suitable", "proportionate"]
+  },
+  {
+    "word": "Adhere",
+    "ru": "v. To stick to or follow closely.",
+    "synonyms": ["stick", "cling", "comply", "follow"],
+    "simple_examples": [
+      "You must adhere to the rules if you don't want to get in trouble.",
+      "The labels did not adhere well to the boxes."
+    ],
+    "advanced_example": "Despite criticism, the committee continued to adhere to its original guidelines.",
+    "confusions": ["conform", "observe", "uphold", "abide", "attach"]
+  },
+  {
+    "word": "Adjust",
+    "ru": "v. To modify or change slightly.",
+    "synonyms": ["modify", "alter", "tweak", "adapt"],
+    "simple_examples": [
+      "He had to adjust his seat for comfort.",
+      "You can adjust the volume with this knob."
+    ],
+    "advanced_example": "The researchers adjusted their model to account for the new data.",
+    "confusions": ["adapt", "calibrate", "fine-tune", "amend"]
+  },
+  {
+    "word": "Admire",
+    "ru": "v. To respect or look up to.",
+    "synonyms": ["respect", "esteem", "appreciate", "look up to"],
+    "simple_examples": [
+      "I admire my mother's dedication to her work.",
+      "Many students admire that professor."
+    ],
+    "advanced_example": "Historians continue to admire her courage in challenging the prevailing norms of her time.",
+    "confusions": ["praise", "applaud", "adore", "revere"]
+  },
+  {
+    "word": "Advantageous",
+    "ru": "adj. Beneficial or useful.",
+    "synonyms": ["beneficial", "favorable", "helpful", "profitable"],
+    "simple_examples": [
+      "Speaking multiple languages is advantageous.",
+      "Living near the school is advantageous for students."
+    ],
+    "advanced_example": "The policy proved advantageous to small businesses, which gained access to new markets.",
+    "confusions": ["useful", "convenient", "valuable", "strategic"]
+  },
+  {
+    "word": "Advent",
+    "ru": "n. the arrival or creation of something",
+    "synonyms": ["arrival", "emergence", "appearance", "onset"],
+    "simple_examples": [
+      "The world has never been the same since the advent of the light bulb."
+    ],
+    "advanced_example": "The advent of social media transformed how people consume news and interact with one another.",
+    "confusions": ["beginning", "inception", "origin", "introduction"]
+  },
+  {
+    "word": "Advise",
+    "ru": "v. To recommend or give guidance.",
+    "synonyms": ["recommend", "counsel", "urge", "suggest"],
+    "simple_examples": [
+      "I advise you to study for the exam.",
+      "Doctors advise patients to get enough sleep."
+    ],
+    "advanced_example": "The committee advised the council to postpone the vote until more data could be gathered.",
+    "confusions": ["inform", "consult", "warn", "guide"]
+  },
+  {
+    "word": "Aggravate",
+    "ru": "v. To worsen or intensify.",
+    "synonyms": ["worsen", "exacerbate", "intensify", "inflame"],
+    "simple_examples": [
+      "Scratching the rash will only aggravate it.",
+      "Loud noises can aggravate her headaches."
+    ],
+    "advanced_example": "Cutting funding for public health programs would only aggravate existing inequalities.",
+    "confusions": ["irritate", "annoy", "heighten", "compound"]
+  },
+  {
+    "word": "Aggressive",
+    "ru": "adj. Forceful or overly assertive.",
+    "synonyms": ["hostile", "forceful", "pushy", "assertive"],
+    "simple_examples": [
+      "The man's aggressive tone made everyone uneasy.",
+      "Some salespeople can be very aggressive."
+    ],
+    "advanced_example": "The company adopted an aggressive marketing strategy to gain market share quickly.",
+    "confusions": ["combative", "belligerent", "domineering", "offensive"]
+  },
+  {
+    "word": "Allude",
+    "ru": "v. to make a secretive mention of something",
+    "synonyms": ["hint", "reference", "imply", "suggest"],
+    "simple_examples": [
+      "She alluded to the problem at hand but didn’t say anything more about it.",
+      "The author alludes to a famous myth in this chapter."
+    ],
+    "advanced_example": "By alluding to earlier reforms, the speech situates the new law within a broader historical context.",
+    "confusions": ["refer", "imply", "mention", "evoke"]
+  },
+  {
+    "word": "Ambiguity",
+    "ru": "n. Uncertainty or multiple interpretations.",
+    "synonyms": ["uncertainty", "vagueness", "equivocation", "obscurity"],
+    "simple_examples": [
+      "The ambiguity in his vague statement caused confusion.",
+      "Legal documents must avoid ambiguity."
+    ],
+    "advanced_example": "The poem’s deliberate ambiguity invites readers to construct their own interpretations.",
+    "confusions": ["ambivalence", "vagueness", "indeterminacy", "confusion"]
+  },
+  {
+    "word": "Ambivalence",
+    "ru": "n. Mixed or conflicting feelings.",
+    "synonyms": ["uncertainty", "conflict", "indecision", "mixed feelings"],
+    "simple_examples": [
+      "Jessie felt ambivalence about moving to a new city.",
+      "He spoke with ambivalence about his promotion."
+    ],
+    "advanced_example": "Her ambivalence toward tradition reflects both respect for the past and a desire for change.",
+    "confusions": ["ambiguity", "indifference", "hesitation", "equivocation"]
+  },
+  {
+    "word": "Ameliorate",
+    "ru": "v. To improve or make better.",
+    "synonyms": ["improve", "enhance", "alleviate", "mitigate"],
+    "simple_examples": [
+      "The new policy aims to ameliorate working conditions for all employees.",
+      "Proper ventilation can ameliorate the effects of pollution indoors."
+    ],
+    "advanced_example": "Reforms were introduced to ameliorate the harsh living conditions in the factories.",
+    "confusions": ["alleviate", "mitigate", "remedy", "better"]
+  },
+  {
+    "word": "Amplify",
+    "ru": "v. To increase in size or effect.",
+    "synonyms": ["increase", "magnify", "intensify", "boost"],
+    "simple_examples": [
+      "The microphone will amplify your voice.",
+      "Social media can amplify small disagreements into public conflicts."
+    ],
+    "advanced_example": "The journalist’s emotional language served to amplify the sense of crisis.",
+    "confusions": ["enhance", "expand", "escalate", "heighten"]
+  },
+  {
+    "word": "Amusing",
+    "ru": "adj. Entertaining or humorous.",
+    "synonyms": ["funny", "entertaining", "humorous", "witty"],
+    "simple_examples": [
+      "Jason's joke was quite amusing.",
+      "The movie was light and amusing."
+    ],
+    "advanced_example": "Though seemingly amusing, the story contains a sharp critique of social norms.",
+    "confusions": ["comical", "pleasant", "enjoyable", "charming"]
+  },
+  {
+    "word": "Analogous",
+    "ru": "adj. similar but not identical",
+    "synonyms": ["comparable", "similar", "parallel", "equivalent"],
+    "simple_examples": [
+      "Green onions are considered analogous to spring onions.",
+      "The brain is sometimes described as analogous to a computer."
+    ],
+    "advanced_example": "The historian draws an analogous relationship between past economic crises and current conditions.",
+    "confusions": ["akin", "comparable", "corresponding", "homologous"]
+  },
+  {
+    "word": "Annotate",
+    "ru": "v. To add notes or comments.",
+    "synonyms": ["comment", "note", "gloss", "mark up"],
+    "simple_examples": [
+      "Please annotate the medical text with your observations.",
+      "Students were asked to annotate the poem as they read."
+    ],
+    "advanced_example": "Scholars continue to annotate the manuscript, adding context for modern readers.",
+    "confusions": ["edit", "highlight", "underline", "footnote"]
+  },
+  {
+    "word": "Announce",
+    "ru": "v. To make a public statement.",
+    "synonyms": ["proclaim", "declare", "reveal", "publish"],
+    "simple_examples": [
+      "The CEO will announce the new policy tomorrow.",
+      "They announced their engagement at dinner."
+    ],
+    "advanced_example": "The government announced a series of reforms aimed at reducing corruption.",
+    "confusions": ["advertise", "broadcast", "report", "disclose"]
+  },
+  {
+    "word": "Anomaly",
+    "ru": "n. something different from the norm",
+    "synonyms": ["irregularity", "exception", "aberration", "oddity"],
+    "simple_examples": [
+      "This result is an anomaly and very rarely happens."
+    ],
+    "advanced_example": "The unusually high temperature reading was dismissed as an anomaly in the data.",
+    "confusions": ["outlier", "deviation", "eccentricity", "inconsistency"]
+  },
+  {
+    "word": "Antagonistic",
+    "ru": "adj. Showing hostility or opposition.",
+    "synonyms": ["hostile", "opposed", "adversarial", "aggressive"],
+    "simple_examples": [
+      "His antagonistic behavior created tension at work.",
+      "The two politicians were openly antagonistic during the debate."
+    ],
+    "advanced_example": "The novel portrays an antagonistic relationship between industrial progress and natural landscapes.",
+    "confusions": ["confrontational", "belligerent", "oppositional", "resentful"]
+  },
+  {
+    "word": "Antecedent",
+    "ru": "n. A preceding event or condition.",
+    "synonyms": ["predecessor", "precursor", "forerunner", "prior event"],
+    "simple_examples": [
+      "The antecedent to the war was political unrest."
+    ],
+    "advanced_example": "The author carefully traces the cultural antecedents of the modern movement.",
+    "confusions": ["ancestor", "origin", "cause", "precedent"]
+  },
+  {
+    "word": "Anticipate",
+    "ru": "v. To expect or predict.",
+    "synonyms": ["expect", "foresee", "predict", "await"],
+    "simple_examples": [
+      "Does the weatherman anticipate a rise in temperatures next week?",
+      "We anticipate heavy traffic during the holiday weekend."
+    ],
+    "advanced_example": "The policy was designed to anticipate demographic changes rather than merely react to them.",
+    "confusions": ["envision", "forecast", "project", "suspect"]
+  },
+  {
+    "word": "Antipathy",
+    "ru": "n. a strong feeling of dislike",
+    "synonyms": ["hostility", "aversion", "loathing", "disgust"],
+    "simple_examples": [
+      "Her antipathy toward the professor was obvious: she rolled her eyes whenever he entered the classroom."
+    ],
+    "advanced_example": "Public antipathy toward the proposal forced legislators to reconsider their plans.",
+    "confusions": ["animosity", "resentment", "antagonism", "distaste"]
+  },
+  {
+    "word": "Apex",
+    "ru": "n. the highest point of something",
+    "synonyms": ["peak", "summit", "climax", "pinnacle"],
+    "simple_examples": [
+      "The spring play was the apex of our school year."
+    ],
+    "advanced_example": "The empire reached its apex under the reign of its most successful ruler.",
+    "confusions": ["zenith", "acme", "height", "culmination"]
+  },
+  {
+    "word": "Appropriate",
+    "ru": "adj. Suitable for a specific situation.",
+    "synonyms": ["suitable", "proper", "fitting", "apt"],
+    "simple_examples": [
+      "Lily's velvet dress was appropriate for the formal occasion.",
+      "Make sure your language is appropriate for the audience."
+    ],
+    "advanced_example": "The committee must determine the most appropriate response to the incident.",
+    "confusions": ["relevant", "adequate", "acceptable", "applicable"]
+  },
+  {
+    "word": "Approximate",
+    "ru": "adj. Nearly accurate or close to.",
+    "synonyms": ["rough", "estimated", "near", "close"],
+    "simple_examples": [
+      "The approximate cost is $50.",
+      "We arrived at the approximate location on the map."
+    ],
+    "advanced_example": "The figures provide only an approximate picture of the region’s true economic output.",
+    "confusions": ["roughly", "about", "borderline", "comparable"]
+  },
+  {
+    "word": "Arcane",
+    "ru": "adj. Mysterious or known by few.",
+    "synonyms": ["mysterious", "esoteric", "obscure", "enigmatic"],
+    "simple_examples": [
+      "The ancient book contained arcane knowledge.",
+      "Only a few experts understood the arcane rules of the game."
+    ],
+    "advanced_example": "The legal code is filled with arcane terms that confuse ordinary citizens.",
+    "confusions": ["recondite", "cryptic", "inscrutable", "abstruse"]
+  },
+  {
+    "word": "Arduous",
+    "ru": "adj. Difficult and requiring effort.",
+    "synonyms": ["difficult", "laborious", "strenuous", "taxing"],
+    "simple_examples": [
+      "The steep hike up the mountain was arduous.",
+      "Studying for final exams can be an arduous task."
+    ],
+    "advanced_example": "The project demanded an arduous combination of physical endurance and mental focus.",
+    "confusions": ["onerous", "grueling", "challenging", "demanding"]
+  },
+  {
+    "word": "Assemble",
+    "ru": "v. To gather or put together.",
+    "synonyms": ["gather", "collect", "build", "put together"],
+    "simple_examples": [
+      "We need to assemble the bed if we want a place to sleep tonight.",
+      "The students assembled in the auditorium."
+    ],
+    "advanced_example": "The curator carefully assembled artifacts from around the world for the new exhibit.",
+    "confusions": ["compile", "construct", "convene", "aggregate"]
+  },
+  {
+    "word": "Austere",
+    "ru": "adj. extremely plain; adj. stern and forbidding; adj. relating to self-denial",
+    "synonyms": ["severe", "strict", "spartan", "plain"],
+    "simple_examples": [
+      "He lived in a small, austere cabin in the middle of the woods.",
+      "My boss had an austere expression on her face.",
+      "An austere lifestyle, like that of monks, isn’t for everybody."
+    ],
+    "advanced_example": "The government adopted an austere budget that cut nearly all nonessential programs.",
+    "confusions": ["rigid", "harsh", "minimalist", "frugal"]
+  },
+  {
+    "word": "Avoid",
+    "ru": "v. To stay away from or prevent.",
+    "synonyms": ["evade", "shun", "dodge", "escape"],
+    "simple_examples": [
+      "Mara hates fighting, so she always tries to avoid conflict.",
+      "We left early to avoid traffic."
+    ],
+    "advanced_example": "By diversifying their investments, the family hoped to avoid financial disaster.",
+    "confusions": ["eschew", "circumvent", "bypass", "prevent"]
+  },
+  {
+    "word": "Beneficial",
+    "ru": "adj. Producing good results.",
+    "synonyms": ["helpful", "advantageous", "favorable", "useful"],
+    "simple_examples": [
+      "A balanced diet is beneficial to your health.",
+      "Exercise is beneficial for mental well-being."
+    ],
+    "advanced_example": "The study suggests that even small lifestyle changes can be highly beneficial over time.",
+    "confusions": ["salutary", "constructive", "positive", "wholesome"]
+  },
+  {
+    "word": "Benevolent",
+    "ru": "adj. kind, generous",
+    "synonyms": ["kind", "charitable", "generous", "altruistic"],
+    "simple_examples": [
+      "Many cultures believe in benevolent spirits.",
+      "The benevolent donor paid for the new library."
+    ],
+    "advanced_example": "The organization’s ostensibly benevolent mission masked its more self-serving goals.",
+    "confusions": ["benign", "philanthropic", "compassionate", "magnanimous"]
+  },
+  {
+    "word": "Bold",
+    "ru": "adj. Courageous or striking.",
+    "synonyms": ["brave", "daring", "audacious", "striking"],
+    "simple_examples": [
+      "Elsie made a bold move by quitting her job.",
+      "The painting uses bold colors."
+    ],
+    "advanced_example": "The scientist made a bold claim that challenged decades of accepted theory.",
+    "confusions": ["courageous", "fearless", "rash", "confident"]
+  },
+  {
+    "word": "Borrow",
+    "ru": "v. To take temporarily.",
+    "synonyms": ["take", "use", "loan from", "check out"],
+    "simple_examples": [
+      "Libraries will let you borrow books for several weeks.",
+      "Can I borrow your notes from class?"
+    ],
+    "advanced_example": "Writers often borrow techniques from other genres to create new narrative effects.",
+    "confusions": ["lend", "rent", "lease", "use"]
+  },
+  {
+    "word": "Buttress",
+    "ru": "v. To support or strengthen.",
+    "synonyms": ["support", "bolster", "reinforce", "shore up"],
+    "simple_examples": [
+      "The evidence will buttress his argument.",
+      "New data buttressed the scientist's hypothesis."
+    ],
+    "advanced_example": "The author marshals historical examples to buttress her central claim.",
+    "confusions": ["fortify", "uphold", "sustain", "underpin"]
+  },
+  {
+    "word": "Bypass",
+    "ru": "v. To go around or avoid.",
+    "synonyms": ["avoid", "circumvent", "sidestep", "skirt"],
+    "simple_examples": [
+      "We took a shortcut to bypass traffic.",
+      "The engineers built a canal to bypass the dangerous rapids."
+    ],
+    "advanced_example": "Some corporations attempt to bypass regulations by relocating their operations overseas.",
+    "confusions": ["evade", "dodge", "sidestep", "ignore"]
+  },
+  {
+    "word": "Calibrate",
+    "ru": "v. To adjust for precision.",
+    "synonyms": ["adjust", "tune", "standardize", "fine-tune"],
+    "simple_examples": [
+      "The scientist had to calibrate the instrument to ensure his measurements were accurate."
+    ],
+    "advanced_example": "Before conducting the experiment, the team carefully calibrated each sensor.",
+    "confusions": ["modify", "align", "regulate", "correct"]
+  },
+  {
+    "word": "Candid",
+    "ru": "adj. direct, blunt",
+    "synonyms": ["frank", "honest", "straightforward", "open"],
+    "simple_examples": [
+      "Josh is candid about his desire to become an actor.",
+      "Her candid response surprised the interviewer."
+    ],
+    "advanced_example": "The memoir offers a candid account of the author’s struggles with failure.",
+    "confusions": ["forthright", "blunt", "transparent", "sincere"]
+  },
+  {
+    "word": "Carelessly",
+    "ru": "adv. Without caution.",
+    "synonyms": ["recklessly", "negligently", "thoughtlessly", "sloppily"],
+    "simple_examples": [
+      "He carelessly left his keys on the bus.",
+      "She carelessly spilled coffee on the report."
+    ],
+    "advanced_example": "The chemicals were carelessly stored, creating a serious safety hazard.",
+    "confusions": ["hastily", "rashly", "inattentively", "heedlessly"]
+  },
+  {
+    "word": "Catastrophic",
+    "ru": "adj. Disastrous or causing great damage.",
+    "synonyms": ["disastrous", "devastating", "ruinous", "calamitous"],
+    "simple_examples": [
+      "The catastrophic hurricane destroyed dozens of homes.",
+      "A catastrophic failure of the engine forced the plane to land."
+    ],
+    "advanced_example": "Scientists warn that unchecked climate change could have catastrophic consequences.",
+    "confusions": ["dire", "tragic", "severe", "apocalyptic"]
+  },
+  {
+    "word": "Cause",
+    "ru": "n. A reason for an action or event.",
+    "synonyms": ["reason", "source", "origin", "motivation"],
+    "simple_examples": [
+      "The fire's cause is still unknown.",
+      "Researchers are studying the cause of the disease."
+    ],
+    "advanced_example": "The report identifies poverty as a primary cause of the region’s instability.",
+    "confusions": ["factor", "catalyst", "stimulus", "motive"]
+  },
+  {
+    "word": "Characterization",
+    "ru": "n. The way a character is described.",
+    "synonyms": ["portrayal", "depiction", "representation", "description"],
+    "simple_examples": [
+      "The novel's characterization was deep and complex."
+    ],
+    "advanced_example": "Subtle shifts in dialogue contribute to the nuanced characterization of the narrator.",
+    "confusions": ["persona", "profile", "caricature", "presentation"]
+  },
+  {
+    "word": "Circumvent",
+    "ru": "v. To find a way around.",
+    "synonyms": ["evade", "bypass", "sidestep", "avoid"],
+    "simple_examples": [
+      "They found a loophole to circumvent the rule."
+    ],
+    "advanced_example": "Some companies attempt to circumvent labor laws by hiring temporary contractors.",
+    "confusions": ["dodge", "escape", "elude", "skirt"]
+  },
+  {
+    "word": "Coincidence",
+    "ru": "n. A surprising and unexpected event.",
+    "synonyms": ["accident", "chance event", "fluke", "concurrence"],
+    "simple_examples": [
+      "Meeting my neighbor at the airport was a coincidence.",
+      "It was no coincidence that sales rose after the ad campaign."
+    ],
+    "advanced_example": "The apparent coincidence prompted investigators to look for a deeper connection.",
+    "confusions": ["serendipity", "happenstance", "luck", "correlation"]
+  },
+  {
+    "word": "Collaboration",
+    "ru": "n. Working together on a task.",
+    "synonyms": ["cooperation", "partnership", "teamwork", "alliance"],
+    "simple_examples": [
+      "The scientists' collaboration led to a breakthrough.",
+      "Group projects require good collaboration."
+    ],
+    "advanced_example": "The success of the initiative depended on close collaboration between public and private institutions.",
+    "confusions": ["coordination", "coalition", "contribution", "association"]
+  },
+  {
+    "word": "Commercialization",
+    "ru": "n. The process of making something a business.",
+    "synonyms": ["marketing", "exploitation", "merchandising", "commodification"],
+    "simple_examples": [
+      "The commercialization of the product increased sales."
+    ],
+    "advanced_example": "Critics argue that the commercialization of the holiday has overshadowed its original meaning.",
+    "confusions": ["industrialization", "capitalization", "monetization", "promotion"]
+  },
+  {
+    "word": "Committed",
+    "ru": "adj. Dedicated to a cause or task.",
+    "synonyms": ["dedicated", "devoted", "engaged", "loyal"],
+    "simple_examples": [
+      "Ava is committed to her studies and always wants top grades.",
+      "The volunteers are committed to helping the community."
+    ],
+    "advanced_example": "The organization relies on a small but highly committed group of activists.",
+    "confusions": ["responsible", "obligated", "bound", "faithful"]
+  },
+  {
+    "word": "Common",
+    "ru": "adj. Occurring frequently or shared.",
+    "synonyms": ["frequent", "ordinary", "typical", "widespread"],
+    "simple_examples": [
+      "It's very common for students to feel stressed before exams.",
+      "Sneezing is a common symptom of allergies."
+    ],
+    "advanced_example": "The essay explores common misconceptions about economic inequality.",
+    "confusions": ["prevalent", "routine", "universal", "popular"]
+  },
+  {
+    "word": "Compelling",
+    "ru": "adj. Captivating or persuasive.",
+    "synonyms": ["persuasive", "forceful", "engaging", "convincing"],
+    "simple_examples": [
+      "The debater gave a compelling argument.",
+      "The documentary was compelling from start to finish."
+    ],
+    "advanced_example": "The data present a compelling case for reevaluating current policies.",
+    "confusions": ["persuasive", "intriguing", "powerful", "coercive"]
+  },
+  {
+    "word": "Competent",
+    "ru": "adj. Having the necessary ability or skill.",
+    "synonyms": ["capable", "proficient", "skilled", "adequate"],
+    "simple_examples": [
+      "Noah has worked at this job for a long time and is a competent engineer.",
+      "You need a competent driver for this difficult route."
+    ],
+    "advanced_example": "The board sought a competent leader who could manage both finances and personnel.",
+    "confusions": ["qualified", "effective", "efficient", "satisfactory"]
+  },
+  {
+    "word": "Complementary",
+    "ru": "adj. Enhancing or completing another.",
+    "synonyms": ["matching", "harmonious", "supplementary", "compatible"],
+    "simple_examples": [
+      "The artist and the engineer have skills that are complementary in the project."
+    ],
+    "advanced_example": "The two theories are not mutually exclusive; rather, they provide complementary perspectives on the same phenomenon.",
+    "confusions": ["supplementary", "corresponding", "reciprocal", "cooperative"]
+  },
+  {
+    "word": "Complexity",
+    "ru": "n. The state of being intricate or complicated.",
+    "synonyms": ["complication", "intricacy", "difficulty", "sophistication"],
+    "simple_examples": [
+      "The complexity of the 1,000 piece puzzle made it challenging."
+    ],
+    "advanced_example": "The complexity of the legal system often deters citizens from pursuing their rights.",
+    "confusions": ["confusion", "elaboration", "detail", "obscurity"]
+  },
+  {
+    "word": "Compose",
+    "ru": "v. To create or write.",
+    "synonyms": ["write", "create", "devise", "craft"],
+    "simple_examples": [
+      "Jordan plans to compose a new symphony.",
+      "She composed a heartfelt letter to her grandmother."
+    ],
+    "advanced_example": "The poet composed the collection over several years, revising each piece multiple times.",
+    "confusions": ["construct", "formulate", "produce", "author"]
+  },
+  {
+    "word": "Compound",
+    "ru": "v. To intensify or combine.",
+    "synonyms": ["worsen", "exacerbate", "combine", "amplify"],
+    "simple_examples": [
+      "The traffic was compounded by bad weather.",
+      "His stress was compounded by lack of sleep."
+    ],
+    "advanced_example": "Economic hardship can compound the effects of existing social inequalities.",
+    "confusions": ["aggravate", "heighten", "accumulate", "merge"]
+  },
+  {
+    "word": "Comprise",
+    "ru": "v. To consist of or include.",
+    "synonyms": ["consist of", "include", "contain", "be made up of"],
+    "simple_examples": [
+      "The book comprises ten chapters."
+    ],
+    "advanced_example": "The committee comprises experts from a variety of disciplines.",
+    "confusions": ["compose", "constitute", "encompass", "embrace"]
+  },
+  {
+    "word": "Conceal",
+    "ru": "v. To hide or keep secret.",
+    "synonyms": ["hide", "cover", "mask", "disguise"],
+    "simple_examples": [
+      "Luca tried to conceal his disappointment.",
+      "She concealed the gift behind her back."
+    ],
+    "advanced_example": "The government was accused of concealing crucial information from the public.",
+    "confusions": ["obscure", "veil", "suppress", "withhold"]
+  },
+  {
+    "word": "Concede",
+    "ru": "v. To admit or yield.",
+    "synonyms": ["admit", "acknowledge", "yield", "grant"],
+    "simple_examples": [
+      "She conceded that she was wrong during the argument.",
+      "The losing candidate conceded the election."
+    ],
+    "advanced_example": "Although he concedes that progress has been made, he argues that much work remains.",
+    "confusions": ["surrender", "capitulate", "accept", "recognize"]
+  },
+  {
+    "word": "Conceptualize",
+    "ru": "v. To form an idea or concept.",
+    "synonyms": ["envision", "imagine", "formulate", "conceive"],
+    "simple_examples": [
+      "In this lab, scientists conceptualize new theories on viruses."
+    ],
+    "advanced_example": "The artist conceptualized the project as a dialogue between past and present.",
+    "confusions": ["theorize", "design", "ideate", "outline"]
+  },
+  {
+    "word": "Concerning",
+    "ru": "adj. Causing worry or distress.",
+    "synonyms": ["worrying", "alarming", "troubling", "disturbing"],
+    "simple_examples": [
+      "The news about the approaching hurricane is quite concerning."
+    ],
+    "advanced_example": "The decline in voter turnout is particularly concerning for advocates of democracy.",
+    "confusions": ["unsettling", "problematic", "serious", "grave"]
+  },
+  {
+    "word": "Condition",
+    "ru": "n. The state of something.",
+    "synonyms": ["state", "shape", "status", "circumstance"],
+    "simple_examples": [
+      "The car I bought is in excellent condition."
+    ],
+    "advanced_example": "The report describes the condition of schools in rural areas as severely neglected.",
+    "confusions": ["situation", "requirement", "term", "provision"]
+  },
+  {
+    "word": "Confident",
+    "ru": "adj. Feeling sure or self-assured.",
+    "synonyms": ["self-assured", "certain", "secure", "positive"],
+    "simple_examples": [
+      "Michael Jordan is confident in his abilities as a basketball player.",
+      "She felt confident about her presentation."
+    ],
+    "advanced_example": "Despite the challenges, the team remained confident that they could meet the deadline.",
+    "confusions": ["bold", "assured", "overconfident", "arrogant"]
+  },
+  {
+    "word": "Conflated",
+    "ru": "adj. Combined in a misleading way.",
+    "synonyms": ["merged", "confused", "fused", "blended"],
+    "simple_examples": [
+      "The two issues were conflated in the argument."
+    ],
+    "advanced_example": "Public discourse often conflated immigration with national security, obscuring important distinctions.",
+    "confusions": ["combined", "equated", "mixed up", "collapsed"]
+  },
+  {
+    "word": "Conform",
+    "ru": "v. To comply with rules or expectations.",
+    "synonyms": ["comply", "follow", "obey", "adapt"],
+    "simple_examples": [
+      "The alternative rocker refuses to conform to societal norms.",
+      "Employees are expected to conform to the dress code."
+    ],
+    "advanced_example": "Social pressure can cause individuals to conform even when they privately disagree.",
+    "confusions": ["adhere", "oblige", "submit", "acquiesce"]
+  },
+  {
+    "word": "Consensus",
+    "ru": "n. General agreement.",
+    "synonyms": ["agreement", "unity", "harmony", "accord"],
+    "simple_examples": [
+      "The team finally reached a consensus on the decision."
+    ],
+    "advanced_example": "Although no solution pleased everyone, a broad consensus emerged around the proposal.",
+    "confusions": ["majority", "unanimity", "concurrence", "compromise"]
+  },
+  {
+    "word": "Consistent",
+    "ru": "adj. Acting in the same way over time.",
+    "synonyms": ["steady", "reliable", "uniform", "regular"],
+    "simple_examples": [
+      "My grandmother's knitting is always consistent in quality.",
+      "He has been consistent in his support for the policy."
+    ],
+    "advanced_example": "The findings are consistent with earlier studies on the same topic.",
+    "confusions": ["coherent", "constant", "stable", "predictable"]
+  },
+  {
+    "word": "Conspicuous",
+    "ru": "adj. Easily noticed or standing out.",
+    "synonyms": ["noticeable", "obvious", "prominent", "striking"],
+    "simple_examples": [
+      "Veronica's red dress was conspicuous in the crowd."
+    ],
+    "advanced_example": "The conspicuous wealth of the elite contrasted sharply with the poverty of the surrounding neighborhoods.",
+    "confusions": ["evident", "visible", "salient", "flagrant"]
+  },
+  {
+    "word": "Constant",
+    "ru": "adj. Occurring continuously.",
+    "synonyms": ["continual", "persistent", "steady", "unending"],
+    "simple_examples": [
+      "The criminal lived in constant fear that he'd be found out."
+    ],
+    "advanced_example": "The constant noise of traffic made it difficult to concentrate.",
+    "confusions": ["consistent", "perpetual", "incessant", "chronic"]
+  },
+  {
+    "word": "Contentious",
+    "ru": "adj. Causing disagreement or debate.",
+    "synonyms": ["controversial", "disputed", "argumentative", "divisive"],
+    "simple_examples": [
+      "Politics are highly contentious these days."
+    ],
+    "advanced_example": "The most contentious part of the bill involves changes to voting rules.",
+    "confusions": ["polarizing", "debatable", "combative", "hostile"]
+  },
+  {
+    "word": "Contingent",
+    "ru": "adj. Dependent on something else.",
+    "synonyms": ["dependent", "conditional", "subject to", "based on"],
+    "simple_examples": [
+      "Our family ski trip is contingent on the weather."
+    ],
+    "advanced_example": "The success of the plan is contingent upon securing additional funding.",
+    "confusions": ["possible", "provisional", "uncertain", "reliant"]
+  }
+]

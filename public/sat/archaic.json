@@ -1,0 +1,542 @@
+[
+  {
+    "word": "Thou",
+    "ru": "You (informal, singular).",
+    "synonyms": ["you", "ye"],
+    "simple_examples": [
+      "Thou art my closest friend.",
+      "In old poems, people use \"thou\" to speak to one person."
+    ],
+    "advanced_example": "In the poet's farewell, thou is treated not as a distant god but as an intimate companion.",
+    "confusions": ["you", "he", "they", "we"]
+  },
+  {
+    "word": "Thee",
+    "ru": "You (object form of \"thou\").",
+    "synonyms": ["you", "thyself"],
+    "simple_examples": [
+      "I will follow thee wherever thou goest.",
+      "The letter was written to thee alone."
+    ],
+    "advanced_example": "The vow, carved in stone, promised to protect thee from every enemy, seen or unseen.",
+    "confusions": ["you", "him", "her", "them"]
+  },
+  {
+    "word": "Thy",
+    "ru": "Your (possessive form of \"thou\").",
+    "synonyms": ["your", "thine"],
+    "simple_examples": [
+      "Remember thy promise to return.",
+      "Take care of thy health."
+    ],
+    "advanced_example": "The inscription urged, \"Know thy history, and you will better understand yourself.\"",
+    "confusions": ["your", "my", "our", "their"]
+  },
+  {
+    "word": "Doth",
+    "ru": "Does (third person singular form of \"do\").",
+    "synonyms": ["does", "performs", "acts"],
+    "simple_examples": [
+      "He doth protest too much.",
+      "The king doth as he pleases."
+    ],
+    "advanced_example": "The chronicler insists that justice doth prevail, even when rulers seem entirely corrupt.",
+    "confusions": ["does", "can", "might", "must"]
+  },
+  {
+    "word": "Hast",
+    "ru": "Have or has (second person singular form of \"have\").",
+    "synonyms": ["have", "hold", "possess"],
+    "simple_examples": [
+      "Thou hast spoken the truth.",
+      "Thou hast many friends in this city."
+    ],
+    "advanced_example": "If thou hast broken faith once, the council will wonder why it should ever trust thee again.",
+    "confusions": ["hath", "has", "had", "have"]
+  },
+  {
+    "word": "Art",
+    "ru": "Are (second person singular form of \"be\").",
+    "synonyms": ["are", "exist"],
+    "simple_examples": [
+      "Thou art late to the feast.",
+      "Thou art wise beyond thy years."
+    ],
+    "advanced_example": "In the old prayer, the line \"thou art mindful of us\" suggests a close and constant care.",
+    "confusions": ["wert", "are", "weret", "wast"]
+  },
+  {
+    "word": "Methinks",
+    "ru": "It seems to me.",
+    "synonyms": ["it seems to me", "I think", "I suppose"],
+    "simple_examples": [
+      "Methinks the weather will change soon.",
+      "Methinks he is hiding something."
+    ],
+    "advanced_example": "Reading the final page, methinks the author trusts the reader to draw their own moral.",
+    "confusions": ["perhaps", "surely", "doubtless", "indeed"]
+  },
+  {
+    "word": "Oft",
+    "ru": "Often.",
+    "synonyms": ["often", "frequently", "regularly"],
+    "simple_examples": [
+      "He walks here oft in the evening.",
+      "They oft speak of their childhood home."
+    ],
+    "advanced_example": "Social customs are oft misunderstood when observers ignore the history that shaped them.",
+    "confusions": ["often", "seldom", "rarely", "frequently"]
+  },
+  {
+    "word": "Hither",
+    "ru": "To this place.",
+    "synonyms": ["here", "to here", "toward here"],
+    "simple_examples": [
+      "Come hither and sit by the fire.",
+      "The messenger rode hither with urgent news."
+    ],
+    "advanced_example": "The invitation called scholars hither to share their research and learn from one another.",
+    "confusions": ["here", "thither", "inside", "nearby"]
+  },
+  {
+    "word": "Yonder",
+    "ru": "Distant, over there.",
+    "synonyms": ["distant", "far off", "over there"],
+    "simple_examples": [
+      "Do you see yon tower on the hill?",
+      "We watched the storm over yonder sea."
+    ],
+    "advanced_example": "The traveler pointed to the faint lights yonder and claimed that a great city lay beyond the hills.",
+    "confusions": ["distant", "remote", "farther", "beyond"]
+  },
+  {
+    "word": "Ere",
+    "ru": "Before.",
+    "synonyms": ["before", "prior to", "ahead of"],
+    "simple_examples": [
+      "Finish your work ere night falls.",
+      "He left ere the guests arrived."
+    ],
+    "advanced_example": "Reformers warned that the law must change ere injustice became too deeply rooted to dislodge.",
+    "confusions": ["before", "once", "whilst", "until"]
+  },
+  {
+    "word": "Whence",
+    "ru": "From where.",
+    "synonyms": ["from where", "out of which", "from what place"],
+    "simple_examples": [
+      "They returned whence they came.",
+      "No one knows whence the rumor started."
+    ],
+    "advanced_example": "The scholar asked whence such confidence arose when the evidence was so thin.",
+    "confusions": ["where", "whither", "wherefrom", "whereby"]
+  },
+  {
+    "word": "Perchance",
+    "ru": "Perhaps, maybe.",
+    "synonyms": ["perhaps", "maybe", "possibly"],
+    "simple_examples": [
+      "Perchance we will meet again.",
+      "Perchance he will change his mind."
+    ],
+    "advanced_example": "The letter suggests, perchance too gently to offend, that the king may have misjudged his advisors.",
+    "confusions": ["perhaps", "surely", "doubtless", "nonetheless"]
+  },
+  {
+    "word": "Hark",
+    "ru": "Listen, pay attention.",
+    "synonyms": ["listen", "attend", "hear"],
+    "simple_examples": [
+      "Hark, do you hear the bells?",
+      "Hark to the sound of the sea."
+    ],
+    "advanced_example": "The narrator pauses to cry, \"Hark to the voices of the poor,\" urging readers not to turn away.",
+    "confusions": ["listen", "observe", "behold", "look"]
+  },
+  {
+    "word": "Nay",
+    "ru": "No, indeed not.",
+    "synonyms": ["no", "by no means", "not at all"],
+    "simple_examples": [
+      "Nay, I do not agree.",
+      "She shook her head and said, \"Nay.\""
+    ],
+    "advanced_example": "The speech moves from praise to challenge, as the orator declares, \"Nay, we have not yet kept our promises.\"",
+    "confusions": ["no", "indeed", "rather", "surely"]
+  },
+  {
+    "word": "Verily",
+    "ru": "Truly, certainly.",
+    "synonyms": ["truly", "indeed", "certainly"],
+    "simple_examples": [
+      "Verily, I say unto you, this is important.",
+      "She was verily pleased with the result."
+    ],
+    "advanced_example": "The preacher insists, \"Verily, the measure of a society is how it treats its weakest members.\"",
+    "confusions": ["truly", "surely", "indeed", "doubtless"]
+  },
+  {
+    "word": "Fain",
+    "ru": "Willingly, eagerly.",
+    "synonyms": ["willingly", "gladly", "eagerly"],
+    "simple_examples": [
+      "I would fain help if I could.",
+      "He would fain stay longer with his friends."
+    ],
+    "advanced_example": "The young scholar would fain abandon comfort for the chance to study with a great teacher.",
+    "confusions": ["gladly", "reluctantly", "eagerly", "readily"]
+  },
+  {
+    "word": "Whither",
+    "ru": "To where, to which place.",
+    "synonyms": ["to where", "to which place"],
+    "simple_examples": [
+      "Whither dost thou travel this night?",
+      "No one knows whither the river flows."
+    ],
+    "advanced_example": "Ambitious students must decide whither they will direct their talents: toward profit, or toward service.",
+    "confusions": ["where", "whence", "wherever", "thither"]
+  },
+  {
+    "word": "Forsooth",
+    "ru": "Truly, in truth.",
+    "synonyms": ["truly", "indeed", "in truth"],
+    "simple_examples": [
+      "Forsooth, I did not expect to see you here.",
+      "The tale is strange, forsooth."
+    ],
+    "advanced_example": "The narrator remarks, \"Forsooth, the hero is brave,\" yet spends the rest of the chapter proving the opposite.",
+    "confusions": ["indeed", "surely", "verily", "honestly"]
+  },
+  {
+    "word": "Anon",
+    "ru": "Soon, shortly.",
+    "synonyms": ["soon", "shortly", "presently"],
+    "simple_examples": [
+      "I will return anon.",
+      "The play shall begin anon."
+    ],
+    "advanced_example": "The letter ends with a promise to write again anon once the outcome is known.",
+    "confusions": ["soon", "presently", "later", "shortly"]
+  },
+  {
+    "word": "Anigh",
+    "ru": "Near.",
+    "synonyms": ["near", "close", "nearby"],
+    "simple_examples": [
+      "The village lies anigh the river.",
+      "Stay anigh the fire to keep warm."
+    ],
+    "advanced_example": "With danger so anigh and help so far away, the villagers relied on one another.",
+    "confusions": ["near", "close", "adjacent", "nearby"]
+  },
+  {
+    "word": "'Tis",
+    "ru": "It is.",
+    "synonyms": ["it is", "it's"],
+    "simple_examples": [
+      "'Tis a fine day for a walk.",
+      "'Tis true that he helped many people."
+    ],
+    "advanced_example": "In the opening line, the narrator calmly observes, \"'Tis a strange thing, how quickly fortunes change.\"",
+    "confusions": ["this is", "that is", "it seems", "there is"]
+  },
+  {
+    "word": "O'er",
+    "ru": "Over.",
+    "synonyms": ["over", "across", "above"],
+    "simple_examples": [
+      "He looked o'er the wall into the garden.",
+      "Snow lay o'er the fields."
+    ],
+    "advanced_example": "The poem imagines time flowing o'er the city like an unseen river, reshaping every life it touches.",
+    "confusions": ["over", "through", "across", "around"]
+  },
+  {
+    "word": "'Twas",
+    "ru": "It was.",
+    "synonyms": ["it was"],
+    "simple_examples": [
+      "'Twas late when we arrived.",
+      "'Twas a night to remember."
+    ],
+    "advanced_example": "'Twas a small decision at the time, yet it altered the course of the whole family's history.",
+    "confusions": ["this was", "that was", "there was", "it seemed"]
+  },
+  {
+    "word": "'Twill",
+    "ru": "It will.",
+    "synonyms": ["it will"],
+    "simple_examples": [
+      "'Twill rain before sunset.",
+      "'Twill be hard to change his mind."
+    ],
+    "advanced_example": "'Twill not be easy to admit the past, but without honesty no real peace is possible.",
+    "confusions": ["this will", "that will", "there will", "it may"]
+  },
+  {
+    "word": "Ne'er",
+    "ru": "Never.",
+    "synonyms": ["never", "at no time"],
+    "simple_examples": [
+      "He ne'er forgets a kindness.",
+      "They ne'er spoke of that day again."
+    ],
+    "advanced_example": "The contract was so strict that the workers ne'er truly controlled their own time.",
+    "confusions": ["never", "hardly", "rarely", "seldom"]
+  },
+  {
+    "word": "Mayhap",
+    "ru": "Perhaps, maybe.",
+    "synonyms": ["perhaps", "maybe", "possibly"],
+    "simple_examples": [
+      "Mayhap we shall meet again.",
+      "Mayhap the storm will pass us by."
+    ],
+    "advanced_example": "Mayhap the author is not contradicting herself but inviting us to hold two ideas at once.",
+    "confusions": ["perhaps", "surely", "doubtless", "instead"]
+  },
+  {
+    "word": "Aught",
+    "ru": "Anything.",
+    "synonyms": ["anything", "something"],
+    "simple_examples": [
+      "If you need aught, call my name.",
+      "He found aught of value in the ruins."
+    ],
+    "advanced_example": "The record offers hardly aught to explain why the villagers suddenly left their homes.",
+    "confusions": ["anything", "much", "little", "nothing"]
+  },
+  {
+    "word": "Haply",
+    "ru": "Perhaps, by chance.",
+    "synonyms": ["perhaps", "by chance", "possibly"],
+    "simple_examples": [
+      "Haply we shall cross paths again.",
+      "Haply his letter was lost in the post."
+    ],
+    "advanced_example": "The historian writes that the document survived only because it was, haply, misplaced in a forgotten drawer.",
+    "confusions": ["perhaps", "accidentally", "unexpectedly", "fortunately"]
+  },
+  {
+    "word": "Sooth",
+    "ru": "Truth, reality.",
+    "synonyms": ["truth", "reality", "fact"],
+    "simple_examples": [
+      "In sooth, I speak plainly.",
+      "They sought the sooth behind the legend."
+    ],
+    "advanced_example": "Legends adorn the king's memory, but the chronicler searches for the plain sooth beneath them.",
+    "confusions": ["truth", "certainty", "verity", "reality"]
+  },
+  {
+    "word": "Betwixt",
+    "ru": "Between.",
+    "synonyms": ["between", "amidst", "among"],
+    "simple_examples": [
+      "The cottage lay betwixt the hills.",
+      "He sat betwixt his friends at the table."
+    ],
+    "advanced_example": "The narrator stands betwixt two worlds, never fully at home in either.",
+    "confusions": ["between", "among", "amid", "within"]
+  },
+  {
+    "word": "Wilt",
+    "ru": "Will (second person singular form of \"will\").",
+    "synonyms": ["will", "shalt"],
+    "simple_examples": [
+      "Thou wilt see the truth in time.",
+      "Wilt thou come with us tomorrow?"
+    ],
+    "advanced_example": "If thou wilt listen with patience, the story may yet change thy mind.",
+    "confusions": ["shalt", "canst", "mayst", "would"]
+  },
+  {
+    "word": "Whilom",
+    "ru": "Formerly, once upon a time.",
+    "synonyms": ["formerly", "once", "once upon a time"],
+    "simple_examples": [
+      "The whilom king now lived in exile.",
+      "Whilom he was rich, but no longer."
+    ],
+    "advanced_example": "In a whilom age, the town thrived on trade, but now only a few shops remain.",
+    "confusions": ["formerly", "recently", "lately", "once"]
+  },
+  {
+    "word": "Wherefore",
+    "ru": "Why, for what reason.",
+    "synonyms": ["why", "for what reason"],
+    "simple_examples": [
+      "Wherefore art thou so troubled?",
+      "She asked wherefore they had lied."
+    ],
+    "advanced_example": "The playwright invites us to ask wherefore the characters cling to pride when gentler choices are open to them.",
+    "confusions": ["why", "how", "whereby", "therefore"]
+  },
+  {
+    "word": "Hap",
+    "ru": "Fortune, luck.",
+    "synonyms": ["fortune", "chance", "luck"],
+    "simple_examples": [
+      "By hap, he met an old friend in the market.",
+      "Their meeting was pure hap."
+    ],
+    "advanced_example": "The villagers blamed bad hap for the failed harvest, though the causes were far more complex.",
+    "confusions": ["fortune", "fate", "chance", "destiny"]
+  },
+  {
+    "word": "Ope",
+    "ru": "Open.",
+    "synonyms": ["open", "unclose"],
+    "simple_examples": [
+      "Ope the window and let in the air.",
+      "He bade them ope the gate."
+    ],
+    "advanced_example": "The poet begs the reader to ope heart and mind to voices long ignored.",
+    "confusions": ["open", "widen", "unlock", "unbar"]
+  },
+  {
+    "word": "Ne'er-do-well",
+    "ru": "A person of bad character, a troublemaker.",
+    "synonyms": ["troublemaker", "idler", "good-for-nothing"],
+    "simple_examples": [
+      "The village called him a ne'er-do-well.",
+      "Her uncle was known as a ne'er-do-well who never kept a job."
+    ],
+    "advanced_example": "Though the town labeled him a ne'er-do-well, the novel shows how few chances he was ever given.",
+    "confusions": ["outcast", "rogue", "drifter", "vagabond"]
+  },
+  {
+    "word": "Dost",
+    "ru": "Do (second person singular form of \"do\").",
+    "synonyms": ["do", "perform"],
+    "simple_examples": [
+      "Why dost thou doubt my word?",
+      "Dost thou understand the question?"
+    ],
+    "advanced_example": "When thou dost question old customs, the elders grow uneasy, yet their answers reveal their own doubts.",
+    "confusions": ["didst", "shalt", "canst", "mayst"]
+  },
+  {
+    "word": "Tarry",
+    "ru": "Stay, linger.",
+    "synonyms": ["linger", "stay", "remain"],
+    "simple_examples": [
+      "Tarry here until I return.",
+      "They tarried by the river at sunset."
+    ],
+    "advanced_example": "The guide urged the travelers not to tarry in the valley, for storms came quickly there.",
+    "confusions": ["linger", "pause", "remain", "wait"]
+  },
+  {
+    "word": "Sojourn",
+    "ru": "A temporary stay.",
+    "synonyms": ["stay", "visit", "residence"],
+    "simple_examples": [
+      "Their sojourn in the city lasted two weeks.",
+      "During her sojourn abroad, she learned a new language."
+    ],
+    "advanced_example": "The writer's brief sojourn in the capital shaped the rest of her career.",
+    "confusions": ["visit", "residence", "journey", "halt"]
+  },
+  {
+    "word": "Oftentimes",
+    "ru": "Frequently.",
+    "synonyms": ["frequently", "often", "regularly"],
+    "simple_examples": [
+      "Oftentimes he walks alone at night.",
+      "Children oftentimes learn by watching adults."
+    ],
+    "advanced_example": "Oftentimes, reforms fail not because they are unwise, but because no one explains them clearly.",
+    "confusions": ["often", "usually", "commonly", "regularly"]
+  },
+  {
+    "word": "Whencever",
+    "ru": "From wherever.",
+    "synonyms": ["from wherever", "from any place"],
+    "simple_examples": [
+      "Help will come whencever it may.",
+      "Whencever he travels, he sends letters home."
+    ],
+    "advanced_example": "The law promised protection to refugees whencever they might arrive.",
+    "confusions": ["wherever", "whenever", "however", "from wherever"]
+  },
+  {
+    "word": "Herewith",
+    "ru": "With this.",
+    "synonyms": ["with this", "by this"],
+    "simple_examples": [
+      "I send you herewith the signed papers.",
+      "Herewith, I enclose my reply."
+    ],
+    "advanced_example": "The officials declared, \"We submit, herewith, our final report for your consideration.\"",
+    "confusions": ["hereby", "therewith", "thereby", "herein"]
+  },
+  {
+    "word": "Forthwith",
+    "ru": "Immediately, without delay.",
+    "synonyms": ["immediately", "instantly", "at once"],
+    "simple_examples": [
+      "He was ordered to leave forthwith.",
+      "The problem must be fixed forthwith."
+    ],
+    "advanced_example": "The judge ordered that the unjust law be repealed forthwith, not at some distant date.",
+    "confusions": ["immediately", "shortly", "presently", "soon"]
+  },
+  {
+    "word": "Whatsoever",
+    "ru": "Whatever.",
+    "synonyms": ["whatever", "anything at all"],
+    "simple_examples": [
+      "Take whatsoever you need.",
+      "He had no doubt whatsoever."
+    ],
+    "advanced_example": "The contract gave the landlord control over whatsoever changes were made to the building.",
+    "confusions": ["whatever", "whichever", "anything", "everything"]
+  },
+  {
+    "word": "Unto",
+    "ru": "To, until.",
+    "synonyms": ["to", "until"],
+    "simple_examples": [
+      "He preached peace unto the people.",
+      "Do unto others as you would have them do unto you."
+    ],
+    "advanced_example": "The law applied unto all citizens, regardless of wealth or birth.",
+    "confusions": ["to", "toward", "upon", "over"]
+  },
+  {
+    "word": "Eftsoons",
+    "ru": "Soon after.",
+    "synonyms": ["soon after", "shortly afterward"],
+    "simple_examples": [
+      "The storm passed, and eftsoons the sky cleared.",
+      "They left, and eftsoons the house grew quiet."
+    ],
+    "advanced_example": "The decree was issued, and eftsoons resistance began to form in distant provinces.",
+    "confusions": ["soon after", "presently", "immediately", "thereafter"]
+  },
+  {
+    "word": "Unbeknownst",
+    "ru": "Without the knowledge of.",
+    "synonyms": ["unknown to", "without the knowledge of"],
+    "simple_examples": [
+      "Unbeknownst to her, they were planning a party.",
+      "The letter was, unbeknownst to him, already lost."
+    ],
+    "advanced_example": "Unbeknownst to the officials, the policy was already harming the people it claimed to help.",
+    "confusions": ["unknown", "hidden", "unseen", "unnoticed"]
+  },
+  {
+    "word": "Anent",
+    "ru": "Concerning, about.",
+    "synonyms": ["concerning", "regarding", "about"],
+    "simple_examples": [
+      "He wrote a letter anent the new law.",
+      "The council met anent the town's safety."
+    ],
+    "advanced_example": "The essay is not chiefly anent the king's deeds, but the ideas that shaped them.",
+    "confusions": ["regarding", "concerning", "about", "respecting"]
+  }
+]
+
