@@ -62,8 +62,13 @@ export function buildSession(
 ): Question[] {
     const now = Date.now();
 
+    // Drop malformed entries so a bad custom quiz can never crash the build.
+    const safeWords = (allWords || []).filter(w =>
+        w && typeof w.word === 'string' && w.word.trim() && typeof w.ru === 'string'
+    );
+
     // 1. Select candidates by priority - prioritize new/weak words, avoid recently seen
-    const candidates = allWords
+    const candidates = safeWords
         .map(w => {
             const p = progressMap[w.word];
             const progress = p ?? { 
@@ -123,17 +128,17 @@ export function buildSession(
     for (const w of selectedWords) {
         if (mode === "learn") {
             questions.push(makeRecallQuestion(w));
-            questions.push(makeSimpleUsageQuestion(w, allWords));
-            questions.push(makeSatClozeQuestion(w, allWords));
+            questions.push(makeSimpleUsageQuestion(w, safeWords));
+            questions.push(makeSatClozeQuestion(w, safeWords));
         } else if (mode === "drill") {
-            questions.push(makeSimpleUsageQuestion(w, allWords));
-            questions.push(makeSatClozeQuestion(w, allWords));
+            questions.push(makeSimpleUsageQuestion(w, safeWords));
+            questions.push(makeSatClozeQuestion(w, safeWords));
         } else if (mode === "exam") {
-            questions.push(makeSatClozeQuestion(w, allWords));
+            questions.push(makeSatClozeQuestion(w, safeWords));
         } else if (mode === "mistakes") {
             const p = progressMap[w.word];
             if (p && (p.wrongStreak || 0) > 0) {
-                questions.push(makeSatClozeQuestion(w, allWords));
+                questions.push(makeSatClozeQuestion(w, safeWords));
             }
         }
     }
@@ -149,25 +154,31 @@ function makeRecallQuestion(word: Word): Question {
     return {
         id: `recall-${word.word}-${Date.now()}-${Math.random()}`,
         word: word.word,
+        image: word.image,
         type: 'recall',
         payload: {
             word: word.word,
             ru: word.ru,
             synonyms: word.synonyms,
-            example: word.simple_examples[0]
+            example: (Array.isArray(word.simple_examples) && word.simple_examples[0]) || ''
         }
     };
 }
 
 function makeSimpleUsageQuestion(word: Word, allWords: Word[]): Question {
-    const correctSentence = word.simple_examples[0];
+    const correctSentence = (Array.isArray(word.simple_examples) && word.simple_examples[0]) || ''
     // Simple cloze: replace word with blank
-    const parts = correctSentence.split(new RegExp(`\\b${word.word}\\w*\\b`, 'i'));
-    const sentenceWithBlank = parts.length > 1 ? parts.join('_______') : correctSentence.replace(word.word, '_______');
+    let sentenceWithBlank
+    if (correctSentence) {
+        const parts = correctSentence.split(new RegExp(`\\b${word.word}\\w*\\b`, 'i'))
+        sentenceWithBlank = parts.length > 1 ? parts.join('_______') : correctSentence.replace(word.word, '_______')
+    } else {
+        sentenceWithBlank = word.word
+    }
 
     // Distractors: confusions + random
     const distractors = shuffle([
-        ...word.confusions,
+        ...(word.confusions || []),
         ...shuffle(allWords).slice(0, 3).map(w => w.word)
     ]).slice(0, 3);
 
@@ -176,6 +187,7 @@ function makeSimpleUsageQuestion(word: Word, allWords: Word[]): Question {
     return {
         id: `usage-${word.word}-${Date.now()}-${Math.random()}`,
         word: word.word,
+        image: word.image,
         type: 'simple_usage',
         payload: {
             sentence: sentenceWithBlank,
@@ -190,14 +202,20 @@ function makeSimpleUsageQuestion(word: Word, allWords: Word[]): Question {
 }
 
 function makeSatClozeQuestion(word: Word, allWords: Word[]): Question {
-    const correctSentence = word.advanced_example;
+    const correctSentence = word.advanced_example || (Array.isArray(word.simple_examples) && word.simple_examples[0]) || ''
     // Regex to replace the word and its variations (e.g. contending, contended)
     // For simplicity, we just look for the word stem or exact match if possible
-    const regex = new RegExp(`\\b${word.word}\\w*\\b`, 'i');
-    const sentenceWithBlank = correctSentence.replace(regex, '_______');
+    let sentenceWithBlank: string
+    if (correctSentence) {
+        const regex = new RegExp(`\\b${word.word}\\w*\\b`, 'i')
+        const replaced = correctSentence.replace(regex, '_______')
+        sentenceWithBlank = replaced === correctSentence ? correctSentence.replace(word.word, '_______') : replaced
+    } else {
+        sentenceWithBlank = word.word
+    }
 
     const distractors = shuffle([
-        ...word.confusions,
+        ...(word.confusions || []),
         ...shuffle(allWords).slice(0, 3).map(w => w.word)
     ]).slice(0, 3);
 
@@ -206,6 +224,7 @@ function makeSatClozeQuestion(word: Word, allWords: Word[]): Question {
     return {
         id: `sat-${word.word}-${Date.now()}-${Math.random()}`,
         word: word.word,
+        image: word.image,
         type: 'sat_cloze',
         payload: {
             sentence: sentenceWithBlank,
@@ -243,20 +262,41 @@ export function buildQuestionSession(
         list = list.slice(0, limit);
     }
 
-    return shuffle(list).map(q => {
+    return shuffle(list)
+        .filter(q => q && typeof q.prompt === 'string' && q.prompt.trim())
+        .map(q => {
         const base = {
             id: q.id,
             word: q.id,
+            image: q.image || ''
         };
 
+        if (q.kind === 'simulation') {
+            return {
+                ...base,
+                type: 'simulation' as const,
+                payload: {
+                    prompt: q.prompt,
+                    steps: Array.isArray(q.steps) ? q.steps : [],
+                    language: q.language || ''
+                }
+            };
+        }
+
         if (q.kind === 'multiple_choice') {
+            const options = (q.options || []).filter(o => typeof o === 'string');
+            let correctIndex = 0;
+            if (typeof q.correctIndex === 'number' && Number.isInteger(q.correctIndex)) {
+                correctIndex = q.correctIndex;
+                if (correctIndex < 0 || correctIndex >= options.length) correctIndex = 0;
+            }
             return {
                 ...base,
                 type: 'generic_mc' as const,
                 payload: {
                     prompt: q.prompt,
-                    options: q.options || [],
-                    correctIndex: q.correctIndex ?? 0,
+                    options,
+                    correctIndex,
                     explanation: q.explanation || ''
                 }
             };
@@ -299,41 +339,63 @@ export function buildTestSession(
 
     if (questions && questions.length) {
         // Question quiz: pass through MC/TF, turn flashcards into written answers.
-        built = shuffle(questions).slice(0, limit).map(q => {
-            const base = { id: q.id, word: q.id }
-            if (q.kind === 'multiple_choice') {
+        built = shuffle(questions)
+            .filter(q => q && typeof (q.prompt || '') === 'string')
+            .slice(0, limit)
+.map(q => {
+                const base = { id: q.id, word: q.id, image: q.image || '' }
+
+                if (q.kind === 'simulation') {
+                    return {
+                        ...base,
+                        type: 'simulation' as const,
+                        payload: {
+                            prompt: q.prompt,
+                            steps: Array.isArray(q.steps) ? q.steps : [],
+                            language: q.language || ''
+                        }
+                    }
+                }
+
+                if (q.kind === 'multiple_choice') {
+                    const options = (q.options || []).filter(o => typeof o === 'string')
+                    let correctIndex = 0
+                    if (typeof q.correctIndex === 'number' && Number.isInteger(q.correctIndex)) {
+                        correctIndex = q.correctIndex
+                        if (correctIndex < 0 || correctIndex >= options.length) correctIndex = 0
+                    }
+                    return {
+                        ...base,
+                        type: 'generic_mc' as const,
+                        payload: {
+                            prompt: q.prompt,
+                            options,
+                            correctIndex,
+                            explanation: q.explanation || ''
+                        }
+                    }
+                }
+                if (q.kind === 'true_false') {
+                    return {
+                        ...base,
+                        type: 'generic_tf' as const,
+                        payload: {
+                            prompt: q.prompt,
+                            correctAnswer: q.correctAnswer === true,
+                            explanation: q.explanation || ''
+                        }
+                    }
+                }
                 return {
                     ...base,
-                    type: 'generic_mc' as const,
+                    type: 'generic_written' as const,
                     payload: {
                         prompt: q.prompt,
-                        options: q.options || [],
-                        correctIndex: q.correctIndex ?? 0,
+                        answer: q.answer || '',
                         explanation: q.explanation || ''
                     }
                 }
-            }
-            if (q.kind === 'true_false') {
-                return {
-                    ...base,
-                    type: 'generic_tf' as const,
-                    payload: {
-                        prompt: q.prompt,
-                        correctAnswer: q.correctAnswer === true,
-                        explanation: q.explanation || ''
-                    }
-                }
-            }
-            return {
-                ...base,
-                type: 'generic_written' as const,
-                payload: {
-                    prompt: q.prompt,
-                    answer: q.answer || '',
-                    explanation: q.explanation || ''
-                }
-            }
-        })
+            })
         return shuffle(built)
     }
 

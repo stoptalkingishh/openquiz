@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Sparkles, BookOpen, Check, Users, Play, Globe, Lock, Share2, Copy, Twitter, Facebook, MessageCircle, X, Folder, FolderPlus, FolderOpen, Gamepad2, ClipboardList } from 'lucide-react'
+import { Plus, Sparkles, BookOpen, Check, Users, Play, Globe, Lock, Share2, Copy, Twitter, Facebook, MessageCircle, X, Folder, FolderPlus, FolderOpen, Gamepad2, ClipboardList, Trash2 } from 'lucide-react'
 import BottomNav from '../components/BottomNav'
 import { useAuth } from '../contexts/AuthContext'
-import { getQuizSets, getCustomQuizzes, getPublicQuizzes, createCustomQuiz, getFolders, createFolder } from '../lib/db'
+import { getQuizSets, getCustomQuizzes, getPublicQuizzes, createCustomQuiz, getFolders, createFolder, normalizeImportedQuizItems, validateQuizJSON, deleteCustomQuiz } from '../lib/db'
 import { useQuizStore } from '../lib/quizStore'
 import { assetPath, BASE_PATH } from '../lib/paths'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -36,7 +36,7 @@ export default function QuizzesPage() {
         loadQuizzes()
     }, [user, router])
 
-    const loadWordCount = async (filePath: string): Promise<number> => {
+    const loadItemCount = async (filePath: string): Promise<number> => {
         try {
             const response = await fetch(assetPath(filePath))
             const data = await response.json()
@@ -49,11 +49,12 @@ export default function QuizzesPage() {
     const loadQuizzes = async () => {
         if (!user) return
 
-        // Signed-in users only see their own quizzes — no pre-made content.
+        // Everyone sees pre-made Official sets. "Peer Sets" (locally shared
+        // public community quizzes) remain guest-only.
         const isGuest = user.id === 'guest'
 
         const [sets, custom, peers, folderList] = await Promise.all([
-            isGuest ? getQuizSets() : Promise.resolve<any[]>([]),
+            getQuizSets(),
             getCustomQuizzes(user.id),
             isGuest ? getPublicQuizzes(user.id) : Promise.resolve<any[]>([]),
             getFolders()
@@ -64,10 +65,10 @@ export default function QuizzesPage() {
         setPeerQuizzes(peers)
         setFolders(folderList)
 
-        // Load word counts for all quiz sets
+        // Load item counts for all quiz sets
         const counts: Record<string, number> = {}
         for (const set of sets) {
-            counts[set.file_path] = await loadWordCount(set.file_path)
+            counts[set.file_path] = await loadItemCount(set.file_path)
         }
         setWordCounts(counts)
     }
@@ -93,6 +94,25 @@ export default function QuizzesPage() {
     const handleShare = (quiz: any, isCustom: boolean = false) => {
         setShareQuiz({ ...quiz, isCustom })
         setShowShareModal(true)
+    }
+
+    const [confirmDelete, setConfirmDelete] = useState<any>(null)
+
+    const handleDelete = async (quiz: any) => {
+        setConfirmDelete(null)
+        try {
+            if (user) {
+                await deleteCustomQuiz(quiz.id)
+                const fresh = await getCustomQuizzes(user.id)
+                setCustomQuizzes(fresh)
+                if (selectedQuizPath === `/custom-quiz/${quiz.id}`) {
+                    setSelectedQuizPath('')
+                }
+            }
+        } catch (err) {
+            console.error('Failed to delete quiz:', err)
+            alert('Could not delete the quiz. Please try again.')
+        }
     }
 
     const getShareUrl = (quiz: any) => {
@@ -151,6 +171,15 @@ export default function QuizzesPage() {
 
         window.open(shareUrl, '_blank', 'width=600,height=400')
     }
+
+    // Group official sets by category so pre-made content stays tidy
+    // (e.g. one "CompTIA Security+" group instead of many loose cards).
+    const categorized = quizSets.reduce<Record<string, any[]>>((acc, set) => {
+        const key = set.category_label || 'Official Sets'
+        if (!acc[key]) acc[key] = []
+        acc[key].push(set)
+        return acc
+    }, {})
 
     return (
         <div className="min-h-screen bg-background-light dark:bg-background-dark pb-24">
@@ -222,11 +251,14 @@ export default function QuizzesPage() {
                     )}
                 </div>
 
-                {/* Official Quiz Sets */}
-                <div>
-                    <h2 className="text-lg font-bold text-neutral-900 dark:text-neutral-100 mb-4">Official Sets</h2>
-                    <div className="grid gap-4 md:grid-cols-2">
-                        {quizSets.map((set) => {
+                {/* Official Quiz Sets (grouped by category) */}
+                {Object.entries(categorized).map(([label, sets]) => (
+                    <div key={label}>
+                        <h2 className="text-lg font-bold text-neutral-900 dark:text-neutral-100 mb-4">
+                            {label} <span className="text-sm font-semibold text-neutral-400">({sets.length})</span>
+                        </h2>
+                        <div className="grid gap-4 md:grid-cols-2">
+                            {sets.map((set: any) => {
                             const isSelected = selectedQuizPath === set.file_path
 
                             return (
@@ -252,7 +284,7 @@ export default function QuizzesPage() {
                                         <div className="flex items-center gap-4 text-xs text-neutral-500 dark:text-neutral-400 mb-4">
                                             <span className="flex items-center gap-1">
                                                 <BookOpen className="w-4 h-4" />
-                                                {wordCounts[set.file_path] || '...'} words
+                                                {wordCounts[set.file_path] || '...'} {set.item_type === 'questions' ? 'questions' : set.item_type === 'flashcards' ? 'cards' : 'words'}
                                             </span>
                                         </div>
                                     </div>
@@ -302,8 +334,9 @@ export default function QuizzesPage() {
                                 </div>
                             )
                         })}
+                        </div>
                     </div>
-                </div>
+                ))}
 
                 {/* Peer Sets */}
                 {peerQuizzes.length > 0 && (
@@ -457,6 +490,13 @@ export default function QuizzesPage() {
                                                         </>
                                                     )}
                                                 </div>
+                                                <button
+                                                    onClick={() => setConfirmDelete(quiz)}
+                                                    className="absolute top-4 right-4 p-2 rounded-lg text-neutral-400 hover:text-error hover:bg-error/10 transition-colors"
+                                                    title="Delete quiz"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
                                             </div>
                                             <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-3">{quiz.description}</p>
                                             <div className="flex items-center gap-4 text-xs text-neutral-500 dark:text-neutral-400 mb-2">
@@ -549,6 +589,52 @@ export default function QuizzesPage() {
                         onCopyLink={() => copyShareLink(shareQuiz)}
                         onShareSocial={(platform: 'twitter' | 'facebook' | 'telegram') => shareToSocial(platform, shareQuiz)}
                     />
+                )}
+                {confirmDelete && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setConfirmDelete(null)}
+                            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                        />
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            className="bg-white dark:bg-surface-dark rounded-3xl p-6 shadow-2xl relative z-10 max-w-sm w-full"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="w-12 h-12 bg-error/10 dark:bg-error/20 rounded-full flex items-center justify-center">
+                                    <Trash2 className="w-6 h-6 text-error" />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-lg text-neutral-900 dark:text-neutral-100">
+                                        Delete Quiz?
+                                    </h3>
+                                    <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                                        &ldquo;{confirmDelete.name}&rdquo; will be permanently removed.
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setConfirmDelete(null)}
+                                    className="flex-1 py-3 px-4 bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 rounded-xl font-semibold hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={() => handleDelete(confirmDelete)}
+                                    className="flex-1 py-3 px-4 bg-error text-white rounded-xl font-semibold hover:bg-error/90 transition-colors"
+                                >
+                                    Delete
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
                 )}
             </AnimatePresence>
 
@@ -810,13 +896,22 @@ Remember:
 
         try {
             if (step === 'json-mode') {
-                const words = JSON.parse(jsonText)
+                const parsed = JSON.parse(jsonText)
 
-                if (!Array.isArray(words)) {
+                if (!Array.isArray(parsed)) {
                     throw new Error('JSON must be an array')
                 }
 
-                await createCustomQuiz(user.id, name, description, words, isPublic, authorName || undefined)
+                const { words, questions, errors } = normalizeImportedQuizItems(parsed)
+                if (errors.length) {
+                    throw new Error('Some items were invalid:\n' + errors.slice(0, 10).map((e: string) => `• ${e}`).join('\n'))
+                }
+                if (questions.length) {
+                    await createCustomQuiz(user.id, name, description, [], isPublic, authorName || undefined, questions)
+                } else {
+                    if (!words.length) throw new Error('No valid quiz content found in JSON')
+                    await createCustomQuiz(user.id, name, description, words, isPublic, authorName || undefined)
+                }
             } else {
                 const cleanQuestions = questions
                     .filter(q => q.prompt.trim())
@@ -1010,12 +1105,12 @@ Remember:
                                 value={jsonText}
                                 onChange={(e) => setJsonText(e.target.value)}
                                 className="input-field min-h-[200px] font-mono text-sm"
-                                placeholder='[{"word": "...", "ru": "...", ...}]'
+                                placeholder='[{"word": "...", "ru": "...", ...}]  or  [{"question": "...", "options": ["A) ..."], "answer": "A"}]'
                             />
                         </div>
 
                         {error && (
-                            <div className="bg-error/10 border-2 border-error text-error-dark dark:text-error-light px-4 py-3 rounded-xl text-sm">
+                            <div className="bg-error/10 border-2 border-error text-error-dark dark:text-error-light px-4 py-3 rounded-xl text-sm whitespace-pre-wrap">
                                 {error}
                             </div>
                         )}
@@ -1023,6 +1118,21 @@ Remember:
                         <div className="flex gap-3">
                             <button onClick={() => setStep('method')} className="btn-outline flex-1">
                                 Back
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setError('')
+                                    const result = validateQuizJSON(jsonText)
+                                    if (!result.ok) {
+                                        setError('Validation failed:\n' + result.errors.map((e: string) => `• ${e}`).join('\n'))
+                                    } else {
+                                        setError(`Valid! ${result.count} item${result.count === 1 ? '' : 's'} ready to create.`)
+                                    }
+                                }}
+                                disabled={!jsonText || loading}
+                                className="btn-secondary flex-1 disabled:opacity-50"
+                            >
+                                Validate
                             </button>
                             <button
                                 onClick={handleCreate}

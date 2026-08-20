@@ -7,7 +7,7 @@ import { buildSession, updateProgress, buildQuestionSession, buildTestSession } 
 import { Word, Question, SessionMode, QuizQuestion } from '../../lib/satTypes'
 import QuestionCard from '../../components/QuestionCard'
 import { useAuth } from '../../contexts/AuthContext'
-import { getWordProgress, saveWordProgress, getCustomQuizById, getQuizSetByPath, recordQuizSession } from '../../lib/db'
+import { getWordProgress, saveWordProgress, getCustomQuizById, getQuizSetByPath, recordQuizSession, loadOfficialQuiz } from '../../lib/db'
 import { useQuizStore } from '../../lib/quizStore'
 import { assetPath } from '../../lib/paths'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -24,7 +24,9 @@ export default function SessionModePage() {
     const [index, setIndex] = useState(0)
     const [progress, setProgress] = useState<Record<string, any>>({})
     const [loading, setLoading] = useState(true)
+    const [loadError, setLoadError] = useState<string | null>(null)
     const [showExitConfirm, setShowExitConfirm] = useState(false)
+    const [retryKey, setRetryKey] = useState(0)
 
     const startTimeRef = useRef<number>(Date.now())
     const correctCountRef = useRef(0)
@@ -36,11 +38,17 @@ export default function SessionModePage() {
             return
         }
 
-        // Signed-in users only run quizzes they own — never pre-made/official sets.
-        if (user.id !== 'guest' && !selectedQuizPath.startsWith('/custom-quiz/')) {
-            router.push('/quizzes')
-            return
-        }
+        // Everyone may run both custom quizzes and pre-made/official sets.
+
+        setLoading(true)
+        setLoadError(null)
+
+        // If the quiz data or Drive cannot be reached, fail fast instead of
+        // sitting on an infinite spinner.
+        const timeout = setTimeout(() => {
+            setLoadError('This is taking too long. Check your connection and try again.')
+            setLoading(false)
+        }, 12000)
 
         // Load words and progress
         const loadQuizData = async (): Promise<{ words?: Word[]; questions?: QuizQuestion[] }> => {
@@ -55,11 +63,12 @@ export default function SessionModePage() {
                 }
                 return { words: Array.isArray(quiz.words) ? quiz.words : [] }
             } else {
-                // Regular JSON file
-                const res = await fetch(assetPath(selectedQuizPath))
-                const words = await res.json()
+                // Regular JSON file — may be vocab words OR manual questions.
                 const official = await getQuizSetByPath(selectedQuizPath)
-                quizMetaRef.current = { id: selectedQuizPath, name: official?.name || selectedQuizPath.split('/').pop()?.replace('.json', '') || selectedQuizPath }
+                const setName = official?.name || selectedQuizPath.split('/').pop()?.replace('.json', '') || selectedQuizPath
+                quizMetaRef.current = { id: selectedQuizPath, name: setName }
+                const { words, questions } = await loadOfficialQuiz(selectedQuizPath)
+                if (questions.length) return { questions }
                 return { words }
             }
         }
@@ -71,16 +80,26 @@ export default function SessionModePage() {
             loadQuizData(),
             getWordProgress(user.id)
         ]).then(([quizData, progressData]) => {
+            clearTimeout(timeout)
             setWords(quizData.words || [])
             setProgress(progressData)
+
+            const buildFromQuestions = (q: Question[]) => {
+                if (!q.length) {
+                    setLoadError('This quiz has no studyable content. Try another quiz.')
+                    setLoading(false)
+                    return
+                }
+                setQuestions(q)
+                setLoading(false)
+            }
 
             if (quizData.questions && quizData.questions.length) {
                 // Question-based quiz: build directly from the manual questions.
                 const q = mode === 'test'
                     ? buildTestSession(undefined, quizData.questions, Math.min(20, quizData.questions.length))
                     : buildQuestionSession(mode, quizData.questions, progressData, Math.min(50, quizData.questions.length))
-                setQuestions(q)
-                setLoading(false)
+                buildFromQuestions(q)
                 return
             }
 
@@ -92,13 +111,14 @@ export default function SessionModePage() {
             const q = mode === 'test'
                 ? buildTestSession(wordsOrUndefined, undefined, 20)
                 : buildSession(mode, wordsOrUndefined, progressData, sessionLimit)
-            setQuestions(q)
-            setLoading(false)
+            buildFromQuestions(q)
         }).catch(err => {
+            clearTimeout(timeout)
             console.error('Error loading quiz:', err)
+            setLoadError('Something went wrong while loading this quiz. Please try again.')
             setLoading(false)
         })
-    }, [user, mode, router, selectedQuizPath])
+    }, [user, mode, router, selectedQuizPath, retryKey])
 
     const finishSession = (correct: number, total: number) => {
         const elapsed = Math.round((Date.now() - startTimeRef.current) / 1000)
@@ -153,6 +173,22 @@ export default function SessionModePage() {
             handleExit()
         }
     }
+
+    if (loadError) return (
+        <div className="min-h-screen flex items-center justify-center bg-background-light dark:bg-background-dark p-6">
+            <div className="card max-w-md w-full text-center p-8">
+                <AlertCircle className="w-12 h-12 text-warning mx-auto mb-3" />
+                <h2 className="text-xl font-bold mb-2">Couldn&apos;t Start Studying</h2>
+                <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-6">{loadError}</p>
+                <button onClick={() => setRetryKey(k => k + 1)} className="btn-primary w-full mb-3">
+                    Try Again
+                </button>
+                <button onClick={() => router.push('/quizzes')} className="btn-outline w-full">
+                    Back to Quizzes
+                </button>
+            </div>
+        </div>
+    )
 
     if (loading || !questions.length) return (
         <div className="min-h-screen flex items-center justify-center bg-background-light dark:bg-background-dark">

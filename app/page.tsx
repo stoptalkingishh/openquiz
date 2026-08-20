@@ -32,8 +32,26 @@ export default function Home() {
     if (!user) return
 
     const loadPreviewWords = async () => {
-      // Signed-in users: gather words from their own quizzes only.
-      if (user.id !== 'guest') {
+      // Preview the selected pre-made/official quiz (works for everyone).
+      if (selectedQuizPath && !selectedQuizPath.startsWith('/custom-quiz/')) {
+        fetch(assetPath(selectedQuizPath))
+          .then(res => {
+            if (!res.ok) throw new Error('Failed to fetch quiz')
+            return res.json()
+          })
+          .then(data => {
+            setWords(Array.isArray(data) ? data : [])
+            setLoading(false)
+          })
+          .catch(error => {
+            console.error('Error loading quiz:', error)
+            setLoading(false)
+          })
+        return
+      }
+
+      // Otherwise gather words from the user's own quizzes.
+      if (user && user.id !== 'guest') {
         const quizzes = await getCustomQuizzes(user.id)
         const seen = new Set<string>()
         const collected: Word[] = []
@@ -51,24 +69,7 @@ export default function Home() {
         return
       }
 
-      // Guests preview the selected pre-made quiz.
-      if (selectedQuizPath) {
-        fetch(assetPath(selectedQuizPath))
-          .then(res => {
-            if (!res.ok) throw new Error('Failed to fetch quiz')
-            return res.json()
-          })
-          .then(data => {
-            setWords(data)
-            setLoading(false)
-          })
-          .catch(error => {
-            console.error('Error loading quiz:', error)
-            setLoading(false)
-          })
-      } else {
-        setLoading(false)
-      }
+      setLoading(false)
     }
 
     loadPreviewWords()
@@ -92,10 +93,7 @@ export default function Home() {
     router.push('/auth')
   }
 
-  // Signed-in (non-guest) users never run pre-made sets, so their mode cards
-  // point at the quizzes page where they pick one of their own quizzes.
-  const modeBase = user && user.id !== 'guest' ? '/quizzes' : null
-  const modeHref = (path: string) => (modeBase ? modeBase : path)
+  const modeHref = (path: string) => path
 
   if (authLoading || loading || !user) {
     return (

@@ -1,4 +1,4 @@
-import { WordProgress, QuizQuestion, Folder, QuizStats } from './satTypes'
+import { WordProgress, QuizQuestion, SimulationStep, Word, Folder, QuizStats } from './satTypes'
 import { assetPath } from './paths'
 import { isDriveConfigured, readDriveFile, writeDriveFile, getDriveUser } from './drive'
 
@@ -104,6 +104,29 @@ export async function getQuizSetByPath(filePath: string) {
     return sets.find(s => s.file_path === normalized) || null
 }
 
+/**
+ * Load an official (pre-made) quiz content file. Files may be either
+ * vocabulary-shaped (array of `Word` objects) OR question-shaped (array of
+ * `prompt`/`options`/... quiz questions). We sniff the shape and split
+ * accordingly so the same loader works for SAT vocab and Security+ practice.
+ */
+export async function loadOfficialQuiz(filePath: string): Promise<{ words: Word[]; questions: QuizQuestion[] }> {
+    try {
+        const res = await fetch(assetPath(filePath))
+        if (!res.ok) return { words: [], questions: [] }
+        const items = await res.json()
+        return parseOfficialQuiz(items)
+    } catch {
+        return { words: [], questions: [] }
+    }
+}
+
+export function parseOfficialQuiz(items: unknown): { words: Word[]; questions: QuizQuestion[] } {
+    if (!Array.isArray(items)) return { words: [], questions: [] }
+    const { words, questions } = normalizeImportedQuizItems(items)
+    return { words, questions }
+}
+
 // ---------------------------------------------------------------------------
 // Custom quizzes
 // ---------------------------------------------------------------------------
@@ -134,10 +157,223 @@ export async function getCustomQuizById(quizId: string) {
     if (isCloudActive()) {
         const remote = await readDriveFile<any[]>(CUSTOM_QUIZZES_FILE)
         const remoteQuiz = (remote || []).find(q => q.id === quizId)
-        if (remoteQuiz) return remoteQuiz
+        if (remoteQuiz) return repairQuizShape(remoteQuiz)
     }
 
-    return local
+    return repairQuizShape(local)
+}
+
+/**
+ * Accept both vocabulary entries (`word`/`ru`) and manual questions
+ * (`question`+`options`+`answer`, or `prompt`-style) in a single pasted
+ * JSON. Returns which half the array is so callers store it correctly,
+ * plus any per-item validation errors so the import UI can tell the user
+ * exactly what won't load.
+ */
+export function normalizeImportedQuizItems(
+    items: any[]
+): { words: any[]; questions: QuizQuestion[]; errors: string[] } {
+    if (!Array.isArray(items)) return { words: [], questions: [], errors: ['JSON must be an array'] }
+    if (!items.length) return { words: [], questions: [], errors: ['No items to import'] }
+
+    const looksLikeWords = items.some((it: any) =>
+        it && typeof it === 'object' && typeof it.word === 'string' && typeof it.ru === 'string'
+    )
+
+    if (looksLikeWords) {
+        const errors: string[] = []
+        const words: any[] = []
+        items.forEach((it: any, i: number) => {
+            if (!it || typeof it !== 'object') {
+                errors.push(`Item ${i + 1}: not an object`)
+                return
+            }
+            if (!it.word || !String(it.word).trim()) {
+                errors.push(`Item ${i + 1}: missing "word"`)
+                return
+            }
+            if (!it.ru || !String(it.ru).trim()) {
+                errors.push(`Item ${i + 1} ("${it.word}"): missing "ru"`)
+                return
+            }
+            const clean: any = {
+                word: String(it.word).trim(),
+                ru: String(it.ru).trim(),
+                synonyms: Array.isArray(it.synonyms) ? it.synonyms.map((s: any) => String(s)) : [],
+                simple_examples: Array.isArray(it.simple_examples) ? it.simple_examples.map((s: any) => String(s)) : [],
+                advanced_example: it.advanced_example ? String(it.advanced_example) : '',
+                confusions: Array.isArray(it.confusions) ? it.confusions.map((s: any) => String(s)) : []
+            }
+            if (it.image) clean.image = String(it.image)
+            words.push(clean)
+        })
+        return { words, questions: [], errors }
+    }
+
+    const makeId = () =>
+        typeof crypto !== 'undefined' && 'randomUUID' in crypto
+            ? crypto.randomUUID()
+            : `q-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
+
+    const stripPrefix = (opt: unknown): string =>
+        String(opt ?? '')
+            .trim()
+            .replace(/^[A-Ea-e0-9][.)\-:]\s*/, '')
+            .trim()
+
+    const questions: QuizQuestion[] = []
+    const errors: string[] = []
+    items.forEach((it: any, i: number) => {
+        if (!it || typeof it !== 'object') {
+            errors.push(`Item ${i + 1}: not an object`)
+            return
+        }
+        const prompt = String(it.prompt || it.question || it.q || '').trim()
+        if (!prompt) {
+            errors.push(`Item ${i + 1}: missing a question/prompt`)
+            return
+        }
+
+        if (it.kind === 'simulation') {
+            const steps = Array.isArray(it.steps) ? it.steps.map((s: any, si: number): SimulationStep => {
+                const base: SimulationStep = {
+                    id: s?.id || `step-${makeId()}-${si}`,
+                    kind: (s?.kind === 'choice' || s?.kind === 'checkbox' || s?.kind === 'config' || s?.kind === 'placement') ? s.kind : 'choice',
+                    title: String(s?.title || ''),
+                    explanation: s?.explanation ? String(s.explanation) : ''
+                }
+                if (base.kind === 'choice') {
+                    base.options = Array.isArray(s?.options) ? s.options.map(String) : []
+                    base.correctIndex = Number.isInteger(s?.correctIndex) ? s.correctIndex : 0
+                }
+                if (base.kind === 'checkbox') {
+                    base.items = Array.isArray(s?.items) ? s.items.map((it2: any, ix: number) => ({
+                        id: it2?.id || `it-${makeId()}-${ix}`,
+                        label: String(it2?.label || ''),
+                        correct: !!it2?.correct
+                    })) : []
+                }
+                if (base.kind === 'config') {
+                    base.config = Array.isArray(s?.config) ? s.config.map((it2: any, ix: number) => ({
+                        id: it2?.id || `it-${makeId()}-${ix}`,
+                        label: String(it2?.label || ''),
+                        correct: !!it2?.correct
+                    })) : []
+                }
+                if (base.kind === 'placement') {
+                    base.itemsToPlace = Array.isArray(s?.itemsToPlace) ? s.itemsToPlace.map(String) : []
+                    base.slots = Array.isArray(s?.slots) ? s.slots.map(String) : []
+                    base.correctMapping = Array.isArray(s?.correctMapping) ? s.correctMapping.map(Number) : []
+                }
+                if (s?.image) base.image = String(s.image)
+                return base
+            }) : []
+            const q: QuizQuestion = {
+                id: it.id ? String(it.id) : makeId(),
+                kind: 'simulation',
+                prompt,
+                steps,
+                explanation: it.explanation ? String(it.explanation) : ''
+            }
+            if (it.image) q.image = String(it.image)
+            questions.push(q)
+            return
+        }
+
+        const options = Array.isArray(it.options)
+            ? it.options.map(stripPrefix).filter(Boolean)
+            : []
+
+        if (options.length >= 2) {
+            let correctIndex = 0
+            if (Number.isInteger(it.correctIndex) && it.correctIndex >= 0 && it.correctIndex < options.length) {
+                correctIndex = it.correctIndex
+            } else if (it.answer != null) {
+                const ans = String(it.answer).trim()
+                const letterIdx = ans.length === 1 ? ans.toUpperCase().charCodeAt(0) - 65 : -1
+                if (letterIdx >= 0 && letterIdx < options.length) {
+                    correctIndex = letterIdx
+                } else {
+                    const match = options.findIndex((o: string) => o.toLowerCase() === ans.toLowerCase() || stripPrefix(ans).toLowerCase() === o.toLowerCase())
+                    correctIndex = match >= 0 ? match : 0
+                }
+            }
+            const q: QuizQuestion = {
+                id: makeId(),
+                kind: 'multiple_choice',
+                prompt,
+                options,
+                correctIndex,
+                explanation: it.explanation ? String(it.explanation) : ''
+            }
+            if (it.image) q.image = String(it.image)
+            questions.push(q)
+        } else if (typeof it.answer === 'boolean' || /^(true|false|t|f)$/i.test(String(it.answer ?? '').trim())) {
+            const q: QuizQuestion = {
+                id: makeId(),
+                kind: 'true_false',
+                prompt,
+                correctAnswer: it.answer === true || /^(true|t)$/i.test(String(it.answer).trim()),
+                explanation: it.explanation ? String(it.explanation) : ''
+            }
+            if (it.image) q.image = String(it.image)
+            questions.push(q)
+        } else {
+            const answer = String(it.answer ?? it.correct_answer ?? '').trim()
+            const q: QuizQuestion = {
+                id: makeId(),
+                kind: 'flashcard',
+                prompt,
+                answer,
+                explanation: it.explanation ? String(it.explanation) : ''
+            }
+            if (it.image) q.image = String(it.image)
+            questions.push(q)
+        }
+    })
+
+    return { words: [], questions, errors }
+}
+
+/**
+ * Some quizzes were imported before question-shaped JSON was supported and
+ * ended up stored inside `words`. Repair on read: if there are no `questions`
+ * but `words` contains question-shaped entries, move them into `questions`.
+ */
+export function repairQuizShape(quiz: any): any {
+    if (!quiz) return quiz
+    if (Array.isArray(quiz.questions) && quiz.questions.length) return quiz
+    const items = Array.isArray(quiz.words) ? quiz.words : []
+    const hasWords = items.some((w: any) =>
+        w && typeof w === 'object' && typeof w.word === 'string' && typeof w.ru === 'string'
+    )
+    if (hasWords || !items.length) return quiz
+    const { questions } = normalizeImportedQuizItems(items)
+    return { ...quiz, words: [], questions }
+}
+
+/**
+ * Human-friendly summary of what was wrong with a pasted JSON payload.
+ * Returns a block of error strings (empty = valid) plus how many usable
+ * items were parsed.
+ */
+export function validateQuizJSON(jsonText: string): { ok: boolean; errors: string[]; count: number } {
+    let parsed: any
+    try {
+        parsed = JSON.parse(jsonText)
+    } catch (err: any) {
+        return { ok: false, errors: [`Invalid JSON: ${err?.message || 'could not be parsed'}`], count: 0 }
+    }
+
+    if (!Array.isArray(parsed)) {
+        return { ok: false, errors: ['JSON must be an array of items'], count: 0 }
+    }
+
+    const { words, questions, errors } = normalizeImportedQuizItems(parsed)
+    if (errors.length) {
+        return { ok: false, errors: errors.slice(0, 10), count: words.length + questions.length }
+    }
+    return { ok: true, errors: [], count: words.length + questions.length }
 }
 
 export async function createCustomQuiz(

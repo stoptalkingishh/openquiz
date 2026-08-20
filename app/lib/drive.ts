@@ -67,10 +67,22 @@ function loadScript(src: string): Promise<void> {
     })
 }
 
+// Resolve to `fallback` if the promise doesn't settle within `ms` so a slow
+// or blocked Google API can never leave the UI hanging forever.
+function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+    return new Promise<T>((resolve) => {
+        const t = setTimeout(() => {
+            console.error(`Drive operation timed out after ${ms}ms`)
+            resolve(fallback)
+        }, ms)
+        promise.then(v => { clearTimeout(t); resolve(v) }, () => { clearTimeout(t); resolve(fallback) })
+    })
+}
+
 function initGapi(): Promise<boolean> {
     if (!initialized) {
         initialized = true
-        driveReady = (async () => {
+        driveReady = withTimeout((async () => {
             try {
                 await loadScript('https://accounts.google.com/gsi/client')
                 await loadScript('https://apis.google.com/js/api.js')
@@ -83,12 +95,18 @@ function initGapi(): Promise<boolean> {
                 })
                 return true
             } catch (err) {
-                initialized = false
-                driveReady = null
                 console.error('Drive init failed:', err)
                 return false
             }
-        })()
+        })(), 10000, false)
+            .then(ok => {
+                if (!ok) {
+                    // Allow retry on the next attempt.
+                    initialized = false
+                    driveReady = null
+                }
+                return ok
+            })
     }
     return driveReady!
 }
@@ -172,35 +190,74 @@ async function fetchProfile(token: string): Promise<DriveUser> {
 // Public auth API (used by AuthContext)
 // ---------------------------------------------------------------------------
 
-export async function getDriveToken(): Promise<string | null> {
-    if (!isDriveConfigured() || typeof window === 'undefined') return null
-    if (currentToken) return currentToken
+// Single-flight: every caller shares ONE in-flight (or next) token request.
+// Without this, concurrent Drive reads (auth boot + quiz loading + cloud
+// sync firing at once) each trigger their own Google OAuth request, which is
+// why the app could pop the Google prompt several times on login.
+let tokenRequest: Promise<string | null> | null = null
 
-    const ok = await initGapi()
-    if (!ok) return null
+// A silent (prompt:'') restore attempt that returns no token means Google has
+// no usable cached consent — retrying it in the same session just fires
+// another account-chooser popup. We allow exactly one silent restore per
+// (re)load; afterwards getDriveToken() falls back to null so a reload never
+// spams the login prompt. signInToDrive() (user-clicked) always resets this.
+let silentRestoreDone = false
 
-    try {
-        // If the user already has a Google session, grab a token without a popup.
-        currentToken = await requestToken('')
-        window.gapi.client.setToken({ access_token: currentToken })
-        return currentToken
-    } catch {
-        currentToken = null
-        return null
+function requestTokenNow(): Promise<string | null> {
+    if (!isDriveConfigured() || typeof window === 'undefined') return Promise.resolve(null)
+    if (currentToken) return Promise.resolve(currentToken)
+
+    return (async () => {
+        const ok = await withTimeout(initGapi(), 6000, false)
+        if (!ok) return null
+
+        try {
+            // If the user already has a Google session, grab a token without a popup.
+            const token = await withTimeout(requestToken(''), 8000, null)
+            if (!token) return null
+            currentToken = token
+            window.gapi.client.setToken({ access_token: currentToken })
+            return currentToken
+        } catch {
+            currentToken = null
+            return null
+        }
+    })()
+}
+
+export function getDriveToken(): Promise<string | null> {
+    if (!isDriveConfigured() || typeof window === 'undefined') return Promise.resolve(null)
+    if (currentToken) return Promise.resolve(currentToken)
+
+    // Only one silent restore per page load. If it found nothing, don't keep
+    // asking Google for a token — every such call can open an account chooser.
+    if (silentRestoreDone) return Promise.resolve(null)
+
+    silentRestoreDone = true
+
+    if (!tokenRequest) {
+        tokenRequest = requestTokenNow().finally(() => { tokenRequest = null })
     }
+    return tokenRequest
 }
 
 export async function signInToDrive(): Promise<DriveUser> {
     if (!isDriveConfigured()) throw new Error('Google sign-in is not configured on this build.')
     if (typeof window === 'undefined') throw new Error('Not in browser')
 
-    const ok = await initGapi()
+    // A user-initiated sign-in always re-allows a fresh token, regardless of
+    // how many silent restores already ran this session.
+    silentRestoreDone = false
+
+    const ok = await withTimeout(initGapi(), 10000, false)
     if (!ok) throw new Error('Could not initialize Google Drive client')
 
-    const token = await requestToken('consent')
+    const token = await withTimeout(requestToken('consent'), 30000, null)
+    if (!token) throw new Error('Google sign-in was cancelled or timed out')
     currentToken = token
     window.gapi.client.setToken({ access_token: token })
     currentUser = await fetchProfile(token)
+    rememberDriveUser(currentUser)
     return currentUser
 }
 
@@ -209,7 +266,8 @@ export async function restoreDriveSession(): Promise<DriveUser | null> {
     const token = await getDriveToken()
     if (!token) return null
     try {
-        currentUser = await fetchProfile(token)
+        currentUser = await withTimeout(fetchProfile(token), 8000, null)
+        if (currentUser) rememberDriveUser(currentUser)
         return currentUser
     } catch {
         return null
@@ -227,10 +285,46 @@ export async function signOutFromDrive(): Promise<void> {
     }
     currentToken = null
     currentUser = null
+    clearStoredDriveUser()
 }
 
 export function getDriveUser(): DriveUser | null {
     return currentUser
+}
+
+// ---------------------------------------------------------------------------
+// Session persistence
+//
+// The access token itself is short-lived, but the fact that a user has signed
+// in (their profile) is persisted so a page reload rehydrates the session
+// instead of bouncing the user back to the login screen. A newer access token
+// is fetched silently on demand by getDriveToken().
+// ---------------------------------------------------------------------------
+
+const STORED_USER_KEY = 'oquiz:drive_user'
+
+export function rememberDriveUser(user: DriveUser) {
+    if (user) currentUser = user
+    if (typeof window === 'undefined') return
+    try { window.localStorage.setItem(STORED_USER_KEY, JSON.stringify(user)) } catch { }
+}
+
+export function getStoredDriveUser(): DriveUser | null {
+    if (typeof window === 'undefined') return null
+    try {
+        const raw = window.localStorage.getItem(STORED_USER_KEY)
+        if (!raw) return null
+        const user = JSON.parse(raw) as DriveUser
+        if (user) currentUser = user
+        return user
+    } catch {
+        return null
+    }
+}
+
+export function clearStoredDriveUser() {
+    if (typeof window === 'undefined') return
+    try { window.localStorage.removeItem(STORED_USER_KEY) } catch { }
 }
 
 // ---------------------------------------------------------------------------
@@ -259,21 +353,21 @@ async function ensureFolder(): Promise<string | null> {
     try {
         // Find the app folder this app already created (drive.file scope only
         // exposes files the app created), otherwise create it.
-        const found = await window.gapi.client.drive.files.list({
+        const found = await withTimeout<{ result?: { files?: { id?: string }[] } }>(window.gapi.client.drive.files.list({
             q: `name = '${FOLDER_NAME}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
             fields: 'files(id, name)',
             pageSize: 1
-        })
+        }), 8000, { result: { files: [] } })
         const existing = found?.result?.files?.[0]
         if (existing?.id) {
             localSet(folderKey, existing.id)
             return existing.id
         }
 
-        const created = await window.gapi.client.drive.files.create({
+        const created = await withTimeout<{ result?: { id?: string | null } }>(window.gapi.client.drive.files.create({
             resource: { name: FOLDER_NAME, mimeType: 'application/vnd.google-apps.folder' },
             fields: 'id'
-        })
+        }), 8000, { result: { id: null } })
         if (created?.result?.id) {
             localSet(folderKey, created.result.id)
             return created.result.id
@@ -286,11 +380,11 @@ async function ensureFolder(): Promise<string | null> {
 
 async function findFileId(folderId: string, name: string): Promise<string | null> {
     try {
-        const res = await window.gapi.client.drive.files.list({
+        const res = await withTimeout<{ result?: { files?: { id?: string }[] } }>(window.gapi.client.drive.files.list({
             q: `'${folderId}' in parents and name = '${name}' and trashed = false`,
             fields: 'files(id, name)',
             pageSize: 1
-        })
+        }), 8000, { result: { files: [] } })
         return res?.result?.files?.[0]?.id || null
     } catch {
         return null
@@ -320,11 +414,11 @@ export function readDriveFile<T>(fileName: string): Promise<T | null> {
         if (!fileId) return null
 
         try {
-            const res = await window.gapi.client.request({
+            const res = await withTimeout<any>(window.gapi.client.request({
                 path: `/drive/v3/files/${fileId}`,
                 method: 'GET',
                 params: { alt: 'media' }
-            })
+            }), 8000, {})
             const text = typeof res?.body === 'string' ? res.body : JSON.stringify(res?.result ?? res)
             return JSON.parse(text) as T
         } catch (err) {
@@ -348,31 +442,31 @@ export function writeDriveFile(fileName: string, data: unknown): Promise<boolean
         const fileId = await findFileId(folderId, fileName)
         try {
             if (fileId) {
-                await window.gapi.client.request({
+                await withTimeout<any>(window.gapi.client.request({
                     path: `/upload/drive/v3/files/${fileId}`,
                     method: 'PATCH',
                     params: { uploadType: 'media' },
                     headers: { 'Content-Type': 'application/json; charset=UTF-8' },
                     body: JSON.stringify(data)
-                })
+                }), 8000, null)
             } else {
-                const created = await window.gapi.client.drive.files.create({
+                const created = await withTimeout<{ result?: { id?: string | null } }>(window.gapi.client.drive.files.create({
                     resource: {
                         name: fileName,
                         parents: [folderId],
                         mimeType: 'application/json'
                     },
                     fields: 'id'
-                })
+                }), 8000, { result: { id: null } })
                 const newFileId = created?.result?.id
                 if (!newFileId) return false
-                await window.gapi.client.request({
+                await withTimeout<any>(window.gapi.client.request({
                     path: `/upload/drive/v3/files/${newFileId}`,
                     method: 'PATCH',
                     params: { uploadType: 'media' },
                     headers: { 'Content-Type': 'application/json; charset=UTF-8' },
                     body: JSON.stringify(data)
-                })
+                }), 8000, null)
             }
             return true
         } catch (err) {

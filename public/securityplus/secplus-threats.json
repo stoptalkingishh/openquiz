@@ -1,0 +1,142 @@
+[
+ {
+  "id": "t-f1",
+  "kind": "flashcard",
+  "prompt": "Phishing",
+  "answer": "Fraudulent email dressed up as a trusted sender to trick the victim into revealing info.",
+  "explanation": ""
+ },
+ {
+  "id": "t-f2",
+  "kind": "flashcard",
+  "prompt": "Spear phishing",
+  "answer": "Phishing targeted at a specific person or group.",
+  "explanation": ""
+ },
+ {
+  "id": "t-f3",
+  "kind": "flashcard",
+  "prompt": "Whaling",
+  "answer": "Phishing aimed at senior executives.",
+  "explanation": ""
+ },
+ {
+  "id": "t-f4",
+  "kind": "flashcard",
+  "prompt": "Vishing",
+  "answer": "Voice/phone social engineering to steal credentials.",
+  "explanation": ""
+ },
+ {
+  "id": "t-f5",
+  "kind": "flashcard",
+  "prompt": "Smishing",
+  "answer": "SMS text phishing variant.",
+  "explanation": ""
+ },
+ {
+  "id": "t-f6",
+  "kind": "flashcard",
+  "prompt": "Pretexting",
+  "answer": "Fabricated scenario (e.g. fake IT technician) to obtain confidential information.",
+  "explanation": ""
+ },
+ {
+  "id": "t-f7",
+  "kind": "flashcard",
+  "prompt": "Pharming",
+  "answer": "Redirection to a fake page via DNS poisoning rather than email links.",
+  "explanation": ""
+ },
+ {
+  "id": "t-f8",
+  "kind": "flashcard",
+  "prompt": "Tailgating",
+  "answer": "Following an authorized person into a restricted area without credentials.",
+  "explanation": ""
+ },
+ {
+  "id": "t-f9",
+  "kind": "flashcard",
+  "prompt": "Ransomware",
+  "answer": "Encrypts data and demands ransom for the decryption key.",
+  "explanation": ""
+ },
+ {
+  "id": "t-f10",
+  "kind": "flashcard",
+  "prompt": "Trojan",
+  "answer": "Legitimate-looking software that performs hidden malicious activity.",
+  "explanation": ""
+ },
+ {
+  "id": "t-f11",
+  "kind": "flashcard",
+  "prompt": "Worm",
+  "answer": "Self-replicating malware that moves across the network by itself.",
+  "explanation": ""
+ },
+ {
+  "id": "t-f12",
+  "kind": "flashcard",
+  "prompt": "Rootkit",
+  "answer": "Kernel-level stealth that grants persistent unauthorized access.",
+  "explanation": ""
+ },
+ {
+  "id": "t-f13",
+  "kind": "flashcard",
+  "prompt": "Logic bomb",
+  "answer": "Malware payload triggered by a condition or time.",
+  "explanation": ""
+ },
+ {
+  "id": "t-f14",
+  "kind": "flashcard",
+  "prompt": "Keylogger",
+  "answer": "Records keystrokes to capture credentials.",
+  "explanation": ""
+ },
+ {
+  "id": "t-f15",
+  "kind": "flashcard",
+  "prompt": "Botnet",
+  "answer": "Army of infected devices (usually IoT) used for DDoS, spam etc.",
+  "explanation": ""
+ },
+ {
+  "id": "t-f16",
+  "kind": "flashcard",
+  "prompt": "SQL injection",
+  "answer": "Crafted user input that alters a DB query to read/write data.",
+  "explanation": ""
+ },
+ {
+  "id": "t-f17",
+  "kind": "flashcard",
+  "prompt": "XSS",
+  "answer": "Injects scripts into a trusted page so it runs in other browsers.",
+  "explanation": ""
+ },
+ {
+  "id": "t-f18",
+  "kind": "flashcard",
+  "prompt": "Zero-day",
+  "answer": "Exploit for a vulnerability unknown or unpatched at disclosure.",
+  "explanation": ""
+ },
+ {
+  "id": "t-f19",
+  "kind": "flashcard",
+  "prompt": "DoS / DDoS",
+  "answer": "Resource exhaustion so services crash — one source (DoS) or many sources (DDoS).",
+  "explanation": ""
+ },
+ {
+  "id": "t-f20",
+  "kind": "flashcard",
+  "prompt": "ARP spoofing/poisoning",
+  "answer": "Sends forged ARP so frames are redirected through an attacker.",
+  "explanation": ""
+ }
+]

@@ -1,0 +1,142 @@
+[
+ {
+  "id": "irc-f1",
+  "kind": "flashcard",
+  "prompt": "IR phases",
+  "answer": "Preparation, Detection & Analysis, Containment, Eradication, Recovery, Lessons learned.",
+  "explanation": ""
+ },
+ {
+  "id": "irc-f2",
+  "kind": "flashcard",
+  "prompt": "Runbook / playbook",
+  "answer": "Documented, step-by-step procedure used during an incident.",
+  "explanation": ""
+ },
+ {
+  "id": "irc-f3",
+  "kind": "flashcard",
+  "prompt": "Tabletop exercise",
+  "answer": "Discussion-based drill of the response plan without live execution.",
+  "explanation": ""
+ },
+ {
+  "id": "irc-f4",
+  "kind": "flashcard",
+  "prompt": "SIEM",
+  "answer": "Centralized correlation of event logs for real-time alerting.",
+  "explanation": ""
+ },
+ {
+  "id": "irc-f5",
+  "kind": "flashcard",
+  "prompt": "SOAR",
+  "answer": "Orchestration + automation to standardize repetitive responses.",
+  "explanation": ""
+ },
+ {
+  "id": "irc-f6",
+  "kind": "flashcard",
+  "prompt": "UBAE",
+  "answer": "ML anomaly detection on user and entity behavior.",
+  "explanation": ""
+ },
+ {
+  "id": "irc-f7",
+  "kind": "flashcard",
+  "prompt": "FIM",
+  "answer": "Monitors hashes of critical files and flags any change.",
+  "explanation": ""
+ },
+ {
+  "id": "irc-f8",
+  "kind": "flashcard",
+  "prompt": "DLP",
+  "answer": "Prevents exfiltration of sensitive data from leaving the org.",
+  "explanation": ""
+ },
+ {
+  "id": "irc-f9",
+  "kind": "flashcard",
+  "prompt": "NAC",
+  "answer": "Screens device health/compliance before granting network access.",
+  "explanation": ""
+ },
+ {
+  "id": "irc-f10",
+  "kind": "flashcard",
+  "prompt": "WORM storage",
+  "answer": "Write-once-read-many volume; ideal for tamper-proof logs.",
+  "explanation": ""
+ },
+ {
+  "id": "irc-f11",
+  "kind": "flashcard",
+  "prompt": "BIA",
+  "answer": "Identifies critical functions and quantifies the outage cost (in).",
+  "explanation": ""
+ },
+ {
+  "id": "irc-f12",
+  "kind": "flashcard",
+  "prompt": "RTO / RPO",
+  "answer": "RTO = time to recover; RPO = max acceptable data loss.",
+  "explanation": ""
+ },
+ {
+  "id": "irc-f13",
+  "kind": "flashcard",
+  "prompt": "BCP / DRP",
+  "answer": "BCP keeps operations running in a crisis; DRP restores critical systems.",
+  "explanation": ""
+ },
+ {
+  "id": "irc-f14",
+  "kind": "flashcard",
+  "prompt": "NIST CSF",
+  "answer": "Framework of Functions (Identify, Protect, Detect, Respond, Recover).",
+  "explanation": ""
+ },
+ {
+  "id": "irc-f15",
+  "kind": "flashcard",
+  "prompt": "ISO 27001",
+  "answer": "International IS-2 standard: an ISMS approach to security.",
+  "explanation": ""
+ },
+ {
+  "id": "irc-f16",
+  "kind": "flashcard",
+  "prompt": "PCI DSS",
+  "answer": "Standard for handlers of cardholder data.",
+  "explanation": ""
+ },
+ {
+  "id": "irc-f17",
+  "kind": "flashcard",
+  "prompt": "HIPAA",
+  "answer": "US law protecting health information.",
+  "explanation": ""
+ },
+ {
+  "id": "irc-f18",
+  "kind": "flashcard",
+  "prompt": "GDPR",
+  "answer": "EU privacy regulation with breach-notification duty.",
+  "explanation": ""
+ },
+ {
+  "id": "irc-f19",
+  "kind": "flashcard",
+  "prompt": "SOX",
+  "answer": "Financial records accountability for US public companies.",
+  "explanation": ""
+ },
+ {
+  "id": "irc-f20",
+  "kind": "flashcard",
+  "prompt": "IAM / federation",
+  "answer": "Centralized identity and single-sign-on across organizations.",
+  "explanation": ""
+ }
+]

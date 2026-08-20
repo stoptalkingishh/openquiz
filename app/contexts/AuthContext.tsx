@@ -7,6 +7,8 @@ import {
     restoreDriveSession,
     signOutFromDrive,
     getDriveUser,
+    getStoredDriveUser,
+    rememberDriveUser,
     DriveUser
 } from '../lib/drive'
 import { syncLocalToCloud } from '../lib/db'
@@ -81,20 +83,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 return
             }
 
-            // Try to restore an existing Google session (no popup).
-            const driveUser = await restoreDriveSession()
-            if (!mounted) return
-
-            if (driveUser) {
-                setUser(driveUser)
-                syncLocalToCloud().catch(() => { })
-            } else {
-                // Keep the guest profile when signed out, so the app still works.
-                const guest = readGuest()
-                writeGuest(guest)
-                setUser(guest)
+            // Rehydrate an already-signed-in Drive user so a reload never
+            // bounces the user back to the login screen. A fresh token is
+            // fetched silently in the background when the app needs Drive.
+            const stored = getStoredDriveUser()
+            if (stored) {
+                if (!mounted) return
+                setUser(stored)
+                setLoading(false)
+                restoreDriveSession()
+                    .then(u => {
+                        if (u) {
+                            rememberDriveUser(u)
+                            if (mounted) setUser(u)
+                        }
+                        syncLocalToCloud().catch(() => { })
+                    })
+                    .catch(() => { })
+                return
             }
-            setLoading(false)
+
+            // A visitor who has never signed in shouldn't trigger a Google
+            // account-chooser popup on page load. They'll click the button
+            // consciously. If stale storage references a Drive user, the
+            // guarded background restore above gives a graceful second chance.
+            const guest = readGuest()
+            writeGuest(guest)
+            if (mounted) {
+                setUser(guest)
+                setLoading(false)
+            }
         }
 
         boot()

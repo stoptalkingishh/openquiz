@@ -39,6 +39,13 @@ export default function WordModal({ word, onClose }: WordModalProps) {
                     <p className="text-xl text-gray-500 dark:text-gray-400 font-medium">{word.ru}</p>
                 </div>
 
+                {word.image && (
+                    <div className="mb-6 flex justify-center">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={word.image} alt={word.word} className="rounded-2xl max-h-64 w-full max-w-full object-contain border-2 border-neutral-200 dark:border-neutral-700" />
+                    </div>
+                )}
+
                 <div className="space-y-6">
                     <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-2xl">
                         <h3 className="text-sm font-bold text-gray-400 uppercase mb-2">Examples</h3>

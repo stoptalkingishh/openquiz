@@ -2,11 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Play, BookOpen, Globe, Lock, Share2, Copy, Users, Check, Gamepad2, ClipboardList, Folder, FolderPlus, Trophy } from 'lucide-react'
-import { getCustomQuizById, getQuizSetByPath, getFolders, setQuizInFolder, createFolder, getQuizStats } from '../lib/db'
+import { ArrowLeft, Play, BookOpen, Globe, Lock, Share2, Copy, Users, Check, Gamepad2, ClipboardList, Folder, FolderPlus, Trophy, Trash2 } from 'lucide-react'
+import { getCustomQuizById, getQuizSetByPath, getFolders, setQuizInFolder, createFolder, getQuizStats, loadOfficialQuiz, deleteCustomQuiz } from '../lib/db'
 import { useQuizStore } from '../lib/quizStore'
 import { useAuth } from '../contexts/AuthContext'
-import { assetPath } from '../lib/paths'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -15,7 +14,7 @@ export default function QuizDetailClient() {
     const router = useRouter()
     const quizId = searchParams.get('id')
     const pathParam = searchParams.get('path')
-    const { setSelectedQuizPath } = useQuizStore()
+    const { setSelectedQuizPath, selectedQuizPath } = useQuizStore()
     const { user } = useAuth()
     const [quiz, setQuiz] = useState<any>(null)
     const [loading, setLoading] = useState(true)
@@ -69,9 +68,8 @@ export default function QuizDetailClient() {
                     router.push('/quizzes')
                     return
                 }
-                const response = await fetch(assetPath(officialQuiz.file_path))
-                const words = await response.json()
-                setQuiz({ ...officialQuiz, words, isCustom: false })
+                const { words, questions } = await loadOfficialQuiz(officialQuiz.file_path)
+                setQuiz({ ...officialQuiz, words, questions, isCustom: false })
                 setLoading(false)
                 return
             }
@@ -99,6 +97,17 @@ export default function QuizDetailClient() {
             setSelectedQuizPath(quiz.file_path)
         }
         router.push(mode === 'test' ? '/session/test' : '/match')
+    }
+
+    const handleDeleteQuiz = async () => {
+        if (!quiz?.isCustom || !quizId) return
+        const ok = window.confirm(`Delete "${quiz.name}" permanently? This cannot be undone.`)
+        if (!ok) return
+        await deleteCustomQuiz(quizId)
+        if (selectedQuizPath === `/custom-quiz/${quizId}`) {
+            setSelectedQuizPath('')
+        }
+        router.push('/quizzes')
     }
 
     const quizStorageId = quiz.isCustom ? (quizId || '') : (quiz.file_path || '')
@@ -202,6 +211,7 @@ function kindLabel(kind: string): string {
         case 'multiple_choice': return 'Multiple Choice'
         case 'true_false': return 'True / False'
         case 'flashcard': return 'Flashcard'
+        case 'simulation': return 'Simulation'
         default: return 'Question'
     }
 }
@@ -250,6 +260,15 @@ function kindLabel(kind: string): string {
                                             </>
                                         )}
                                     </div>
+                                    {quiz.isCustom && (
+                                        <button
+                                            onClick={handleDeleteQuiz}
+                                            className="p-2 rounded-lg text-neutral-400 hover:text-error hover:bg-error/10 transition-colors"
+                                            title="Delete quiz"
+                                        >
+                                            <Trash2 className="w-5 h-5" />
+                                        </button>
+                                    )}
                                 </div>
                                 {quiz.author_name && (
                                     <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-2 flex items-center gap-2">
@@ -400,6 +419,21 @@ function kindLabel(kind: string): string {
                                             <h3 className="font-bold text-lg text-neutral-900 dark:text-neutral-100 pl-11">
                                                 {q.prompt}
                                             </h3>
+                                            {q.image && (
+                                                <div className="pl-11 mt-2">
+                                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                    <img src={q.image} alt="Question media" className="rounded-xl max-h-48 w-full max-w-full object-contain border-2 border-neutral-200 dark:border-neutral-700" />
+                                                </div>
+                                            )}
+                                            {q.kind === 'simulation' && Array.isArray(q.steps) && (
+                                                <div className="pl-11 mt-2 space-y-1">
+                                                    {q.steps.map((s: any, si: number) => (
+                                                        <p key={s.id || si} className="text-sm text-neutral-600 dark:text-neutral-400">
+                                                            Step {si + 1}: {s.title || '(untitled)'}
+                                                        </p>
+                                                    ))}
+                                                </div>
+                                            )}
                                             {q.kind === 'multiple_choice' && Array.isArray(q.options) && (
                                                 <div className="pl-11 mt-2 space-y-1">
                                                     {q.options.map((opt: string, oi: number) => (
@@ -480,6 +514,14 @@ function kindLabel(kind: string): string {
                                                     className="border-t-2 border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/50"
                                                 >
                                                     <div className="p-4 space-y-4">
+                                                        {/* Media */}
+                                                        {word.image && (
+                                                            <div>
+                                                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                                <img src={word.image} alt={word.word} className="rounded-xl max-h-48 w-full max-w-full object-contain border-2 border-neutral-200 dark:border-neutral-700" />
+                                                            </div>
+                                                        )}
+
                                                         {/* Synonyms */}
                                                         {word.synonyms && word.synonyms.length > 0 && (
                                                             <div>

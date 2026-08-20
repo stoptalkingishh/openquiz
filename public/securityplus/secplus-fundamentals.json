@@ -1,0 +1,107 @@
+[
+ {
+  "id": "fund-f1",
+  "kind": "flashcard",
+  "prompt": "CIA Triad",
+  "answer": "Confidentiality (data stays private), Integrity (data stays accurate/unaltered), Availability (authorized users can access when needed).",
+  "explanation": ""
+ },
+ {
+  "id": "fund-f2",
+  "kind": "flashcard",
+  "prompt": "Non-repudiation",
+  "answer": "Guarantees a party cannot deny an action — backed by digital signatures, audit logs and timestamps.",
+  "explanation": ""
+ },
+ {
+  "id": "fund-f3",
+  "kind": "flashcard",
+  "prompt": "AAA (Authentication, Authorization, Accounting)",
+  "answer": "Verifies who you are, what you may do, and tracks/logs the activity performed.",
+  "explanation": ""
+ },
+ {
+  "id": "fund-f4",
+  "kind": "flashcard",
+  "prompt": "Zero Trust",
+  "answer": "\"Never trust, always verify\" — every user and device is continuously verified and given only the minimum access needed.",
+  "explanation": ""
+ },
+ {
+  "id": "fund-f5",
+  "kind": "flashcard",
+  "prompt": "Policy Enforcement Point (PEP)",
+  "answer": "The component (firewall, endpoint agent, network device) in the Zero Trust data plane that enforces policies.",
+  "explanation": ""
+ },
+ {
+  "id": "fund-f6",
+  "kind": "flashcard",
+  "prompt": "Policy Engine",
+  "answer": "The Zero Trust control-plane component that evaluates policies and makes allow/deny decisions in real time.",
+  "explanation": ""
+ },
+ {
+  "id": "fund-f7",
+  "kind": "flashcard",
+  "prompt": "Micro-segmentation",
+  "answer": "Splitting the network into isolated zones so a compromise can not hop laterally.",
+  "explanation": ""
+ },
+ {
+  "id": "fund-f8",
+  "kind": "flashcard",
+  "prompt": "Least privilege",
+  "answer": "Granting only the minimum permissions needed to perform a job or task.",
+  "explanation": ""
+ },
+ {
+  "id": "fund-f9",
+  "kind": "flashcard",
+  "prompt": "Defense in depth",
+  "answer": "Layered, independent security controls so failure of one layer does not compromise everything.",
+  "explanation": ""
+ },
+ {
+  "id": "fund-f10",
+  "kind": "flashcard",
+  "prompt": "Preventive control",
+  "answer": "Stops incidents from occurring (firewalls, encryption, access-control mechanisms).",
+  "explanation": ""
+ },
+ {
+  "id": "fund-f11",
+  "kind": "flashcard",
+  "prompt": "Detective control",
+  "answer": "Identifies incidents that occur or have occurred (IDS, cameras, audit logs, FIM).",
+  "explanation": ""
+ },
+ {
+  "id": "fund-f12",
+  "kind": "flashcard",
+  "prompt": "Corrective control",
+  "answer": "Restores or contains the impact of an incident (patch mgmt, system restore, quarantine).",
+  "explanation": ""
+ },
+ {
+  "id": "fund-f13",
+  "kind": "flashcard",
+  "prompt": "Deterrent control",
+  "answer": "Discourages attackers by visible defenses (warning banners, visible cameras).",
+  "explanation": ""
+ },
+ {
+  "id": "fund-f14",
+  "kind": "flashcard",
+  "prompt": "Compensating control",
+  "answer": "An alternate control used when the primary control cannot be implemented (e.g. MFA instead of biometrics).",
+  "explanation": ""
+ },
+ {
+  "id": "fund-f15",
+  "kind": "flashcard",
+  "prompt": "Directive control",
+  "answer": "Guides behavior with policy, procedure, or regulation (security-policy sign-offs).",
+  "explanation": ""
+ }
+]

@@ -9,6 +9,7 @@ export interface Word {
   simple_examples: string[];
   advanced_example: string;
   confusions: string[];
+  image?: string; // URL or data URI — shown with the term (Quizlet-style media)
 }
 
 export interface WordProgress {
@@ -35,12 +36,14 @@ export type QuestionType =
   | "generic_mc"
   | "generic_tf"
   | "generic_flashcard"
-  | "generic_written";
+  | "generic_written"
+  | "simulation";
 
 export interface Question {
   id: string;
   word: string;
   type: QuestionType;
+  image?: string; // media shown with the question (Quizlet-style)
   // payload contains specific text, options, correct index
   payload: any;
 }
@@ -124,17 +127,57 @@ export type Session = LearnSession | DrillSession | ExamSession | MistakesSessio
 // Generic (manual) quizzes — any subject, not just vocabulary
 // ---------------------------------------------------------------------------
 
-export type QuizQuestionKind = 'multiple_choice' | 'true_false' | 'flashcard';
+export type QuizQuestionKind = 'multiple_choice' | 'true_false' | 'flashcard' | 'simulation';
+
+// ---------------------------------------------------------------------------
+// Simulations (Comptia-style performance-based questions)
+// ---------------------------------------------------------------------------
+
+export type SimulationStepKind = 'choice' | 'checkbox' | 'config' | 'placement';
+
+/**
+ * A single graded step inside an interactive simulation. Each step is scored
+ * independently; the whole simulation is marked correct only when every step
+ * is correct, but the review shows per-step results.
+ */
+export interface SimulationStep {
+  id: string;
+  kind: SimulationStepKind;
+  title: string;          // instruction / question text
+  image?: string;         // optional media for the step
+
+  // `choice` — pick one option
+  options?: string[];
+  correctIndex?: number;
+
+  // `checkbox` — toggle individual statements/controls on/off
+  items?: { id: string; label: string; correct: boolean }[];
+
+  // `config` — same UI as checkbox (toggle), kept distinct for authoring clarity
+  config?: { id: string; label: string; correct: boolean }[];
+
+  // `placement` — drag/order items into slots (e.g. network topology, order of operations)
+  itemsToPlace?: string[];   // item labels available to assign
+  slots?: string[];          // slot labels in fixed order
+  correctMapping?: number[]; // for each item index, the slot index it belongs in
+
+  explanation?: string;      // shown in the review when the step is wrong
+}
 
 export interface QuizQuestion {
   id: string;
   kind: QuizQuestionKind;
   prompt: string;
+  image?: string;          // URL or data URI — shown alongside the question (Quizlet-style)
   options?: string[];      // for multiple_choice
   correctIndex?: number;   // for multiple_choice
   correctAnswer?: boolean; // for true_false
   answer?: string;         // answer shown for flashcard (and optional explanation)
   explanation?: string;    // optional explanation shown after answering (MC/TF)
+
+  // simulations
+  steps?: SimulationStep[]; // for kind === 'simulation'
+  language?: string;       // optional hint for code/other language content
 }
 
 /** A custom quiz: either a vocabulary list (`words`) or generic questions (`questions`). */

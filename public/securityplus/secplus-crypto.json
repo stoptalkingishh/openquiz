@@ -1,0 +1,121 @@
+[
+ {
+  "id": "c-f1",
+  "kind": "flashcard",
+  "prompt": "Symmetric encryption",
+  "answer": "Same key encrypts and decrypts; very fast but needs secure key exchange.",
+  "explanation": ""
+ },
+ {
+  "id": "c-f2",
+  "kind": "flashcard",
+  "prompt": "Asymmetric encryption",
+  "answer": "Public/private key pair; one encrypts, the other decrypts.",
+  "explanation": ""
+ },
+ {
+  "id": "c-f3",
+  "kind": "flashcard",
+  "prompt": "PKI",
+  "answer": "A system of CAs, certificates, and trust that binds identities to keys.",
+  "explanation": ""
+ },
+ {
+  "id": "c-f4",
+  "kind": "flashcard",
+  "prompt": "Digital signature",
+  "answer": "Hash-signs a message — proves integrity, authenticity, and non-repudiation.",
+  "explanation": ""
+ },
+ {
+  "id": "c-f5",
+  "kind": "flashcard",
+  "prompt": "Hashing",
+  "answer": "One-way digest function for integrity; cannot be reversed.",
+  "explanation": ""
+ },
+ {
+  "id": "c-f6",
+  "kind": "flashcard",
+  "prompt": "Salting",
+  "answer": "Salted random per-user data before hashing defeats median/rainbow table attacks.",
+  "explanation": ""
+ },
+ {
+  "id": "c-f7",
+  "kind": "flashcard",
+  "prompt": "Block cipher",
+  "answer": "Encrypts fixed-size blocks at a time (e.g. AES).",
+  "explanation": ""
+ },
+ {
+  "id": "c-f8",
+  "kind": "flashcard",
+  "prompt": "Stream cipher",
+  "answer": "Encrypts bit-by-bit or byte-by-byte (e.g. RC4).",
+  "explanation": ""
+ },
+ {
+  "id": "c-f9",
+  "kind": "flashcard",
+  "prompt": "Key length",
+  "answer": "Bits in a key; longer adds exponential brute-force cost.",
+  "explanation": ""
+ },
+ {
+  "id": "c-f10",
+  "kind": "flashcard",
+  "prompt": "Key escrow",
+  "answer": "A trusted third party stores a copy of keys for access recovery.",
+  "explanation": ""
+ },
+ {
+  "id": "c-f11",
+  "kind": "flashcard",
+  "prompt": "KMS (Key Management System)",
+  "answer": "Centrally creates, stores, rotates, and controls keys.",
+  "explanation": ""
+ },
+ {
+  "id": "c-f12",
+  "kind": "flashcard",
+  "prompt": "HSM",
+  "answer": "Tamper-resistant hardware that keeps keys and does crypto in it.",
+  "explanation": ""
+ },
+ {
+  "id": "c-f13",
+  "kind": "flashcard",
+  "prompt": "CA (Certificate Authority)",
+  "answer": "Issues and revokes digital certificates.",
+  "explanation": ""
+ },
+ {
+  "id": "c-f14",
+  "kind": "flashcard",
+  "prompt": "CSR (Certificate Signing Request)",
+  "answer": "Request message to obtain a signed certificate.",
+  "explanation": ""
+ },
+ {
+  "id": "c-f15",
+  "kind": "flashcard",
+  "prompt": "CRL (Certificate Revocation List)",
+  "answer": "List of certificates that are no longer valid.",
+  "explanation": ""
+ },
+ {
+  "id": "c-f16",
+  "kind": "flashcard",
+  "prompt": "Perfect Forward Secrecy",
+  "answer": "Per-session random keys ensure a compromise of one session never leaks past ones.",
+  "explanation": ""
+ },
+ {
+  "id": "c-f17",
+  "kind": "flashcard",
+  "prompt": "Tokenization",
+  "answer": "Replaces sensitive human values with random tokens kept in a secure store.",
+  "explanation": ""
+ }
+]

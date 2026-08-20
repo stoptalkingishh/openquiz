@@ -5,8 +5,7 @@ import { useRouter } from 'next/navigation'
 import { ArrowLeft, Timer, Trophy, RotateCcw, Gamepad2 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useQuizStore } from '../lib/quizStore'
-import { getCustomQuizById, getQuizSetByPath, recordQuizSession } from '../lib/db'
-import { assetPath } from '../lib/paths'
+import { getCustomQuizById, getQuizSetByPath, recordQuizSession, loadOfficialQuiz } from '../lib/db'
 import { Word, QuizQuestion } from '../lib/satTypes'
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -53,10 +52,6 @@ export default function MatchPage() {
             router.push('/auth')
             return
         }
-        if (user.id !== 'guest' && !selectedQuizPath.startsWith('/custom-quiz/')) {
-            router.push('/quizzes')
-            return
-        }
         loadQuiz()
     }, [user, router, selectedQuizPath])
 
@@ -77,10 +72,11 @@ export default function MatchPage() {
                 words = Array.isArray(quiz.words) ? quiz.words : []
                 questions = Array.isArray(quiz.questions) ? quiz.questions : []
             } else {
-                const res = await fetch(assetPath(selectedQuizPath))
-                words = await res.json()
                 const official = await getQuizSetByPath(selectedQuizPath)
                 if (official) meta = { id: selectedQuizPath, name: official.name }
+                const loaded = await loadOfficialQuiz(selectedQuizPath)
+                words = loaded.words
+                questions = loaded.questions
             }
 
             setQuizMeta(meta)

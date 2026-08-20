@@ -1,0 +1,100 @@
+[
+ {
+  "id": "ph-f1",
+  "kind": "flashcard",
+  "prompt": "Bollards",
+  "answer": "Short sturdy posts that prevent vehicles from ramming buildings — fixed, removable or hydraulic.",
+  "explanation": ""
+ },
+ {
+  "id": "ph-f2",
+  "kind": "flashcard",
+  "prompt": "Access control vestibule (mantrap)",
+  "answer": "A two-door secure entryway that verifies access before allowing entry.",
+  "explanation": ""
+ },
+ {
+  "id": "ph-f3",
+  "kind": "flashcard",
+  "prompt": "Fencing",
+  "answer": "Perimeter barrier; chain-link for low-risk, razor-wire/elect for high-security sites.",
+  "explanation": ""
+ },
+ {
+  "id": "ph-f4",
+  "kind": "flashcard",
+  "prompt": "CCTV",
+  "answer": "Private closed-circuit video surveillance to monitor and record activity.",
+  "explanation": ""
+ },
+ {
+  "id": "ph-f5",
+  "kind": "flashcard",
+  "prompt": "PTZ camera",
+  "answer": "Pan-tilt-zoom camera for detailed movable surveillance.",
+  "explanation": ""
+ },
+ {
+  "id": "ph-f6",
+  "kind": "flashcard",
+  "prompt": "Access badge",
+  "answer": "ID card granting controlled entry (magnetic stripe, RFID, or smart chip).",
+  "explanation": ""
+ },
+ {
+  "id": "ph-f7",
+  "kind": "flashcard",
+  "prompt": "Perimeter / motion lighting",
+  "answer": "Illumination that deters and reveals night-time unauthorized activity.",
+  "explanation": ""
+ },
+ {
+  "id": "ph-f8",
+  "kind": "flashcard",
+  "prompt": "Infrared sensor",
+  "answer": "Detects heat signatures for motion detection and perimeter alarms.",
+  "explanation": ""
+ },
+ {
+  "id": "ph-f9",
+  "kind": "flashcard",
+  "prompt": "Pressure sensor",
+  "answer": "Detects weight, e.g. someone stepping into an area.",
+  "explanation": ""
+ },
+ {
+  "id": "ph-f10",
+  "kind": "flashcard",
+  "prompt": "Honeypot",
+  "answer": "Decoy system that looks vulnerable to lure attackers and log their behavior.",
+  "explanation": ""
+ },
+ {
+  "id": "ph-f11",
+  "kind": "flashcard",
+  "prompt": "Honeynet",
+  "answer": "A network of interconnected honeypots simulating a real target environment.",
+  "explanation": ""
+ },
+ {
+  "id": "ph-f12",
+  "kind": "flashcard",
+  "prompt": "Honeyfile",
+  "answer": "A decoy file that triggers an alert when opened or stolen.",
+  "explanation": ""
+ },
+ {
+  "id": "ph-f13",
+  "kind": "flashcard",
+  "prompt": "Honeytoken",
+  "answer": "Fake credentials, keys, or records that alert teams when used.",
+  "explanation": ""
+ },
+ {
+  "id": "ph-f14",
+  "kind": "flashcard",
+  "prompt": "Bluejacking",
+  "answer": "Sends unsolicited Bluetooth messages; Bluesnarfing steals data via Bluetooth.",
+  "explanation": ""
+ }
+]

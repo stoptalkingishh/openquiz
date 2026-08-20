@@ -27,11 +27,28 @@ export default function LibraryPage() {
         }
 
         const loadWords = async (): Promise<Word[]> => {
-            // Signed-in users only see words from their own quizzes.
-            if (user.id !== 'guest') {
+            const seen = new Set<string>()
+            const collected: Word[] = []
+
+            // Official pre-made SAT vocab (available to everyone).
+            try {
+                const res = await fetch(assetPath('/sat/1.json'))
+                if (res.ok) {
+                    const official = await res.json()
+                    for (const w of Array.isArray(official) ? official : []) {
+                        if (w?.word && !seen.has(w.word)) {
+                            seen.add(w.word)
+                            collected.push(w)
+                        }
+                    }
+                }
+            } catch {
+                // ignore — fall through to custom words
+            }
+
+            // Plus the words from the user's own quizzes.
+            if (user && user.id !== 'guest') {
                 const quizzes = await getCustomQuizzes(user.id)
-                const seen = new Set<string>()
-                const collected: Word[] = []
                 for (const quiz of quizzes) {
                     if (!Array.isArray(quiz.words) || !quiz.words.length) continue
                     for (const w of quiz.words) {
@@ -41,12 +58,9 @@ export default function LibraryPage() {
                         }
                     }
                 }
-                return collected
             }
 
-            // Guests get the pre-made official SAT set.
-            const res = await fetch(assetPath('/sat/1.json'))
-            return res.json()
+            return collected
         }
 
         loadWords().then(setWords)

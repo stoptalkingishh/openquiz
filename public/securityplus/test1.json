@@ -1,0 +1,1302 @@
+[
+ {
+  "id": "test1-q1",
+  "kind": "multiple_choice",
+  "prompt": "Which of the following scenarios best demonstrates the principle of confidentiality?",
+  "options": [
+   "Encrypting sensitive files before transmission",
+   "Detecting unauthorized changes in a document",
+   "Ensuring servers are available during peak hours",
+   "Creating redundant backups of critical data"
+  ],
+  "correctIndex": 0,
+  "explanation": "Answer: A) Encrypting sensitive files before transmission"
+ },
+ {
+  "id": "test1-q2",
+  "kind": "multiple_choice",
+  "prompt": "Which framework provides a structured approach for managing security and risk in an organization?",
+  "options": [
+   "GDPR",
+   "ISO 27001",
+   "COBIT",
+   "PCI DSS"
+  ],
+  "correctIndex": 1,
+  "explanation": "Answer: B) ISO 27001"
+ },
+ {
+  "id": "test1-q3",
+  "kind": "multiple_choice",
+  "prompt": "In the CIA triad, availability ensures which of the following?",
+  "options": [
+   "Only authorized users can access data",
+   "Data remains accurate and trustworthy",
+   "Resources are accessible when needed",
+   "Unauthorized users are denied access"
+  ],
+  "correctIndex": 2,
+  "explanation": "Answer: C) Resources are accessible when needed"
+ },
+ {
+  "id": "test1-q4",
+  "kind": "multiple_choice",
+  "prompt": "Which access control model restricts access based on policies defined by the system administrator?",
+  "options": [
+   "Discretionary Access Control (DAC)",
+   "Role-Based Access Control (RBAC)",
+   "Attribute-Based Access Control (ABAC)",
+   "Mandatory Access Control (MAC)"
+  ],
+  "correctIndex": 3,
+  "explanation": "Answer: D) Mandatory Access Control (MAC)"
+ },
+ {
+  "id": "test1-q5",
+  "kind": "multiple_choice",
+  "prompt": "What does the principle of least privilege ensure?",
+  "options": [
+   "Users have minimal access necessary to perform their tasks",
+   "All users must authenticate with multi-factor authentication",
+   "Data access is monitored continuously",
+   "Privileged accounts are disabled by default"
+  ],
+  "correctIndex": 0,
+  "explanation": "Answer: A) Users have minimal access necessary to perform their tasks"
+ },
+ {
+  "id": "test1-q6",
+  "kind": "multiple_choice",
+  "prompt": "What type of malware disguises itself as legitimate software to gain unauthorized access?",
+  "options": [
+   "Worm",
+   "Rootkit",
+   "Trojan",
+   "Keylogger"
+  ],
+  "correctIndex": 2,
+  "explanation": "Answer: C) Trojan"
+ },
+ {
+  "id": "test1-q7",
+  "kind": "multiple_choice",
+  "prompt": "Which attack method uses DNS spoofing to redirect users to malicious websites?",
+  "options": [
+   "Pharming",
+   "Phishing",
+   "Shoulder surfing",
+   "Cross-site scripting"
+  ],
+  "correctIndex": 0,
+  "explanation": "Answer: A) Pharming"
+ },
+ {
+  "id": "test1-q8",
+  "kind": "multiple_choice",
+  "prompt": "Which of the following is an example of a social engineering attack?",
+  "options": [
+   "SQL Injection",
+   "Ransomware attack",
+   "An attacker posing as IT support to obtain user credentials",
+   "A brute force password attack"
+  ],
+  "correctIndex": 2,
+  "explanation": "Answer: C) An attacker posing as IT support to obtain user credentials"
+ },
+ {
+  "id": "test1-q9",
+  "kind": "multiple_choice",
+  "prompt": "Which vulnerability allows attackers to execute code remotely on a system?",
+  "options": [
+   "Command injection",
+   "Privilege escalation",
+   "Buffer overflow",
+   "Zero-day exploit"
+  ],
+  "correctIndex": 0,
+  "explanation": "Answer: A) Command injection"
+ },
+ {
+  "id": "test1-q10",
+  "kind": "multiple_choice",
+  "prompt": "What is the primary goal of implementing a honeypot in a network? 2",
+  "options": [
+   "Detect and log unauthorized access attempts",
+   "Prevent malware infections",
+   "Encrypt sensitive data",
+   "Improve network performance"
+  ],
+  "correctIndex": 1,
+  "explanation": "Answer: B) Prevent malware infections"
+ },
+ {
+  "id": "test1-q11",
+  "kind": "multiple_choice",
+  "prompt": "Which of the following best describes a demilitarized zone (DMZ)?",
+  "options": [
+   "A segment of a network used exclusively for storing sensitive data",
+   "A subnet that hosts public-facing services and isolates them from the internal network",
+   "A firewall rule designed to block incoming traffic",
+   "A secure VPN tunnel between two sites"
+  ],
+  "correctIndex": 1,
+  "explanation": "Answer: B) A subnet that hosts public-facing services and isolates them from the internal network"
+ },
+ {
+  "id": "test1-q12",
+  "kind": "multiple_choice",
+  "prompt": "What does micro-segmentation achieve in network security?",
+  "options": [
+   "Isolates workloads to reduce the attack surface",
+   "Encrypts all traffic within the network",
+   "Implements zero trust policies across an organization",
+   "Consolidates network traffic for better monitoring"
+  ],
+  "correctIndex": 3,
+  "explanation": "Answer: D) Consolidates network traffic for better monitoring"
+ },
+ {
+  "id": "test1-q13",
+  "kind": "multiple_choice",
+  "prompt": "Which of the following devices is primarily used to detect and respond to suspicious network activity?",
+  "options": [
+   "Router",
+   "Proxy server",
+   "Intrusion Prevention System (IPS)",
+   "Load balancer"
+  ],
+  "correctIndex": 2,
+  "explanation": "Answer: C) Intrusion Prevention System (IPS)"
+ },
+ {
+  "id": "test1-q14",
+  "kind": "multiple_choice",
+  "prompt": "What is the main purpose of a Virtual Private Network (VPN)?",
+  "options": [
+   "Enhance wireless connectivity",
+   "Encrypt communications over insecure networks",
+   "Reduce bandwidth usage",
+   "Block unauthorized devices from connecting to the network"
+  ],
+  "correctIndex": 1,
+  "explanation": "Answer: B) Encrypt communications over insecure networks"
+ },
+ {
+  "id": "test1-q15",
+  "kind": "multiple_choice",
+  "prompt": "Which cloud deployment model is exclusively available to a single organization?",
+  "options": [
+   "Public cloud",
+   "Private cloud",
+   "Hybrid cloud",
+   "Community cloud"
+  ],
+  "correctIndex": 1,
+  "explanation": "Answer: B) Private cloud"
+ },
+ {
+  "id": "test1-q16",
+  "kind": "multiple_choice",
+  "prompt": "Which tool is commonly used for packet analysis during a network investigation?",
+  "options": [
+   "Nessus",
+   "Wireshark",
+   "Splunk",
+   "Netcat"
+  ],
+  "correctIndex": 1,
+  "explanation": "Answer: B) Wireshark"
+ },
+ {
+  "id": "test1-q17",
+  "kind": "multiple_choice",
+  "prompt": "What is the purpose of an incident response plan?",
+  "options": [
+   "Monitor system performance",
+   "Define roles and actions during security incidents",
+   "Enforce compliance with regulatory standards",
+   "Conduct vulnerability scans"
+  ],
+  "correctIndex": 1,
+  "explanation": "Answer: B) Define roles and actions during security incidents"
+ },
+ {
+  "id": "test1-q18",
+  "kind": "multiple_choice",
+  "prompt": "Which of the following is a function of a Security Information and Event Management (SIEM) system?",
+  "options": [
+   "Perform penetration testing",
+   "Automate software patching",
+   "Correlate and analyze security event data",
+   "Provide real-time endpoint protection"
+  ],
+  "correctIndex": 2,
+  "explanation": "Answer: C) Correlate and analyze security event data"
+ },
+ {
+  "id": "test1-q19",
+  "kind": "multiple_choice",
+  "prompt": "What is the first phase of the incident response process?",
+  "options": [
+   "Eradication",
+   "Preparation",
+   "Recovery 3",
+   "Containment"
+  ],
+  "correctIndex": 1,
+  "explanation": "Answer: B) Preparation"
+ },
+ {
+  "id": "test1-q20",
+  "kind": "multiple_choice",
+  "prompt": "Which type of log provides information about user logins and authentication attempts?",
+  "options": [
+   "System log",
+   "Security log",
+   "Application log",
+   "Audit log"
+  ],
+  "correctIndex": 1,
+  "explanation": "Answer: B) Security log"
+ },
+ {
+  "id": "test1-q21",
+  "kind": "multiple_choice",
+  "prompt": "Which framework is used for assessing and improving critical infrastructure cybersecurity?",
+  "options": [
+   "NIST CSF",
+   "ITIL",
+   "ISO 31000",
+   "COBIT"
+  ],
+  "correctIndex": 0,
+  "explanation": "Answer: A) NIST CSF"
+ },
+ {
+  "id": "test1-q22",
+  "kind": "multiple_choice",
+  "prompt": "What is the primary benefit of implementing governance, risk, and compliance (GRC) tools?",
+  "options": [
+   "Automate vulnerability scanning",
+   "Centralize the management of risk and compliance efforts",
+   "Improve encryption mechanisms",
+   "Prevent all cyberattacks"
+  ],
+  "correctIndex": 2,
+  "explanation": "Answer: C) Improve encryption mechanisms"
+ },
+ {
+  "id": "test1-q23",
+  "kind": "multiple_choice",
+  "prompt": "What does the term \"risk appetite\" refer to in a security context?",
+  "options": [
+   "The level of risk an organization is willing to accept",
+   "The total number of identified vulnerabilities",
+   "The cost of implementing a risk mitigation strategy",
+   "The likelihood of a threat exploiting a vulnerability"
+  ],
+  "correctIndex": 0,
+  "explanation": "Answer: A) The level of risk an organization is willing to accept"
+ },
+ {
+  "id": "test1-q24",
+  "kind": "multiple_choice",
+  "prompt": "Which regulation requires organizations to notify individuals of a data breach?",
+  "options": [
+   "GDPR",
+   "PCI DSS",
+   "HIPAA",
+   "ISO 27001"
+  ],
+  "correctIndex": 0,
+  "explanation": "Answer: A) GDPR"
+ },
+ {
+  "id": "test1-q25",
+  "kind": "multiple_choice",
+  "prompt": "What is the goal of a business impact analysis (BIA)?",
+  "options": [
+   "Identify critical business functions and the impact of disruptions",
+   "Define roles in an incident response team",
+   "Assess the effectiveness of security policies",
+   "Calculate the cost of implementing new technology"
+  ],
+  "correctIndex": 0,
+  "explanation": "Answer: A) Identify critical business functions and the impact of disruptions"
+ },
+ {
+  "id": "test1-q26",
+  "kind": "multiple_choice",
+  "prompt": "Which of the following is an indicator of a phishing attempt in an email?",
+  "options": [
+   "A generic salutation such as \"Dear Customer\"",
+   "The presence of a company logo",
+   "A correctly spelled domain name in the sender's address",
+   "A secure HTTPS link in the email body"
+  ],
+  "correctIndex": 0,
+  "explanation": "Answer: A) A generic salutation such as \"Dear Customer\""
+ },
+ {
+  "id": "test1-q27",
+  "kind": "multiple_choice",
+  "prompt": "An attacker exploits a vulnerability in a smart thermostat connected to the network. Which type of attack is this?",
+  "options": [
+   "Internet of Things (IoT) attack",
+   "Distributed Denial of Service (DDoS) attack",
+   "Social engineering attack",
+   "SQL injection"
+  ],
+  "correctIndex": 0,
+  "explanation": "Answer: A) Internet of Things (IoT) attack"
+ },
+ {
+  "id": "test1-q28",
+  "kind": "multiple_choice",
+  "prompt": "What technique is used by attackers to exploit an unpatched software vulnerability before the vendor releases a fix?",
+  "options": [
+   "Zero-day exploit",
+   "Cross-site scripting",
+   "Privilege escalation",
+   "DLL injection"
+  ],
+  "correctIndex": 0,
+  "explanation": "Answer: A) Zero-day exploit"
+ },
+ {
+  "id": "test1-q29",
+  "kind": "multiple_choice",
+  "prompt": "Which of the following is an example of a ransomware attack?",
+  "options": [
+   "Locking the user’s files and demanding payment for a decryption key 4",
+   "Exploiting a vulnerability to execute unauthorized code",
+   "Monitoring user activity through a spyware program",
+   "Redirecting traffic from a legitimate site to a malicious one"
+  ],
+  "correctIndex": 0,
+  "explanation": "Answer: A) Locking the user’s files and demanding payment for a decryption key 4"
+ },
+ {
+  "id": "test1-q30",
+  "kind": "multiple_choice",
+  "prompt": "A malicious actor uses stolen credentials to log into an online banking platform. What type of attack is this?",
+  "options": [
+   "Credential stuffing",
+   "Replay attack",
+   "Brute force attack",
+   "Keylogger attack"
+  ],
+  "correctIndex": 0,
+  "explanation": "Answer: A) Credential stuffing"
+ },
+ {
+  "id": "test1-q31",
+  "kind": "multiple_choice",
+  "prompt": "Which security measure ensures data transmitted between two systems is encrypted end-to-end?",
+  "options": [
+   "Virtual Private Network (VPN)",
+   "Secure Sockets Layer (SSL)",
+   "Multi-factor authentication (MFA)",
+   "Network Access Control (NAC)"
+  ],
+  "correctIndex": 1,
+  "explanation": "Answer: B) Secure Sockets Layer (SSL)"
+ },
+ {
+  "id": "test1-q32",
+  "kind": "multiple_choice",
+  "prompt": "An organization is migrating critical applications to the cloud. Which security challenge is most relevant?",
+  "options": [
+   "Managing on-premises firewalls",
+   "Ensuring data integrity in transit and at rest",
+   "Monitoring legacy systems",
+   "Installing endpoint antivirus software"
+  ],
+  "correctIndex": 1,
+  "explanation": "Answer: B) Ensuring data integrity in transit and at rest"
+ },
+ {
+  "id": "test1-q33",
+  "kind": "multiple_choice",
+  "prompt": "Which of the following technologies is most effective in segmenting and isolating different workloads within a cloud environment?",
+  "options": [
+   "VLANs",
+   "Zero Trust Architecture",
+   "Firewalls",
+   "Micro-segmentation"
+  ],
+  "correctIndex": 3,
+  "explanation": "Answer: D) Micro-segmentation"
+ },
+ {
+  "id": "test1-q34",
+  "kind": "multiple_choice",
+  "prompt": "What is the primary goal of implementing a federated identity management system?",
+  "options": [
+   "Encrypt sensitive data at rest",
+   "Enable single sign-on across multiple organizations",
+   "Strengthen multi-factor authentication processes",
+   "Reduce the attack surface in hybrid environments"
+  ],
+  "correctIndex": 2,
+  "explanation": "Answer: C) Strengthen multi-factor authentication processes"
+ },
+ {
+  "id": "test1-q35",
+  "kind": "multiple_choice",
+  "prompt": "A company deploys a bastion host in its DMZ. What is the main purpose of this host?",
+  "options": [
+   "Provide a secure access point to internal systems for remote users",
+   "Encrypt all inbound and outbound traffic",
+   "Act as a firewall for the internal network",
+   "Host public-facing applications securely"
+  ],
+  "correctIndex": 1,
+  "explanation": "Answer: B) Encrypt all inbound and outbound traffic"
+ },
+ {
+  "id": "test1-q36",
+  "kind": "multiple_choice",
+  "prompt": "Which of the following is the most critical first step when conducting a forensic investigation?",
+  "options": [
+   "Chain of custody documentation",
+   "Removing the compromised system from the network",
+   "Backing up log files",
+   "Analyzing memory and disk images"
+  ],
+  "correctIndex": 0,
+  "explanation": "Answer: A) Chain of custody documentation"
+ },
+ {
+  "id": "test1-q37",
+  "kind": "multiple_choice",
+  "prompt": "What type of solution uses machine learning to detect anomalies in user behavior and flag potential security threats?",
+  "options": [
+   "Intrusion Detection System (IDS)",
+   "Endpoint Detection and Response (EDR)",
+   "User and Entity Behavior Analytics (UEBA)",
+   "Vulnerability Scanner"
+  ],
+  "correctIndex": 2,
+  "explanation": "Answer: C) User and Entity Behavior Analytics (UEBA)"
+ },
+ {
+  "id": "test1-q38",
+  "kind": "multiple_choice",
+  "prompt": "An analyst is reviewing logs and notices repeated login attempts from multiple IP addresses. What is the likely attack method? 5",
+  "options": [
+   "Password spraying",
+   "Phishing",
+   "SQL injection",
+   "Privilege escalation"
+  ],
+  "correctIndex": 0,
+  "explanation": "Answer: A) Password spraying"
+ },
+ {
+  "id": "test1-q39",
+  "kind": "multiple_choice",
+  "prompt": "What is the primary purpose of using playbooks in a Security Orchestration, Automation, and Response (SOAR) platform?",
+  "options": [
+   "Automate and standardize responses to common incidents",
+   "Generate compliance reports for auditors",
+   "Improve endpoint protection capabilities",
+   "Conduct vulnerability assessments"
+  ],
+  "correctIndex": 0,
+  "explanation": "Answer: A) Automate and standardize responses to common incidents"
+ },
+ {
+  "id": "test1-q40",
+  "kind": "multiple_choice",
+  "prompt": "Which of the following is considered a detective control?",
+  "options": [
+   "Firewall rules",
+   "Security cameras",
+   "Data encryption",
+   "Antivirus software"
+  ],
+  "correctIndex": 1,
+  "explanation": "Answer: B) Security cameras"
+ },
+ {
+  "id": "test1-q41",
+  "kind": "multiple_choice",
+  "prompt": "What is the purpose of a certificate revocation list (CRL) in a Public Key Infrastructure (PKI)?",
+  "options": [
+   "Validate a certificate's authenticity",
+   "Distribute public keys to users",
+   "Identify certificates that are no longer valid",
+   "Encrypt email communications"
+  ],
+  "correctIndex": 2,
+  "explanation": "Answer: C) Identify certificates that are no longer valid"
+ },
+ {
+  "id": "test1-q42",
+  "kind": "multiple_choice",
+  "prompt": "Which encryption algorithm is used in Wi-Fi Protected Access 3 (WPA3)?",
+  "options": [
+   "RSA",
+   "AES",
+   "SHA-256",
+   "Blowfish"
+  ],
+  "correctIndex": 1,
+  "explanation": "Answer: B) AES"
+ },
+ {
+  "id": "test1-q43",
+  "kind": "multiple_choice",
+  "prompt": "What is the main advantage of elliptic curve cryptography (ECC) over traditional algorithms like RSA?",
+  "options": [
+   "Faster key generation and encryption",
+   "Requires longer keys for the same security level",
+   "Uses symmetric key encryption",
+   "Focuses on hashing operations"
+  ],
+  "correctIndex": 0,
+  "explanation": "Answer: A) Faster key generation and encryption"
+ },
+ {
+  "id": "test1-q44",
+  "kind": "multiple_choice",
+  "prompt": "A company needs to securely transfer large amounts of sensitive data between systems. Which protocol should they use?",
+  "options": [
+   "SSH",
+   "SFTP",
+   "HTTP",
+   "FTP"
+  ],
+  "correctIndex": 1,
+  "explanation": "Answer: B) SFTP"
+ },
+ {
+  "id": "test1-q45",
+  "kind": "multiple_choice",
+  "prompt": "Which cryptographic method ensures the integrity of a file during transfer?",
+  "options": [
+   "Hashing",
+   "Asymmetric encryption",
+   "Symmetric encryption",
+   "Tokenization"
+  ],
+  "correctIndex": 0,
+  "explanation": "Answer: A) Hashing"
+ },
+ {
+  "id": "test1-q46",
+  "kind": "multiple_choice",
+  "prompt": "Which of the following regulations requires companies to protect EU citizens' personal data, regardless of where the company is located?",
+  "options": [
+   "PCI DSS",
+   "HIPAA",
+   "GDPR",
+   "SOX"
+  ],
+  "correctIndex": 2,
+  "explanation": "Answer: C) GDPR"
+ },
+ {
+  "id": "test1-q47",
+  "kind": "multiple_choice",
+  "prompt": "What is the primary purpose of the Health Insurance Portability and Accountability Act (HIPAA)? 6",
+  "options": [
+   "Secure financial data",
+   "Protect personal health information",
+   "Govern cybersecurity frameworks",
+   "Enforce zero-trust policies"
+  ],
+  "correctIndex": 1,
+  "explanation": "Answer: B) Protect personal health information"
+ },
+ {
+  "id": "test1-q48",
+  "kind": "multiple_choice",
+  "prompt": "Which of the following metrics is used to determine the time allowed to recover a system after a failure?",
+  "options": [
+   "Recovery Point Objective (RPO)",
+   "Recovery Time Objective (RTO)",
+   "Mean Time Between Failures (MTBF)",
+   "Maximum Tolerable Downtime (MTD)"
+  ],
+  "correctIndex": 1,
+  "explanation": "Answer: B) Recovery Time Objective (RTO)"
+ },
+ {
+  "id": "test1-q49",
+  "kind": "multiple_choice",
+  "prompt": "A security manager is assessing the risk level of a new cloud application. What is the FIRST step they should take?",
+  "options": [
+   "Perform a vulnerability scan",
+   "Identify and classify assets",
+   "Conduct a business impact analysis",
+   "Review compliance requirements"
+  ],
+  "correctIndex": 1,
+  "explanation": "Answer: B) Identify and classify assets"
+ },
+ {
+  "id": "test1-q50",
+  "kind": "multiple_choice",
+  "prompt": "Which type of assessment involves simulating real-world attacks to test system defenses?",
+  "options": [
+   "Penetration testing",
+   "Vulnerability scanning",
+   "Risk assessment",
+   "Patch management"
+  ],
+  "correctIndex": 0,
+  "explanation": "Answer: A) Penetration testing"
+ },
+ {
+  "id": "test1-q51",
+  "kind": "multiple_choice",
+  "prompt": "During an incident response, what is the primary goal of the containment phase?",
+  "options": [
+   "Identify the root cause of the incident",
+   "Eradicate the threat from the environment",
+   "Limit the spread of the attack",
+   "Notify regulatory authorities"
+  ],
+  "correctIndex": 2,
+  "explanation": "Answer: C) Limit the spread of the attack"
+ },
+ {
+  "id": "test1-q52",
+  "kind": "multiple_choice",
+  "prompt": "Which of the following tools would an analyst use to detect unauthorized changes to files on a server?",
+  "options": [
+   "SIEM",
+   "File Integrity Monitoring (FIM)",
+   "Vulnerability scanner",
+   "Network Access Control (NAC)"
+  ],
+  "correctIndex": 1,
+  "explanation": "Answer: B) File Integrity Monitoring (FIM)"
+ },
+ {
+  "id": "test1-q53",
+  "kind": "multiple_choice",
+  "prompt": "A company's DNS server is experiencing an overwhelming number of requests. Logs indicate requests are coming from multiple sources simultaneously. Which type of attack is this?",
+  "options": [
+   "DNS spoofing",
+   "Distributed Denial of Service (DDoS)",
+   "DNS amplification",
+   "Man-in-the-middle"
+  ],
+  "correctIndex": 1,
+  "explanation": "Answer: B) Distributed Denial of Service (DDoS)"
+ },
+ {
+  "id": "test1-q54",
+  "kind": "multiple_choice",
+  "prompt": "Which logging practice ensures that log files are protected from tampering after they are created?",
+  "options": [
+   "Rotating logs regularly",
+   "Implementing write-once-read-many (WORM) media",
+   "Encrypting log files during storage",
+   "Storing logs on a network share"
+  ],
+  "correctIndex": 1,
+  "explanation": "Answer: B) Implementing write-once-read-many (WORM) media"
+ },
+ {
+  "id": "test1-q55",
+  "kind": "multiple_choice",
+  "prompt": "What is the purpose of a tabletop exercise in incident response planning?",
+  "options": [
+   "Simulate a real attack scenario to test systems",
+   "Review and validate the response plan without live execution",
+   "Conduct penetration testing on a network",
+   "Generate automated incident response playbooks 7"
+  ],
+  "correctIndex": 1,
+  "explanation": "Answer: B) Review and validate the response plan without live execution"
+ },
+ {
+  "id": "test1-q56",
+  "kind": "multiple_choice",
+  "prompt": "An attacker uses a compromised IoT device as part of a botnet to perform a DDoS attack. What is the best mitigation?",
+  "options": [
+   "Deploy a Web Application Firewall (WAF)",
+   "Implement network segmentation for IoT devices",
+   "Install antivirus software on IoT devices",
+   "Conduct regular penetration tests"
+  ],
+  "correctIndex": 1,
+  "explanation": "Answer: B) Implement network segmentation for IoT devices"
+ },
+ {
+  "id": "test1-q57",
+  "kind": "multiple_choice",
+  "prompt": "Which type of vulnerability involves user input that modifies SQL queries to gain unauthorized database access?",
+  "options": [
+   "Buffer overflow",
+   "Cross-site scripting",
+   "Command injection",
+   "SQL injection"
+  ],
+  "correctIndex": 3,
+  "explanation": "Answer: D) SQL injection"
+ },
+ {
+  "id": "test1-q58",
+  "kind": "multiple_choice",
+  "prompt": "What technique prevents an attacker from exploiting a memory corruption vulnerability in an application?",
+  "options": [
+   "Input validation",
+   "Security patching",
+   "Data encryption",
+   "Secure boot"
+  ],
+  "correctIndex": 1,
+  "explanation": "Answer: B) Security patching"
+ },
+ {
+  "id": "test1-q59",
+  "kind": "multiple_choice",
+  "prompt": "Which of the following methods can attackers use to covertly gather data about a target network?",
+  "options": [
+   "Ping sweep",
+   "ARP poisoning",
+   "DNS zone transfer",
+   "MAC spoofing"
+  ],
+  "correctIndex": 2,
+  "explanation": "Answer: C) DNS zone transfer"
+ },
+ {
+  "id": "test1-q60",
+  "kind": "multiple_choice",
+  "prompt": "What is the main purpose of using salting in password security?",
+  "options": [
+   "Increase computational difficulty for brute force attacks",
+   "Enable multi-factor authentication",
+   "Encrypt stored passwords",
+   "Prevent dictionary attacks using precomputed hashes"
+  ],
+  "correctIndex": 3,
+  "explanation": "Answer: D) Prevent dictionary attacks using precomputed hashes"
+ },
+ {
+  "id": "test1-q61",
+  "kind": "multiple_choice",
+  "prompt": "What is the primary purpose of Transport Layer Security (TLS)?",
+  "options": [
+   "Encrypt email communications",
+   "Provide secure communication over the internet",
+   "Authenticate users during login",
+   "Detect unauthorized file access"
+  ],
+  "correctIndex": 1,
+  "explanation": "Answer: B) Provide secure communication over the internet"
+ },
+ {
+  "id": "test1-q62",
+  "kind": "multiple_choice",
+  "prompt": "Which of the following hashing algorithms is considered secure for modern cryptographic use?",
+  "options": [
+   "MD5",
+   "SHA-1",
+   "SHA-256",
+   "RC4"
+  ],
+  "correctIndex": 2,
+  "explanation": "Answer: C) SHA-256"
+ },
+ {
+  "id": "test1-q63",
+  "kind": "multiple_choice",
+  "prompt": "What is the key characteristic of symmetric encryption?",
+  "options": [
+   "It uses a single key for encryption and decryption",
+   "It relies on public-private key pairs",
+   "It provides digital signatures for data integrity",
+   "It supports blockchain operations"
+  ],
+  "correctIndex": 0,
+  "explanation": "Answer: A) It uses a single key for encryption and decryption"
+ },
+ {
+  "id": "test1-q64",
+  "kind": "multiple_choice",
+  "prompt": "Which cryptographic protocol is used to secure wireless communications under WPA3?",
+  "options": [
+   "Advanced Encryption Standard (AES)",
+   "Diffie-Hellman Key Exchange",
+   "RSA",
+   "Elliptic Curve Digital Signature Algorithm (ECDSA) 8"
+  ],
+  "correctIndex": 0,
+  "explanation": "Answer: A) Advanced Encryption Standard (AES)"
+ },
+ {
+  "id": "test1-q65",
+  "kind": "multiple_choice",
+  "prompt": "A user receives an email encrypted using a recipient's public key. What is required to decrypt it?",
+  "options": [
+   "Sender’s private key",
+   "Sender’s public key",
+   "Recipient’s private key",
+   "Recipient’s public key"
+  ],
+  "correctIndex": 2,
+  "explanation": "Answer: C) Recipient’s private key"
+ },
+ {
+  "id": "test1-q66",
+  "kind": "multiple_choice",
+  "prompt": "What is the primary function of a sandbox in malware analysis?",
+  "options": [
+   "Protect sensitive data from malware",
+   "Simulate an isolated environment to observe malware behavior",
+   "Prevent phishing attacks",
+   "Encrypt malware signatures"
+  ],
+  "correctIndex": 1,
+  "explanation": "Answer: B) Simulate an isolated environment to observe malware behavior"
+ },
+ {
+  "id": "test1-q67",
+  "kind": "multiple_choice",
+  "prompt": "Which technology enables secure communication between branch offices over the internet?",
+  "options": [
+   "VPN",
+   "Firewall",
+   "DNSSEC",
+   "SIEM"
+  ],
+  "correctIndex": 0,
+  "explanation": "Answer: A) VPN"
+ },
+ {
+  "id": "test1-q68",
+  "kind": "multiple_choice",
+  "prompt": "An organization implements geofencing to restrict access to certain resources. What type of access control is this?",
+  "options": [
+   "Role-based",
+   "Context-aware",
+   "Discretionary",
+   "Mandatory"
+  ],
+  "correctIndex": 1,
+  "explanation": "Answer: B) Context-aware"
+ },
+ {
+  "id": "test1-q69",
+  "kind": "multiple_choice",
+  "prompt": "Which type of firewall inspects traffic at the application layer?",
+  "options": [
+   "Packet-filtering firewall",
+   "Stateful firewall",
+   "Next-generation firewall (NGFW)",
+   "Circuit-level gateway"
+  ],
+  "correctIndex": 2,
+  "explanation": "Answer: C) Next-generation firewall (NGFW)"
+ },
+ {
+  "id": "test1-q70",
+  "kind": "multiple_choice",
+  "prompt": "What is the purpose of a Network Access Control (NAC) solution?",
+  "options": [
+   "Monitor and log network traffic",
+   "Ensure only compliant devices access the network",
+   "Detect and block phishing emails",
+   "Encrypt data transmitted over the network"
+  ],
+  "correctIndex": 1,
+  "explanation": "Answer: B) Ensure only compliant devices access the network"
+ },
+ {
+  "id": "test1-q71",
+  "kind": "multiple_choice",
+  "prompt": "What does the Sarbanes-Oxley Act (SOX) primarily address?",
+  "options": [
+   "Data breach notification requirements",
+   "Protection of financial records",
+   "Safeguarding health information",
+   "Cross-border data transfers"
+  ],
+  "correctIndex": 1,
+  "explanation": "Answer: B) Protection of financial records"
+ },
+ {
+  "id": "test1-q72",
+  "kind": "multiple_choice",
+  "prompt": "Which of the following is an example of risk avoidance?",
+  "options": [
+   "Purchasing cybersecurity insurance",
+   "Refusing to engage in high-risk activities",
+   "Mitigating risk through technical controls",
+   "Accepting residual risk"
+  ],
+  "correctIndex": 1,
+  "explanation": "Answer: B) Refusing to engage in high-risk activities"
+ },
+ {
+  "id": "test1-q73",
+  "kind": "multiple_choice",
+  "prompt": "Which organization publishes the OWASP Top Ten vulnerabilities?",
+  "options": [
+   "ISO",
+   "NIST",
+   "(ISC)²",
+   "Open Web Application Security Project"
+  ],
+  "correctIndex": 3,
+  "explanation": "Answer: D) Open Web Application Security Project"
+ },
+ {
+  "id": "test1-q74",
+  "kind": "multiple_choice",
+  "prompt": "What is the purpose of a Data Loss Prevention (DLP) solution?",
+  "options": [
+   "Encrypt data stored on servers",
+   "Prevent sensitive data from leaving the organization 9",
+   "Monitor user activity across the network",
+   "Enforce user access policies"
+  ],
+  "correctIndex": 1,
+  "explanation": "Answer: B) Prevent sensitive data from leaving the organization 9"
+ },
+ {
+  "id": "test1-q75",
+  "kind": "multiple_choice",
+  "prompt": "Which regulation requires encryption of patient health information to ensure confidentiality?",
+  "options": [
+   "GDPR",
+   "PCI DSS",
+   "HIPAA",
+   "FISMA"
+  ],
+  "correctIndex": 2,
+  "explanation": "Answer: C) HIPAA"
+ },
+ {
+  "id": "test1-q76",
+  "kind": "multiple_choice",
+  "prompt": "An analyst finds that multiple accounts were compromised due to weak passwords. What is the best remediation step?",
+  "options": [
+   "Implement account lockout policies",
+   "Require users to update passwords regularly",
+   "Deploy multi-factor authentication (MFA)",
+   "Conduct security awareness training"
+  ],
+  "correctIndex": 2,
+  "explanation": "Answer: C) Deploy multi-factor authentication (MFA)"
+ },
+ {
+  "id": "test1-q77",
+  "kind": "multiple_choice",
+  "prompt": "Which tool would you use to analyze malicious activity in system memory?",
+  "options": [
+   "Wireshark",
+   "Volatility",
+   "Nessus",
+   "Splunk"
+  ],
+  "correctIndex": 1,
+  "explanation": "Answer: B) Volatility"
+ },
+ {
+  "id": "test1-q78",
+  "kind": "multiple_choice",
+  "prompt": "During an incident, the security team disconnects an infected machine from the network. Which incident response step does this represent?",
+  "options": [
+   "Containment",
+   "Eradication",
+   "Recovery",
+   "Preparation"
+  ],
+  "correctIndex": 1,
+  "explanation": "Answer: B) Eradication"
+ },
+ {
+  "id": "test1-q79",
+  "kind": "multiple_choice",
+  "prompt": "Which log type is essential for identifying the source of unauthorized login attempts?",
+  "options": [
+   "Firewall logs",
+   "Security logs",
+   "Application logs",
+   "DNS logs"
+  ],
+  "correctIndex": 1,
+  "explanation": "Answer: B) Security logs"
+ },
+ {
+  "id": "test1-q80",
+  "kind": "multiple_choice",
+  "prompt": "What is the main purpose of a runbook in incident response?",
+  "options": [
+   "Document roles in the incident response team",
+   "Automate repetitive tasks during incidents",
+   "Provide detailed instructions for handling specific scenarios",
+   "Identify vulnerabilities in the network"
+  ],
+  "correctIndex": 2,
+  "explanation": "Answer: C) Provide detailed instructions for handling specific scenarios"
+ },
+ {
+  "id": "test1-q81",
+  "kind": "multiple_choice",
+  "prompt": "An attacker uses a fake access point to intercept sensitive information during a wireless session. What is this attack called?",
+  "options": [
+   "Evil twin",
+   "Rogue AP",
+   "Bluejacking",
+   "Packet sniffing"
+  ],
+  "correctIndex": 0,
+  "explanation": "Answer: A) Evil twin"
+ },
+ {
+  "id": "test1-q82",
+  "kind": "multiple_choice",
+  "prompt": "What type of malware modifies itself to avoid detection by antivirus software?",
+  "options": [
+   "Polymorphic malware",
+   "Rootkit",
+   "Spyware",
+   "Logic bomb"
+  ],
+  "correctIndex": 0,
+  "explanation": "Answer: A) Polymorphic malware"
+ },
+ {
+  "id": "test1-q83",
+  "kind": "multiple_choice",
+  "prompt": "An attacker gains access to a system by exploiting a weak API. What is the best preventive control?",
+  "options": [
+   "Implement input validation 10",
+   "Encrypt API traffic",
+   "Monitor API usage with a SIEM",
+   "Use TLS for all communications"
+  ],
+  "correctIndex": 0,
+  "explanation": "Answer: A) Implement input validation 10"
+ },
+ {
+  "id": "test1-q84",
+  "kind": "multiple_choice",
+  "prompt": "What technique involves sending malicious scripts to a trusted website that executes in the user's browser?",
+  "options": [
+   "Cross-site scripting (XSS)",
+   "SQL injection",
+   "Command injection",
+   "Buffer overflow"
+  ],
+  "correctIndex": 0,
+  "explanation": "Answer: A) Cross-site scripting (XSS)"
+ },
+ {
+  "id": "test1-q85",
+  "kind": "multiple_choice",
+  "prompt": "Which of the following would best protect against social engineering attacks?",
+  "options": [
+   "Enforcing strong password policies",
+   "Implementing email filtering solutions",
+   "Conducting regular employee awareness training",
+   "Deploying endpoint detection and response (EDR)"
+  ],
+  "correctIndex": 0,
+  "explanation": "Answer: A) Enforcing strong password policies"
+ },
+ {
+  "id": "test1-q86",
+  "kind": "multiple_choice",
+  "prompt": "Which cryptographic concept ensures that a sender cannot deny sending a message?",
+  "options": [
+   "Encryption",
+   "Non-repudiation",
+   "Integrity",
+   "Authentication"
+  ],
+  "correctIndex": 1,
+  "explanation": "Answer: B) Non-repudiation"
+ },
+ {
+  "id": "test1-q87",
+  "kind": "multiple_choice",
+  "prompt": "What is the purpose of perfect forward secrecy (PFS) in encryption protocols?",
+  "options": [
+   "Prevent the reuse of session keys",
+   "Ensure data confidentiality during transmission",
+   "Support large-scale certificate management",
+   "Detect unauthorized modifications"
+  ],
+  "correctIndex": 0,
+  "explanation": "Answer: A) Prevent the reuse of session keys"
+ },
+ {
+  "id": "test1-q88",
+  "kind": "multiple_choice",
+  "prompt": "A company needs to implement a secure email solution that verifies the sender's identity and ensures message integrity. Which protocol should they use?",
+  "options": [
+   "S/MIME",
+   "POP3",
+   "IMAP",
+   "SMTP"
+  ],
+  "correctIndex": 0,
+  "explanation": "Answer: A) S/MIME"
+ },
+ {
+  "id": "test1-q89",
+  "kind": "multiple_choice",
+  "prompt": "Which hashing algorithm is suitable for digitally signing documents?",
+  "options": [
+   "SHA-256",
+   "MD5",
+   "RC4",
+   "AES"
+  ],
+  "correctIndex": 0,
+  "explanation": "Answer: A) SHA-256"
+ },
+ {
+  "id": "test1-q90",
+  "kind": "multiple_choice",
+  "prompt": "What is the primary difference between block and stream ciphers?",
+  "options": [
+   "Block ciphers encrypt data in fixed-size chunks, while stream ciphers encrypt data bit by bit",
+   "Block ciphers use symmetric keys, and stream ciphers use asymmetric keys",
+   "Block ciphers are faster for real-time data encryption",
+   "Stream ciphers offer better support for file encryption"
+  ],
+  "correctIndex": 0,
+  "explanation": "Answer: A) Block ciphers encrypt data in fixed-size chunks, while stream ciphers encrypt data bit by bit"
+ },
+ {
+  "id": "test1-q91",
+  "kind": "multiple_choice",
+  "prompt": "What is the purpose of implementing software-defined networking (SDN) in a data center?",
+  "options": [
+   "Encrypt all network traffic",
+   "Centralize network control and improve flexibility",
+   "Prevent unauthorized access to physical devices",
+   "Deploy microservices securely"
+  ],
+  "correctIndex": 1,
+  "explanation": "Answer: B) Centralize network control and improve flexibility"
+ },
+ {
+  "id": "test1-q92",
+  "kind": "multiple_choice",
+  "prompt": "Which of the following technologies would best protect against man-in-the-middle attacks?",
+  "options": [
+   "TLS",
+   "DNSSEC",
+   "WPA2 11",
+   "SIEM"
+  ],
+  "correctIndex": 0,
+  "explanation": "Answer: A) TLS"
+ },
+ {
+  "id": "test1-q93",
+  "kind": "multiple_choice",
+  "prompt": "An organization is considering the zero-trust model. What is a key requirement for this framework?",
+  "options": [
+   "Implicit trust within internal networks",
+   "Continuous verification of identity and access",
+   "Relying solely on perimeter firewalls",
+   "Storing all data on-premises"
+  ],
+  "correctIndex": 1,
+  "explanation": "Answer: B) Continuous verification of identity and access"
+ },
+ {
+  "id": "test1-q94",
+  "kind": "multiple_choice",
+  "prompt": "What is the primary function of a proxy server in a secure network?",
+  "options": [
+   "Block malware downloads",
+   "Cache frequently accessed resources",
+   "Intercept and filter web traffic",
+   "Monitor network bandwidth usage"
+  ],
+  "correctIndex": 2,
+  "explanation": "Answer: C) Intercept and filter web traffic"
+ },
+ {
+  "id": "test1-q95",
+  "kind": "multiple_choice",
+  "prompt": "Which of the following is a benefit of using a load balancer in a web application environment?",
+  "options": [
+   "Enhance application availability and fault tolerance",
+   "Encrypt all web application traffic",
+   "Detect and block SQL injection attempts",
+   "Ensure compliance with GDPR"
+  ],
+  "correctIndex": 1,
+  "explanation": "Answer: B) Encrypt all web application traffic"
+ },
+ {
+  "id": "test1-q96",
+  "kind": "multiple_choice",
+  "prompt": "Which regulation is primarily concerned with protecting cardholder data?",
+  "options": [
+   "GDPR",
+   "HIPAA",
+   "PCI DSS",
+   "FISMA"
+  ],
+  "correctIndex": 2,
+  "explanation": "Answer: C) PCI DSS"
+ },
+ {
+  "id": "test1-q97",
+  "kind": "multiple_choice",
+  "prompt": "What is the goal of implementing a retention policy for sensitive data?",
+  "options": [
+   "Reduce storage costs",
+   "Limit access to data",
+   "Ensure data is kept for compliance purposes",
+   "Prevent unauthorized data transfers"
+  ],
+  "correctIndex": 2,
+  "explanation": "Answer: C) Ensure data is kept for compliance purposes"
+ },
+ {
+  "id": "test1-q98",
+  "kind": "multiple_choice",
+  "prompt": "Which framework emphasizes the assessment and improvement of cybersecurity maturity in critical infrastructure?",
+  "options": [
+   "ISO 27001",
+   "COBIT",
+   "NIST Cybersecurity Framework (CSF)",
+   "ITIL"
+  ],
+  "correctIndex": 2,
+  "explanation": "Answer: C) NIST Cybersecurity Framework (CSF)"
+ },
+ {
+  "id": "test1-q99",
+  "kind": "multiple_choice",
+  "prompt": "What is a common metric used in risk management to prioritize mitigation efforts?",
+  "options": [
+   "Recovery Point Objective (RPO)",
+   "Annualized Loss Expectancy (ALE)",
+   "Recovery Time Objective (RTO)",
+   "Residual Risk"
+  ],
+  "correctIndex": 1,
+  "explanation": "Answer: B) Annualized Loss Expectancy (ALE)"
+ },
+ {
+  "id": "test1-q100",
+  "kind": "multiple_choice",
+  "prompt": "An auditor is reviewing an organization’s compliance with HIPAA. Which of the following would most likely be assessed?",
+  "options": [
+   "Encryption of payment card information",
+   "Secure storage of health records",
+   "Implementation of firewall rules",
+   "Password complexity policies"
+  ],
+  "correctIndex": 1,
+  "explanation": "Answer: B) Secure storage of health records"
+ }
+]
