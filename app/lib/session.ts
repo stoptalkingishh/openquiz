@@ -284,3 +284,94 @@ export function buildQuestionSession(
         };
     });
 }
+
+// ---------------------------------------------------------------------------
+// Test mode: auto-generate a mixed test (multiple choice, true/false, written)
+// from a vocabulary list OR from a generic question quiz.
+// ---------------------------------------------------------------------------
+
+export function buildTestSession(
+    words: Word[] | undefined,
+    questions: QuizQuestion[] | undefined,
+    limit = 20
+): Question[] {
+    let built: Question[] = []
+
+    if (questions && questions.length) {
+        // Question quiz: pass through MC/TF, turn flashcards into written answers.
+        built = shuffle(questions).slice(0, limit).map(q => {
+            const base = { id: q.id, word: q.id }
+            if (q.kind === 'multiple_choice') {
+                return {
+                    ...base,
+                    type: 'generic_mc' as const,
+                    payload: {
+                        prompt: q.prompt,
+                        options: q.options || [],
+                        correctIndex: q.correctIndex ?? 0,
+                        explanation: q.explanation || ''
+                    }
+                }
+            }
+            if (q.kind === 'true_false') {
+                return {
+                    ...base,
+                    type: 'generic_tf' as const,
+                    payload: {
+                        prompt: q.prompt,
+                        correctAnswer: q.correctAnswer === true,
+                        explanation: q.explanation || ''
+                    }
+                }
+            }
+            return {
+                ...base,
+                type: 'generic_written' as const,
+                payload: {
+                    prompt: q.prompt,
+                    answer: q.answer || '',
+                    explanation: q.explanation || ''
+                }
+            }
+        })
+        return shuffle(built)
+    }
+
+    const list = words || []
+    if (!list.length) return []
+
+    const picked = shuffle(list).slice(0, limit)
+    picked.forEach(w => {
+        // Multiple choice: pick the word from its definition.
+        const distractors = shuffle(list.filter(x => x.word !== w.word))
+            .slice(0, 3)
+            .map(x => x.word)
+        const options = shuffle([w.word, ...distractors])
+
+        built.push({
+            id: `test-mc-${w.word}-${Date.now()}-${Math.random()}`,
+            word: w.word,
+            type: 'generic_mc',
+            payload: {
+                prompt: `Which word best matches: "${w.ru}"?`,
+                options,
+                correctIndex: options.indexOf(w.word),
+                explanation: ''
+            }
+        })
+
+        // Written: type the word from its definition.
+        built.push({
+            id: `test-written-${w.word}-${Date.now()}-${Math.random()}`,
+            word: w.word,
+            type: 'generic_written',
+            payload: {
+                prompt: `Type the word that means: "${w.ru}"`,
+                answer: w.word,
+                explanation: ''
+            }
+        })
+    })
+
+    return shuffle(built)
+}

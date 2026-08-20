@@ -1,13 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { X, AlertCircle } from 'lucide-react'
-import { buildSession, updateProgress, buildQuestionSession } from '../../lib/session'
+import { buildSession, updateProgress, buildQuestionSession, buildTestSession } from '../../lib/session'
 import { Word, Question, SessionMode, QuizQuestion } from '../../lib/satTypes'
 import QuestionCard from '../../components/QuestionCard'
 import { useAuth } from '../../contexts/AuthContext'
-import { getWordProgress, saveWordProgress, getCustomQuizById } from '../../lib/db'
+import { getWordProgress, saveWordProgress, getCustomQuizById, getQuizSetByPath, recordQuizSession } from '../../lib/db'
 import { useQuizStore } from '../../lib/quizStore'
 import { assetPath } from '../../lib/paths'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -25,6 +25,10 @@ export default function SessionModePage() {
     const [progress, setProgress] = useState<Record<string, any>>({})
     const [loading, setLoading] = useState(true)
     const [showExitConfirm, setShowExitConfirm] = useState(false)
+
+    const startTimeRef = useRef<number>(Date.now())
+    const correctCountRef = useRef(0)
+    const quizMetaRef = useRef<{ id: string; name: string }>({ id: selectedQuizPath, name: selectedQuizPath })
 
     useEffect(() => {
         if (!user) {
@@ -45,6 +49,7 @@ export default function SessionModePage() {
                 const quizId = selectedQuizPath.replace('/custom-quiz/', '')
                 const quiz = await getCustomQuizById(quizId)
                 if (!quiz) return { words: [] }
+                quizMetaRef.current = { id: quizId, name: quiz.name || quizId }
                 if (Array.isArray(quiz.questions) && quiz.questions.length) {
                     return { questions: quiz.questions }
                 }
@@ -52,9 +57,15 @@ export default function SessionModePage() {
             } else {
                 // Regular JSON file
                 const res = await fetch(assetPath(selectedQuizPath))
-                return { words: await res.json() }
+                const words = await res.json()
+                const official = await getQuizSetByPath(selectedQuizPath)
+                quizMetaRef.current = { id: selectedQuizPath, name: official?.name || selectedQuizPath.split('/').pop()?.replace('.json', '') || selectedQuizPath }
+                return { words }
             }
         }
+
+        startTimeRef.current = Date.now()
+        correctCountRef.current = 0
 
         Promise.all([
             loadQuizData(),
@@ -65,7 +76,9 @@ export default function SessionModePage() {
 
             if (quizData.questions && quizData.questions.length) {
                 // Question-based quiz: build directly from the manual questions.
-                const q = buildQuestionSession(mode, quizData.questions, progressData, Math.min(50, quizData.questions.length))
+                const q = mode === 'test'
+                    ? buildTestSession(undefined, quizData.questions, Math.min(20, quizData.questions.length))
+                    : buildQuestionSession(mode, quizData.questions, progressData, Math.min(50, quizData.questions.length))
                 setQuestions(q)
                 setLoading(false)
                 return
@@ -74,8 +87,11 @@ export default function SessionModePage() {
             // Build session with all words or reasonable limit
             // For learn mode: use all words to ensure full coverage
             // For other modes: use larger limit to avoid cycling
-            const sessionLimit = mode === 'learn' ? undefined : Math.min(50, (quizData.words || []).length)
-            const q = buildSession(mode, quizData.words || [], progressData, sessionLimit)
+            const wordsOrUndefined = quizData.words || []
+            const sessionLimit = mode === 'learn' ? undefined : Math.min(50, wordsOrUndefined.length)
+            const q = mode === 'test'
+                ? buildTestSession(wordsOrUndefined, undefined, 20)
+                : buildSession(mode, wordsOrUndefined, progressData, sessionLimit)
             setQuestions(q)
             setLoading(false)
         }).catch(err => {
@@ -84,11 +100,20 @@ export default function SessionModePage() {
         })
     }, [user, mode, router, selectedQuizPath])
 
+    const finishSession = (correct: number, total: number) => {
+        const elapsed = Math.round((Date.now() - startTimeRef.current) / 1000)
+        recordQuizSession(quizMetaRef.current.id, quizMetaRef.current.name, { correct, total, seconds: elapsed })
+            .catch(e => console.error('Failed to record session:', e))
+        router.push('/')
+    }
+
     const handleAnswer = async (correct: boolean) => {
         if (!user) return
 
         const currentQ = questions[index]
         const newProgress = updateProgress(progress[currentQ.word], correct, currentQ.word)
+
+        if (correct) correctCountRef.current += 1
 
         // Persist progress locally (cloud sync comes later)
         await saveWordProgress(user.id, currentQ.word, newProgress)
@@ -103,7 +128,7 @@ export default function SessionModePage() {
             setIndex(index + 1)
         } else {
             // Finish
-            router.push('/')
+            finishSession(correctCountRef.current, questions.length)
         }
     }
 

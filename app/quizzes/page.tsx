@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Sparkles, BookOpen, Check, Users, Play, Globe, Lock, Share2, Copy, Twitter, Facebook, MessageCircle, X } from 'lucide-react'
+import { Plus, Sparkles, BookOpen, Check, Users, Play, Globe, Lock, Share2, Copy, Twitter, Facebook, MessageCircle, X, Folder, FolderPlus, FolderOpen, Gamepad2, ClipboardList } from 'lucide-react'
 import BottomNav from '../components/BottomNav'
 import { useAuth } from '../contexts/AuthContext'
-import { getQuizSets, getCustomQuizzes, getPublicQuizzes, createCustomQuiz } from '../lib/db'
+import { getQuizSets, getCustomQuizzes, getPublicQuizzes, createCustomQuiz, getFolders, createFolder } from '../lib/db'
 import { useQuizStore } from '../lib/quizStore'
 import { assetPath, BASE_PATH } from '../lib/paths'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -16,7 +16,10 @@ export default function QuizzesPage() {
     const [quizSets, setQuizSets] = useState<any[]>([])
     const [customQuizzes, setCustomQuizzes] = useState<any[]>([])
     const [peerQuizzes, setPeerQuizzes] = useState<any[]>([])
+    const [folders, setFolders] = useState<any[]>([])
+    const [activeFolderId, setActiveFolderId] = useState<string | null>(null)
     const [showCreateModal, setShowCreateModal] = useState(false)
+    const [showFolderModal, setShowFolderModal] = useState(false)
     const [showShareModal, setShowShareModal] = useState(false)
     const [shareQuiz, setShareQuiz] = useState<any>(null)
     const [wordCounts, setWordCounts] = useState<Record<string, number>>({})
@@ -49,15 +52,17 @@ export default function QuizzesPage() {
         // Signed-in users only see their own quizzes — no pre-made content.
         const isGuest = user.id === 'guest'
 
-        const [sets, custom, peers] = await Promise.all([
+        const [sets, custom, peers, folderList] = await Promise.all([
             isGuest ? getQuizSets() : Promise.resolve<any[]>([]),
             getCustomQuizzes(user.id),
-            isGuest ? getPublicQuizzes(user.id) : Promise.resolve<any[]>([])
+            isGuest ? getPublicQuizzes(user.id) : Promise.resolve<any[]>([]),
+            getFolders()
         ])
 
         setQuizSets(sets)
         setCustomQuizzes(custom)
         setPeerQuizzes(peers)
+        setFolders(folderList)
 
         // Load word counts for all quiz sets
         const counts: Record<string, number> = {}
@@ -75,6 +80,15 @@ export default function QuizzesPage() {
         setSelectedQuizPath(filePath)
         router.push('/session/learn')
     }
+
+    const handlePlayMode = (path: string, mode: 'test' | 'match') => {
+        setSelectedQuizPath(path)
+        router.push(mode === 'test' ? '/session/test' : '/match')
+    }
+
+    const activeFolder = folders.find(f => f.id === activeFolderId) || null
+    const folderQuizIds = activeFolder?.quiz_ids || []
+    const visibleCustomQuizzes = activeFolderId ? customQuizzes.filter(q => folderQuizIds.includes(q.id)) : customQuizzes
 
     const handleShare = (quiz: any, isCustom: boolean = false) => {
         setShareQuiz({ ...quiz, isCustom })
@@ -158,6 +172,56 @@ export default function QuizzesPage() {
                     </button>
                 </div>
 
+                {/* Folders */}
+                <div>
+                    <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-lg font-bold text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
+                            <Folder className="w-5 h-5 text-primary" />
+                            Folders
+                        </h2>
+                        <button
+                            onClick={() => setShowFolderModal(true)}
+                            className="flex items-center gap-1 text-sm font-semibold text-primary hover:bg-primary/10 rounded-lg px-3 py-2 transition-colors"
+                        >
+                            <FolderPlus className="w-4 h-4" />
+                            New Folder
+                        </button>
+                    </div>
+                    {folders.length === 0 ? (
+                        <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                            Organize your custom quizzes into folders.
+                        </p>
+                    ) : (
+                        <div className="flex flex-wrap gap-2">
+                            <button
+                                onClick={() => setActiveFolderId(null)}
+                                className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all border-2 ${!activeFolderId
+                                        ? 'bg-primary/10 text-primary border-primary'
+                                        : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border-transparent hover:bg-neutral-200 dark:hover:bg-neutral-700'
+                                    }`}
+                            >
+                                All
+                            </button>
+                            {folders.map(f => (
+                                <button
+                                    key={f.id}
+                                    onClick={() => setActiveFolderId(activeFolderId === f.id ? null : f.id)}
+                                    className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all border-2 flex items-center gap-2 ${activeFolderId === f.id
+                                            ? 'bg-primary/10 text-primary border-primary'
+                                            : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border-transparent hover:bg-neutral-200 dark:hover:bg-neutral-700'
+                                        }`}
+                                >
+                                    {activeFolderId === f.id
+                                        ? <FolderOpen className="w-4 h-4" />
+                                        : <Folder className="w-4 h-4" />}
+                                    {f.name}
+                                    <span className="text-xs opacity-70">({f.quiz_ids.length})</span>
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
                 {/* Official Quiz Sets */}
                 <div>
                     <h2 className="text-lg font-bold text-neutral-900 dark:text-neutral-100 mb-4">Official Sets</h2>
@@ -217,6 +281,22 @@ export default function QuizzesPage() {
                                         >
                                             <Play className="w-4 h-4" />
                                             Start
+                                        </button>
+                                    </div>
+                                    <div className="mt-2 grid grid-cols-2 gap-2">
+                                        <button
+                                            onClick={() => handlePlayMode(set.file_path, 'test')}
+                                            className="py-2 rounded-xl text-sm font-semibold border-2 border-neutral-200 dark:border-neutral-700 hover:border-primary/50 transition-colors flex items-center justify-center gap-2"
+                                        >
+                                            <ClipboardList className="w-4 h-4" />
+                                            Test
+                                        </button>
+                                        <button
+                                            onClick={() => handlePlayMode(set.file_path, 'match')}
+                                            className="py-2 rounded-xl text-sm font-semibold border-2 border-neutral-200 dark:border-neutral-700 hover:border-primary/50 transition-colors flex items-center justify-center gap-2"
+                                        >
+                                            <Gamepad2 className="w-4 h-4" />
+                                            Match
                                         </button>
                                     </div>
                                 </div>
@@ -300,6 +380,22 @@ export default function QuizzesPage() {
                                                 Start
                                             </button>
                                         </div>
+                                        <div className="mt-2 grid grid-cols-2 gap-2">
+                                            <button
+                                                onClick={() => handlePlayMode(quizPath, 'test')}
+                                                className="py-2 rounded-xl text-sm font-semibold border-2 border-neutral-200 dark:border-neutral-700 hover:border-primary/50 transition-colors flex items-center justify-center gap-2"
+                                            >
+                                                <ClipboardList className="w-4 h-4" />
+                                                Test
+                                            </button>
+                                            <button
+                                                onClick={() => handlePlayMode(quizPath, 'match')}
+                                                className="py-2 rounded-xl text-sm font-semibold border-2 border-neutral-200 dark:border-neutral-700 hover:border-primary/50 transition-colors flex items-center justify-center gap-2"
+                                            >
+                                                <Gamepad2 className="w-4 h-4" />
+                                                Match
+                                            </button>
+                                        </div>
                                     </div>
                                 )
                             })}
@@ -309,11 +405,15 @@ export default function QuizzesPage() {
 
                 {/* Custom Quizzes */}
                 <div>
-                    <h2 className="text-lg font-bold text-neutral-900 dark:text-neutral-100 mb-4">My Custom Quizzes</h2>
-                    {customQuizzes.length === 0 ? (
+                    <h2 className="text-lg font-bold text-neutral-900 dark:text-neutral-100 mb-4">
+                        {activeFolder ? `${activeFolder.name} · ` : ''}My Custom Quizzes
+                    </h2>
+                    {visibleCustomQuizzes.length === 0 ? (
                         <div className="card text-center py-8">
                             <Sparkles className="w-12 h-12 text-neutral-300 dark:text-neutral-600 mx-auto mb-3" />
-                            <p className="text-neutral-500 dark:text-neutral-400">No custom quizzes yet</p>
+                            <p className="text-neutral-500 dark:text-neutral-400">
+                                {activeFolderId ? 'No quizzes in this folder yet' : 'No custom quizzes yet'}
+                            </p>
                             <button
                                 onClick={() => setShowCreateModal(true)}
                                 className="btn-primary mt-4 mx-auto"
@@ -323,7 +423,7 @@ export default function QuizzesPage() {
                         </div>
                     ) : (
                         <div className="grid gap-4 md:grid-cols-2">
-                            {customQuizzes.map((quiz) => {
+                            {visibleCustomQuizzes.map((quiz) => {
                                 const quizPath = `/custom-quiz/${quiz.id}`
                                 const isSelected = selectedQuizPath === quizPath
                                 
@@ -399,6 +499,22 @@ export default function QuizzesPage() {
                                                 Start
                                             </button>
                                         </div>
+                                        <div className="mt-2 grid grid-cols-2 gap-2">
+                                            <button
+                                                onClick={() => handlePlayMode(quizPath, 'test')}
+                                                className="py-2 rounded-xl text-sm font-semibold border-2 border-neutral-200 dark:border-neutral-700 hover:border-primary/50 transition-colors flex items-center justify-center gap-2"
+                                            >
+                                                <ClipboardList className="w-4 h-4" />
+                                                Test
+                                            </button>
+                                            <button
+                                                onClick={() => handlePlayMode(quizPath, 'match')}
+                                                className="py-2 rounded-xl text-sm font-semibold border-2 border-neutral-200 dark:border-neutral-700 hover:border-primary/50 transition-colors flex items-center justify-center gap-2"
+                                            >
+                                                <Gamepad2 className="w-4 h-4" />
+                                                Match
+                                            </button>
+                                        </div>
                                     </div>
                                 )
                             })}
@@ -408,6 +524,15 @@ export default function QuizzesPage() {
             </div>
 
             <AnimatePresence>
+                {showFolderModal && (
+                    <CreateFolderModal
+                        onClose={() => setShowFolderModal(false)}
+                        onCreated={async () => {
+                            setShowFolderModal(false)
+                            setFolders(await getFolders())
+                        }}
+                    />
+                )}
                 {showCreateModal && (
                     <CreateQuizModal
                         onClose={() => setShowCreateModal(false)}
@@ -440,6 +565,68 @@ function quizItemCount(quiz: any): number {
 
 function quizItemLabel(quiz: any): string {
     return Array.isArray(quiz.questions) && quiz.questions.length ? 'questions' : 'words'
+}
+
+function CreateFolderModal({ onClose, onCreated }: { onClose: () => void; onCreated: (folderId: string) => void }) {
+    const [name, setName] = useState('')
+    const [error, setError] = useState('')
+    const { user } = useAuth()
+
+    const handleCreate = async () => {
+        if (!user) return
+        if (!name.trim()) {
+            setError('Give your folder a name')
+            return
+        }
+        setError('')
+        const folder = await createFolder(user.id, name)
+        onCreated(folder.id)
+    }
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={onClose}
+                className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-white dark:bg-surface-dark rounded-3xl p-6 shadow-2xl relative z-10 max-w-sm w-full"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <h2 className="text-xl font-bold mb-4">New Folder</h2>
+                <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') handleCreate() }}
+                    className="input-field mb-4"
+                    placeholder="e.g., SAT Vocab, Biology, Spanish"
+                    autoFocus
+                />
+                {error && (
+                    <p className="text-sm text-error mb-4">{error}</p>
+                )}
+                <div className="flex gap-3">
+                    <button onClick={onClose} className="btn-outline flex-1">
+                        Cancel
+                    </button>
+                    <button
+                        onClick={handleCreate}
+                        disabled={!name.trim()}
+                        className="btn-primary flex-1 disabled:opacity-50"
+                    >
+                        Create
+                    </button>
+                </div>
+            </motion.div>
+        </div>
+    )
 }
 
 function CreateQuizModal({ onClose, onCreated }: { onClose: () => void, onCreated: () => void }) {

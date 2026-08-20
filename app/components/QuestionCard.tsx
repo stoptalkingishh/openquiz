@@ -26,6 +26,9 @@ export default function QuestionCard({ question, onAnswer }: QuestionCardProps) 
     if (question.type === 'generic_flashcard') {
         return <GenericFlashcardCard question={question} onAnswer={onAnswer} />
     }
+    if (question.type === 'generic_written') {
+        return <GenericWrittenCard question={question} onAnswer={onAnswer} />
+    }
     return <div>Unknown question type</div>
 }
 
@@ -588,6 +591,121 @@ function GenericFlashcardCard({ question, onAnswer }: QuestionCardProps) {
                     </button>
                 </motion.div>
             )}
+        </div>
+    )
+}
+
+function GenericWrittenCard({ question, onAnswer }: QuestionCardProps) {
+    const [value, setValue] = useState('')
+    const [submitted, setSubmitted] = useState(false)
+
+    const { prompt, answer, explanation } = question.payload
+
+    const normalize = (s: string) =>
+        s.toLowerCase().trim().replace(/[.,!?;:'"“”‘’()\[\]\/\\\-_]/g, '').replace(/\s+/g, ' ')
+
+    const handleSubmit = () => {
+        if (!value.trim()) return
+        setSubmitted(true)
+        const correct = normalize(value) === normalize(answer || '')
+        setTimeout(() => {
+            onAnswer(correct)
+        }, 3500)
+    }
+
+    return (
+        <div className="flex flex-col h-full max-w-3xl mx-auto w-full px-4">
+            <div className="flex-1 flex flex-col justify-center">
+                <div className="mb-6 text-center">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 dark:bg-primary/20 text-primary dark:text-primary-light rounded-full text-sm font-semibold">
+                        <BookOpen className="w-4 h-4" />
+                        Written Answer
+                    </div>
+                </div>
+
+                <div className="card p-8 mb-8 min-h-[160px] flex items-center justify-center">
+                    <p className="text-xl md:text-2xl font-medium leading-relaxed text-center text-neutral-800 dark:text-neutral-200">
+                        {prompt}
+                    </p>
+                </div>
+
+                <form
+                    onSubmit={(e) => {
+                        e.preventDefault()
+                        handleSubmit()
+                    }}
+                    className="space-y-3"
+                >
+                    <input
+                        type="text"
+                        value={value}
+                        onChange={(e) => setValue(e.target.value)}
+                        disabled={submitted}
+                        autoFocus={!submitted}
+                        placeholder="Type your answer..."
+                        className="input-field text-lg py-4"
+                    />
+                    {!submitted && (
+                        <button
+                            type="submit"
+                            disabled={!value.trim()}
+                            className="w-full btn-primary h-14 text-lg font-bold disabled:opacity-50"
+                        >
+                            Check Answer
+                        </button>
+                    )}
+                </form>
+            </div>
+
+            <AnimatePresence>
+                {submitted && (
+                    <motion.div
+                        initial={{ y: 100, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        exit={{ y: 100, opacity: 0 }}
+                        className={`fixed bottom-0 left-0 right-0 p-6 z-50 border-t-4 ${normalize(value) === normalize(answer || '')
+                                ? 'bg-secondary/10 dark:bg-secondary/20 border-secondary dark:border-secondary-light backdrop-blur-xl'
+                                : 'bg-error/10 dark:bg-error/20 border-error dark:border-error-light backdrop-blur-xl'
+                            }`}
+                    >
+                        <div className="max-w-3xl mx-auto">
+                            <div className="flex items-start gap-4">
+                                <div className={`p-3 rounded-full flex-shrink-0 ${normalize(value) === normalize(answer || '')
+                                        ? 'bg-secondary dark:bg-secondary-dark'
+                                        : 'bg-error dark:bg-error-dark'
+                                    }`}>
+                                    {normalize(value) === normalize(answer || '') ? (
+                                        <Check className="w-6 h-6 text-white" />
+                                    ) : (
+                                        <X className="w-6 h-6 text-white" />
+                                    )}
+                                </div>
+                                <div className="flex-1">
+                                    <h3 className={`font-bold text-xl mb-2 ${normalize(value) === normalize(answer || '')
+                                            ? 'text-secondary-dark dark:text-secondary-light'
+                                            : 'text-error-dark dark:text-error-light'
+                                        }`}>
+                                        {normalize(value) === normalize(answer || '') ? 'Correct!' : 'Incorrect'}
+                                    </h3>
+
+                                    {normalize(value) !== normalize(answer || '') && (
+                                        <p className="text-neutral-700 dark:text-neutral-300 font-medium mb-3">
+                                            The correct answer is: <span className="font-bold text-neutral-900 dark:text-neutral-100">{answer}</span>
+                                        </p>
+                                    )}
+
+                                    {explanation && (
+                                        <div className="p-4 bg-white/50 dark:bg-neutral-800/50 rounded-xl">
+                                            <span className="text-sm font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wide">Explanation</span>
+                                            <p className="text-base font-semibold text-neutral-900 dark:text-neutral-100 mt-1">{explanation}</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     )
 }

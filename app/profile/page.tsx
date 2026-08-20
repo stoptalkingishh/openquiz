@@ -2,16 +2,17 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { LogOut, Mail, Calendar } from 'lucide-react'
+import { LogOut, Mail, Calendar, History, Trophy } from 'lucide-react'
 import BottomNav from '../components/BottomNav'
 import { useAuth } from '../contexts/AuthContext'
-import { getStreak, getDailyStats } from '../lib/db'
+import { getStreak, getDailyStats, getRecentActivity } from '../lib/db'
 
 export default function ProfilePage() {
     const { user, signOut } = useAuth()
     const router = useRouter()
     const [streak, setStreak] = useState(0)
     const [stats, setStats] = useState<any>(null)
+    const [recent, setRecent] = useState<any[]>([])
 
     useEffect(() => {
         if (!user) {
@@ -21,6 +22,7 @@ export default function ProfilePage() {
 
         getStreak(user.id).then(setStreak)
         getDailyStats(user.id).then(setStats)
+        getRecentActivity(8).then(setRecent)
     }, [user, router])
 
     const handleSignOut = async () => {
@@ -71,6 +73,34 @@ export default function ProfilePage() {
                         <div className="text-sm text-gray-500 dark:text-gray-400">Words Today</div>
                     </div>
                 </div>
+
+                {recent.length > 0 && (
+                    <div className="card">
+                        <h2 className="font-bold text-lg mb-4 flex items-center gap-2">
+                            <History className="w-5 h-5 text-primary" />
+                            Recent Study
+                        </h2>
+                        <div className="space-y-3">
+                            {recent.map((entry, i) => (
+                                <div key={i} className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                        <Trophy className="w-5 h-5 text-primary" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="font-semibold text-sm truncate">{entry.quizName}</p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                                            {new Date(entry.date).toLocaleDateString()} · {entry.correct}/{entry.total}
+                                            {entry.seconds ? ` · ${Math.round(entry.seconds / 60)}m` : ''}
+                                        </p>
+                                    </div>
+                                    <div className="text-sm font-bold text-secondary">
+                                        {entry.total ? Math.round((entry.correct / entry.total) * 100) : 0}%
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
 
                 <button
                     onClick={handleSignOut}

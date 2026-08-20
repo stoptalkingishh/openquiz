@@ -1,4 +1,4 @@
-import { WordProgress, QuizQuestion } from './satTypes'
+import { WordProgress, QuizQuestion, Folder, QuizStats } from './satTypes'
 import { assetPath } from './paths'
 import { isDriveConfigured, readDriveFile, writeDriveFile, getDriveUser } from './drive'
 
@@ -17,10 +17,14 @@ import { isDriveConfigured, readDriveFile, writeDriveFile, getDriveUser } from '
 const PROGRESS_KEY = 'oquiz:progress'
 const CUSTOM_QUIZZES_KEY = 'oquiz:custom_quizzes'
 const DAILY_STATS_KEY = 'oquiz:daily_stats'
+const FOLDERS_KEY = 'oquiz:folders'
+const QUIZ_STATS_KEY = 'oquiz:quiz_stats'
 
 const PROGRESS_FILE = 'progress.json'
 const CUSTOM_QUIZZES_FILE = 'custom_quizzes.json'
 const DAILY_STATS_FILE = 'daily_stats.json'
+const FOLDERS_FILE = 'folders.json'
+const QUIZ_STATS_FILE = 'quiz_stats.json'
 
 const MANIFEST_PATH = '/sat/quiz-sets.json'
 
@@ -288,6 +292,163 @@ export async function getStreak(userId: string): Promise<number> {
 }
 
 // ---------------------------------------------------------------------------
+// Folders (organize quizzes)
+// ---------------------------------------------------------------------------
+
+export async function getFolders(): Promise<Folder[]> {
+    const local = readJson<Folder[]>(FOLDERS_KEY, [])
+
+    if (isCloudActive()) {
+        const remote = await readDriveFile<Folder[]>(FOLDERS_FILE)
+        if (remote) return remote
+    }
+
+    return local
+}
+
+export async function createFolder(userId: string, name: string): Promise<Folder> {
+    const folder: Folder = {
+        id: typeof crypto !== 'undefined' && 'randomUUID' in crypto
+            ? crypto.randomUUID()
+            : `folder-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+        user_id: userId,
+        name: name.trim(),
+        quiz_ids: [],
+        created_at: new Date().toISOString()
+    }
+
+    const all = await getFolders()
+    all.push(folder)
+    writeJson(FOLDERS_KEY, all)
+
+    if (isCloudActive()) {
+        await writeDriveFile(FOLDERS_FILE, all)
+    }
+
+    return folder
+}
+
+export async function renameFolder(folderId: string, name: string) {
+    const all = readJson<Folder[]>(FOLDERS_KEY, []).map(f =>
+        f.id === folderId ? { ...f, name: name.trim() } : f
+    )
+    writeJson(FOLDERS_KEY, all)
+
+    if (isCloudActive()) {
+        const remote = (await readDriveFile<Folder[]>(FOLDERS_FILE)) || []
+        await writeDriveFile(FOLDERS_FILE, remote.map(f =>
+            f.id === folderId ? { ...f, name: name.trim() } : f
+        ))
+    }
+}
+
+export async function deleteFolder(folderId: string) {
+    const all = readJson<Folder[]>(FOLDERS_KEY, []).filter(f => f.id !== folderId)
+    writeJson(FOLDERS_KEY, all)
+
+    if (isCloudActive()) {
+        const remote = (await readDriveFile<Folder[]>(FOLDERS_FILE)) || []
+        await writeDriveFile(FOLDERS_FILE, remote.filter(f => f.id !== folderId))
+    }
+}
+
+export async function setQuizInFolder(folderId: string | null, quizId: string) {
+    const all = readJson<Folder[]>(FOLDERS_KEY, []).map(f => {
+        const has = f.quiz_ids.includes(quizId)
+        if (f.id === folderId && !has) return { ...f, quiz_ids: [...f.quiz_ids, quizId] }
+        if (f.id !== folderId && has) return { ...f, quiz_ids: f.quiz_ids.filter(id => id !== quizId) }
+        return f
+    })
+    writeJson(FOLDERS_KEY, all)
+
+    if (isCloudActive()) {
+        const remote = (await readDriveFile<Folder[]>(FOLDERS_FILE)) || []
+        await writeDriveFile(FOLDERS_FILE, remote.map(f => {
+            const has = f.quiz_ids.includes(quizId)
+            if (f.id === folderId && !has) return { ...f, quiz_ids: [...f.quiz_ids, quizId] }
+            if (f.id !== folderId && has) return { ...f, quiz_ids: f.quiz_ids.filter(id => id !== quizId) }
+            return f
+        }))
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Per-quiz study stats and history
+// ---------------------------------------------------------------------------
+
+export async function getQuizStats(quizId: string): Promise<QuizStats | null> {
+    const local = readJson<Record<string, QuizStats>>(QUIZ_STATS_KEY, {})
+
+    if (isCloudActive()) {
+        const remote = await readDriveFile<Record<string, QuizStats>>(QUIZ_STATS_FILE)
+        if (remote?.[quizId]) return remote[quizId]
+    }
+
+    return local[quizId] || null
+}
+
+export async function recordQuizSession(
+    quizId: string,
+    quizName: string,
+    result: { correct: number; total: number; seconds?: number }
+): Promise<void> {
+    if (quizId === 'guest' || !result.total) return
+
+    const now = new Date().toISOString()
+    const all = readJson<Record<string, QuizStats>>(QUIZ_STATS_KEY, {})
+    const existing = all[quizId]
+    const accuracy = Math.round((result.correct / result.total) * 100)
+
+    const stats: QuizStats = {
+        plays: (existing?.plays || 0) + 1,
+        bestCorrect: Math.max(existing?.bestCorrect || 0, result.correct),
+        bestAccuracy: Math.max(existing?.bestAccuracy || 0, accuracy),
+        lastStudied: now,
+        quizName,
+        history: [
+            ...(existing?.history || []),
+            {
+                date: now,
+                correct: result.correct,
+                total: result.total,
+                seconds: result.seconds
+            }
+        ].slice(-30)
+    }
+
+    all[quizId] = stats
+    writeJson(QUIZ_STATS_KEY, all)
+
+    if (isCloudActive()) {
+        const remote = (await readDriveFile<Record<string, QuizStats>>(QUIZ_STATS_FILE)) || {}
+        remote[quizId] = stats
+        await writeDriveFile(QUIZ_STATS_FILE, remote)
+    }
+}
+
+export async function getRecentActivity(limit = 10): Promise<{ quizId: string; quizName: string; correct: number; total: number; seconds?: number; date: string }[]> {
+    const all = readJson<Record<string, QuizStats>>(QUIZ_STATS_KEY, {})
+    if (!Object.keys(all).length && isCloudActive()) {
+        const remote = await readDriveFile<Record<string, QuizStats>>(QUIZ_STATS_FILE)
+        if (remote) {
+            const merged = { ...all, ...remote }
+            return flattenActivity(merged).slice(0, limit)
+        }
+    }
+    return flattenActivity(all).slice(0, limit)
+}
+
+function flattenActivity(all: Record<string, QuizStats>) {
+    const entries: { quizId: string; quizName: string; correct: number; total: number; seconds?: number; date: string }[] = []
+    for (const [quizId, stats] of Object.entries(all)) {
+        for (const h of stats.history || []) {
+            entries.push({ quizId, quizName: stats.quizName, correct: h.correct, total: h.total, seconds: h.seconds, date: h.date })
+        }
+    }
+    return entries.sort((a, b) => b.date.localeCompare(a.date))
+}
+
+// ---------------------------------------------------------------------------
 // One-time migration of guest (localStorage) data into the user's Drive
 // account. Called after a successful sign-in. Drive always wins on conflict.
 // ---------------------------------------------------------------------------
@@ -321,6 +482,23 @@ export async function syncLocalToCloud(): Promise<boolean> {
         const mergedStats = { ...localStats, ...remoteStats }
         if (Object.keys(localStats).length || Object.keys(remoteStats).length) {
             await writeDriveFile(DAILY_STATS_FILE, mergedStats)
+        }
+
+        // Folders: Drive wins by id.
+        const localFolders = readJson<Folder[]>(FOLDERS_KEY, [])
+        const remoteFolders = (await readDriveFile<Folder[]>(FOLDERS_FILE)) || []
+        const remoteFolderIds = new Set(remoteFolders.map(f => f.id))
+        const mergedFolders = [...remoteFolders, ...localFolders.filter(f => !remoteFolderIds.has(f.id))]
+        if (remoteFolders.length || localFolders.length) {
+            await writeDriveFile(FOLDERS_FILE, mergedFolders)
+        }
+
+        // Quiz stats: Drive wins per quiz id.
+        const localQuizStats = readJson<Record<string, QuizStats>>(QUIZ_STATS_KEY, {})
+        const remoteQuizStats = (await readDriveFile<Record<string, QuizStats>>(QUIZ_STATS_FILE)) || {}
+        const mergedQuizStats = { ...localQuizStats, ...remoteQuizStats }
+        if (Object.keys(localQuizStats).length || Object.keys(remoteQuizStats).length) {
+            await writeDriveFile(QUIZ_STATS_FILE, mergedQuizStats)
         }
 
         return true

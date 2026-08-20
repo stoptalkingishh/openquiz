@@ -34,7 +34,8 @@ export type QuestionType =
   | "sat_cloze"
   | "generic_mc"
   | "generic_tf"
-  | "generic_flashcard";
+  | "generic_flashcard"
+  | "generic_written";
 
 export interface Question {
   id: string;
@@ -44,7 +45,7 @@ export interface Question {
   payload: any;
 }
 
-export type SessionMode = 'learn' | 'drill' | 'exam' | 'mistakes';
+export type SessionMode = 'learn' | 'drill' | 'exam' | 'mistakes' | 'test';
 
 export interface DailyProgress {
   date: string;
@@ -147,4 +148,35 @@ export interface CustomQuiz {
   is_public: boolean;
   author_name: string | null;
   created_at: string;
+}
+
+// ---------------------------------------------------------------------------
+// Quizlet-style organizing and study stats
+// ---------------------------------------------------------------------------
+
+/** A folder that groups any quizzes together. */
+export interface Folder {
+  id: string;
+  user_id: string;
+  name: string;
+  quiz_ids: string[];
+  created_at: string;
+}
+
+/** One finished study session (any mode). */
+export interface QuizSessionRecord {
+  date: string;
+  correct: number;
+  total: number;
+  seconds?: number;
+}
+
+/** Aggregated stats for a single quiz (keyed by quiz id). */
+export interface QuizStats {
+  plays: number;
+  bestCorrect: number;
+  bestAccuracy: number;
+  lastStudied: string;
+  quizName: string;
+  history: QuizSessionRecord[];
 }

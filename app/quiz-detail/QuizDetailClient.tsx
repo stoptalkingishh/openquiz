@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Play, BookOpen, Globe, Lock, Share2, Copy, Users, Check } from 'lucide-react'
-import { getCustomQuizById, getQuizSetByPath } from '../lib/db'
+import { ArrowLeft, Play, BookOpen, Globe, Lock, Share2, Copy, Users, Check, Gamepad2, ClipboardList, Folder, FolderPlus, Trophy } from 'lucide-react'
+import { getCustomQuizById, getQuizSetByPath, getFolders, setQuizInFolder, createFolder, getQuizStats } from '../lib/db'
 import { useQuizStore } from '../lib/quizStore'
 import { useAuth } from '../contexts/AuthContext'
 import { assetPath } from '../lib/paths'
@@ -21,6 +21,10 @@ export default function QuizDetailClient() {
     const [loading, setLoading] = useState(true)
     const [showShareModal, setShowShareModal] = useState(false)
     const [expandedWord, setExpandedWord] = useState<string | null>(null)
+    const [folders, setFolders] = useState<any[]>([])
+    const [stats, setStats] = useState<any>(null)
+    const [showFolderPicker, setShowFolderPicker] = useState(false)
+    const [newFolderName, setNewFolderName] = useState('')
 
     useEffect(() => {
         if (!quizId && !pathParam) {
@@ -29,6 +33,15 @@ export default function QuizDetailClient() {
         }
         loadQuiz()
     }, [quizId, pathParam, router])
+
+    useEffect(() => {
+        getFolders().then(setFolders)
+    }, [])
+
+    useEffect(() => {
+        if (!quiz) return
+        getQuizStats(quiz.isCustom ? quizId || '' : quiz.file_path || '').then(setStats)
+    }, [quiz, quizId])
 
     useEffect(() => {
         if (quiz && quiz.name) {
@@ -77,6 +90,31 @@ export default function QuizDetailClient() {
             setSelectedQuizPath(quiz.file_path)
         }
         router.push('/session/learn')
+    }
+
+    const handlePlayMode = (mode: 'test' | 'match') => {
+        if (quiz.isCustom) {
+            setSelectedQuizPath(`/custom-quiz/${quizId}`)
+        } else if (quiz.file_path) {
+            setSelectedQuizPath(quiz.file_path)
+        }
+        router.push(mode === 'test' ? '/session/test' : '/match')
+    }
+
+    const quizStorageId = quiz.isCustom ? (quizId || '') : (quiz.file_path || '')
+
+    const handleFolderSelect = async (folderId: string | null) => {
+        await setQuizInFolder(folderId, quizStorageId)
+        setShowFolderPicker(false)
+        setFolders(await getFolders())
+    }
+
+    const handleCreateFolder = async () => {
+        if (!newFolderName.trim() || !user) return
+        const fresh = await createFolder(user.id, newFolderName.trim())
+        setNewFolderName('')
+        setFolders(await getFolders())
+        if (fresh) await handleFolderSelect(fresh.id)
     }
 
     const encodeShareData = () => {
@@ -232,22 +270,112 @@ function kindLabel(kind: string): string {
                         </div>
 
                         {/* Action Buttons */}
-                        <div className="flex gap-3">
+                        <div className="grid grid-cols-2 gap-3">
                             <button
                                 onClick={() => setShowShareModal(true)}
-                                className="flex-1 py-3 px-4 bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 rounded-xl hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors flex items-center justify-center gap-2 font-semibold"
+                                className="py-3 px-4 bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 rounded-xl hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors flex items-center justify-center gap-2 font-semibold"
                             >
                                 <Share2 className="w-5 h-5" />
-                                Share Quiz
+                                Share
+                            </button>
+                            <button
+                                onClick={() => handlePlayMode('test')}
+                                className="py-3 px-4 bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 rounded-xl hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors flex items-center justify-center gap-2 font-semibold"
+                            >
+                                <ClipboardList className="w-5 h-5" />
+                                Test
+                            </button>
+                            <button
+                                onClick={() => handlePlayMode('match')}
+                                className="py-3 px-4 bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 rounded-xl hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors flex items-center justify-center gap-2 font-semibold"
+                            >
+                                <Gamepad2 className="w-5 h-5" />
+                                Match
                             </button>
                             <button
                                 onClick={handleStart}
-                                className="flex-1 btn-primary py-3 px-4 flex items-center justify-center gap-2 text-lg"
+                                className="py-3 px-4 btn-primary flex items-center justify-center gap-2 text-lg"
                             >
                                 <Play className="w-5 h-5" />
-                                Start Learning
+                                Learn
                             </button>
                         </div>
+
+                        {/* Folder picker (custom quizzes only) */}
+                        {quiz.isCustom && (
+                            <div className="mt-4">
+                                <button
+                                    onClick={() => setShowFolderPicker(v => !v)}
+                                    className="w-full flex items-center justify-between px-4 py-3 bg-neutral-100 dark:bg-neutral-800 rounded-xl hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+                                >
+                                    <span className="flex items-center gap-2 font-semibold text-neutral-700 dark:text-neutral-300">
+                                        <Folder className="w-5 h-5" />
+                                        {folders.find(f => (f.quiz_ids || []).includes(quizStorageId))?.name || 'No folder'}
+                                    </span>
+                                    <FolderPlus className="w-5 h-5 text-neutral-400" />
+                                </button>
+
+                                {showFolderPicker && (
+                                    <div className="mt-2 p-3 bg-neutral-50 dark:bg-neutral-900 rounded-xl space-y-2">
+                                        <button
+                                            onClick={() => handleFolderSelect(null)}
+                                            className="w-full text-left px-3 py-2 rounded-lg text-sm font-semibold text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors"
+                                        >
+                                            No folder
+                                        </button>
+                                        {folders.map(f => (
+                                            <button
+                                                key={f.id}
+                                                onClick={() => handleFolderSelect(f.id)}
+                                                className="w-full text-left px-3 py-2 rounded-lg text-sm font-semibold text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors flex items-center gap-2"
+                                            >
+                                                <Folder className="w-4 h-4" />
+                                                {f.name}
+                                                {(f.quiz_ids || []).includes(quizStorageId) && (
+                                                    <Check className="w-4 h-4 text-secondary ml-auto" />
+                                                )}
+                                            </button>
+                                        ))}
+                                        <div className="flex gap-2 pt-2 border-t-2 border-neutral-200 dark:border-neutral-700">
+                                            <input
+                                                type="text"
+                                                value={newFolderName}
+                                                onChange={(e) => setNewFolderName(e.target.value)}
+                                                onKeyDown={(e) => { if (e.key === 'Enter') handleCreateFolder() }}
+                                                placeholder="New folder name..."
+                                                className="input-field flex-1 py-2 text-sm"
+                                            />
+                                            <button
+                                                onClick={handleCreateFolder}
+                                                disabled={!newFolderName.trim()}
+                                                className="btn-primary px-4 py-2 text-sm disabled:opacity-50"
+                                            >
+                                                Add
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Study stats */}
+                        {stats && (
+                            <div className="mt-4 grid grid-cols-3 gap-3">
+                                <div className="card text-center py-3">
+                                    <Trophy className="w-5 h-5 text-secondary mx-auto mb-1" />
+                                    <div className="text-xl font-bold">{stats.plays}</div>
+                                    <div className="text-xs text-neutral-500 dark:text-neutral-400">Studied</div>
+                                </div>
+                                <div className="card text-center py-3">
+                                    <div className="text-xl font-bold">{stats.bestAccuracy}%</div>
+                                    <div className="text-xs text-neutral-500 dark:text-neutral-400">Best accuracy</div>
+                                </div>
+                                <div className="card text-center py-3">
+                                    <div className="text-xl font-bold">{stats.bestCorrect}</div>
+                                    <div className="text-xs text-neutral-500 dark:text-neutral-400">Best score</div>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Content List */}

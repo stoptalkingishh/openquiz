@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Dumbbell, Brain, Award, AlertCircle, ChevronRight, LogOut } from 'lucide-react'
+import { Dumbbell, Brain, Award, AlertCircle, ChevronRight, LogOut, ClipboardList, Gamepad2 } from 'lucide-react'
 import Header from './components/Header'
 import BottomNav from './components/BottomNav'
 import { Word } from './lib/satTypes'
@@ -92,6 +92,11 @@ export default function Home() {
     router.push('/auth')
   }
 
+  // Signed-in (non-guest) users never run pre-made sets, so their mode cards
+  // point at the quizzes page where they pick one of their own quizzes.
+  const modeBase = user && user.id !== 'guest' ? '/quizzes' : null
+  const modeHref = (path: string) => (modeBase ? modeBase : path)
+
   if (authLoading || loading || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background-light dark:bg-background-dark">
@@ -147,28 +152,40 @@ export default function Home() {
 
         {/* Modes */}
         <div className="grid grid-cols-2 gap-4">
-          <Link href="/session/learn" className="card hover:border-primary/50 transition-all group flex flex-col items-center text-center hover:shadow-glow">
+          <Link href={modeHref('/session/learn')} className="card hover:border-primary/50 transition-all group flex flex-col items-center text-center hover:shadow-glow">
             <Brain className="w-10 h-10 text-primary mb-3 group-hover:scale-110 transition-transform" />
             <h3 className="font-bold text-lg">Learn</h3>
             <p className="text-sm text-gray-400">New words</p>
           </Link>
 
-          <Link href="/session/drill" className="card hover:border-secondary/50 transition-all group flex flex-col items-center text-center hover:shadow-glow">
+          <Link href={modeHref('/session/drill')} className="card hover:border-secondary/50 transition-all group flex flex-col items-center text-center hover:shadow-glow">
             <Dumbbell className="w-10 h-10 text-secondary mb-3 group-hover:scale-110 transition-transform" />
             <h3 className="font-bold text-lg">Drill</h3>
             <p className="text-sm text-gray-400">Practice</p>
           </Link>
 
-          <Link href="/session/exam" className="card hover:border-accent/50 transition-all group flex flex-col items-center text-center hover:shadow-glow">
+          <Link href={modeHref('/session/exam')} className="card hover:border-accent/50 transition-all group flex flex-col items-center text-center hover:shadow-glow">
             <Award className="w-10 h-10 text-accent mb-3 group-hover:scale-110 transition-transform" />
             <h3 className="font-bold text-lg">Exam</h3>
             <p className="text-sm text-gray-400">Test yourself</p>
           </Link>
 
-          <Link href="/session/mistakes" className="card hover:border-warning/50 transition-all group flex flex-col items-center text-center hover:shadow-glow">
+          <Link href={modeHref('/session/mistakes')} className="card hover:border-warning/50 transition-all group flex flex-col items-center text-center hover:shadow-glow">
             <AlertCircle className="w-10 h-10 text-warning mb-3 group-hover:scale-110 transition-transform" />
             <h3 className="font-bold text-lg">Mistakes</h3>
             <p className="text-sm text-gray-400">Fix errors</p>
+          </Link>
+
+          <Link href={modeHref('/session/test')} className="card hover:border-secondary/50 transition-all group flex flex-col items-center text-center hover:shadow-glow">
+            <ClipboardList className="w-10 h-10 text-secondary mb-3 group-hover:scale-110 transition-transform" />
+            <h3 className="font-bold text-lg">Test</h3>
+            <p className="text-sm text-gray-400">Mixed questions</p>
+          </Link>
+
+          <Link href={modeHref('/match')} className="card hover:border-accent/50 transition-all group flex flex-col items-center text-center hover:shadow-glow">
+            <Gamepad2 className="w-10 h-10 text-accent mb-3 group-hover:scale-110 transition-transform" />
+            <h3 className="font-bold text-lg">Match</h3>
+            <p className="text-sm text-gray-400">Speed game</p>
           </Link>
         </div>
 
@@ -189,8 +206,8 @@ export default function Home() {
 
         {/* Continue Session */}
         <div className="fixed bottom-24 left-6 right-6 z-30">
-          <Link href="/session/learn" className="block w-full btn-primary shadow-xl animate-bounce-short text-center">
-            Continue Session
+          <Link href={modeHref('/session/learn')} className="block w-full btn-primary shadow-xl animate-bounce-short text-center">
+            {user.id === 'guest' ? 'Continue Session' : 'Choose a Quiz'}
           </Link>
         </div>
       </main>
