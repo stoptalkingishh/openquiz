@@ -2,12 +2,11 @@
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import Image from 'next/image'
 import { motion } from 'framer-motion'
 import { ShieldCheck, HardDrive } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { isDriveConfigured } from '../lib/drive'
-import { assetPath } from '../lib/paths'
+import Logo from '../components/Logo'
 
 export default function AuthPage() {
     const { signInWithGoogle, user, loading } = useAuth()
@@ -48,21 +47,12 @@ export default function AuthPage() {
                         initial={{ scale: 0, rotate: -180 }}
                         animate={{ scale: 1, rotate: 0 }}
                         transition={{ type: 'spring', delay: 0.2, stiffness: 200 }}
-                        className="inline-flex items-center justify-center w-24 h-24 bg-white/10 backdrop-blur-sm rounded-2xl mb-4 shadow-2xl border-2 border-white/20 p-3"
+                        className="inline-flex items-center justify-center w-24 h-24 bg-white/10 backdrop-blur-sm rounded-2xl mb-4 shadow-2xl border-2 border-white/20 p-2"
                     >
-                        <div className="relative w-full h-full">
-                            <Image
-                                src={assetPath('/sat/logo.png')}
-                                alt="SAT Vocabulary Logo"
-                                fill
-                                className="object-contain drop-shadow-lg"
-                                priority
-                                sizes="96px"
-                            />
-                        </div>
+                        <Logo className="w-full h-full" />
                     </motion.div>
-                    <h1 className="text-4xl font-extrabold text-white mb-2">SAT Vocabulary</h1>
-                    <p className="text-blue-100 text-lg font-medium">Master words. Ace the test.</p>
+                    <h1 className="text-4xl font-extrabold text-white mb-2">OpenQuiz</h1>
+                    <p className="text-blue-100 text-lg font-medium">Learn. Master.</p>
                 </div>
 
                 {/* Auth card */}

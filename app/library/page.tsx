@@ -79,8 +79,9 @@ export default function LibraryPage() {
     })
 
     return (
-        <div className="min-h-screen pb-24 bg-background-light dark:bg-background-dark dark:bg-stars">
-            <div className="sticky top-0 z-30 bg-white dark:bg-surface-dark border-b-2 border-gray-200 dark:border-white/10 p-4 space-y-4 backdrop-blur-xl bg-opacity-90 dark:bg-opacity-90">
+        <div className="min-h-screen pb-40 bg-background-light dark:bg-background-dark dark:bg-stars">
+            <div className="sticky top-0 z-30 bg-white/90 dark:bg-surface-dark/90 border-b-2 border-gray-200 dark:border-white/10 p-4 space-y-4 backdrop-blur-xl">
+                <div className="max-w-2xl mx-auto space-y-4">
                 <h1 className="text-xl font-extrabold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
                     Library
                 </h1>
@@ -115,9 +116,10 @@ export default function LibraryPage() {
                         </button>
                     ))}
                 </div>
+                </div>
             </div>
 
-            <div className="p-4 space-y-2">
+            <div className="mx-auto max-w-2xl p-4 space-y-2">
                 {words.length === 0 && (
                     <div className="card text-center py-8">
                         <p className="text-neutral-500 dark:text-neutral-400">

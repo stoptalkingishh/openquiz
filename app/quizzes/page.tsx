@@ -151,7 +151,7 @@ export default function QuizzesPage() {
     const shareToSocial = (platform: 'twitter' | 'facebook' | 'telegram', quiz: any) => {
         const url = getShareUrl(quiz)
         // Get proper quiz name - use name from database or fallback
-        const quizName = quiz.name || (quiz.file_path ? `SAT Vocabulary Set ${quiz.file_path.split('/').pop()?.replace('.json', '') || ''}` : 'SAT Vocabulary Quiz')
+        const quizName = quiz.name || (quiz.file_path ? `OpenQuiz Set` : 'OpenQuiz Quiz')
         const text = `Check out this SAT vocabulary quiz: ${quizName}`
         const encodedUrl = encodeURIComponent(url)
         const encodedText = encodeURIComponent(text)

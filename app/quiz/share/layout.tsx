@@ -1,19 +1,17 @@
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'SAT Vocabulary Quiz | Share',
-  description: 'Practice SAT vocabulary words with spaced repetition. Master words, ace the test.',
+  title: 'Share a Quiz | OpenQuiz',
+  description: 'Study, practice and share quizzes on OpenQuiz — free pre-made sets, flashcards, simulations and match games.',
   openGraph: {
-    title: 'SAT Vocabulary Quiz',
-    description: 'Practice SAT vocabulary words with spaced repetition.',
-    images: ['/sat/logo.png'],
+    title: 'Shared Quiz | OpenQuiz',
+    description: 'Someone shared a quiz with you on OpenQuiz. Learn · Master.',
     type: 'website',
   },
   twitter: {
     card: 'summary',
-    title: 'SAT Vocabulary Quiz',
-    description: 'Practice SAT vocabulary words with spaced repetition.',
-    images: ['/sat/logo.png'],
+    title: 'Shared Quiz | OpenQuiz',
+    description: 'Someone shared a quiz with you on OpenQuiz. Learn · Master.',
   },
 }
 
@@ -24,5 +22,3 @@ export default function QuizShareLayout({
 }) {
   return <>{children}</>
 }
-
-

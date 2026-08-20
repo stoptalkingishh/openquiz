@@ -4,31 +4,43 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Home, Library, BookOpen, User } from 'lucide-react'
 
+const TABS = [
+    { href: '/', label: 'Home', icon: Home },
+    { href: '/library', label: 'Library', icon: BookOpen },
+    { href: '/quizzes', label: 'Quizzes', icon: Library },
+    { href: '/profile', label: 'Profile', icon: User },
+]
+
 export default function BottomNav() {
     const pathname = usePathname()
-
-    const isActive = (path: string) => pathname === path
+    const isExact = (path: string) => pathname === path || (path !== '/' && pathname.startsWith(`${path}/`))
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-surface-dark border-t-2 border-gray-200 dark:border-gray-700 pb-safe pt-2 px-6 z-50">
-            <div className="flex justify-between items-center max-w-md mx-auto">
-                <Link href="/" className={`tab-item ${isActive('/') ? 'active' : ''}`}>
-                    <Home className="w-6 h-6 mb-1" />
-                    <span className="text-xs font-bold uppercase">Home</span>
-                </Link>
-                <Link href="/library" className={`tab-item ${isActive('/library') ? 'active' : ''}`}>
-                    <BookOpen className="w-6 h-6 mb-1" />
-                    <span className="text-xs font-bold uppercase">Library</span>
-                </Link>
-                <Link href="/quizzes" className={`tab-item ${isActive('/quizzes') ? 'active' : ''}`}>
-                    <Library className="w-6 h-6 mb-1" />
-                    <span className="text-xs font-bold uppercase">Quizzes</span>
-                </Link>
-                <Link href="/profile" className={`tab-item ${isActive('/profile') ? 'active' : ''}`}>
-                    <User className="w-6 h-6 mb-1" />
-                    <span className="text-xs font-bold uppercase">Profile</span>
-                </Link>
+        <nav
+            aria-label="Primary"
+            className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-md px-2 pb-safe"
+        >
+            <div className="rounded-2xl bg-white/90 dark:bg-surface-dark/90 backdrop-blur-xl border border-neutral-200/80 dark:border-neutral-700/80 shadow-lg shadow-black/10 dark:shadow-black/40 flex items-center justify-around py-1.5">
+                {TABS.map(tab => {
+                    const active = isExact(tab.href)
+                    const Icon = tab.icon
+                    return (
+                        <Link
+                            key={tab.href}
+                            href={tab.href}
+                            className={`flex flex-1 flex-col items-center gap-0.5 rounded-xl px-1 py-1.5 transition-colors ${active
+                                    ? 'text-primary dark:text-primary-light bg-primary/10'
+                                    : 'text-neutral-500 dark:text-neutral-400 hover:text-primary dark:hover:text-primary-light'
+                                }`}
+                        >
+                            <Icon className="w-5 h-5" strokeWidth={active ? 2.4 : 2} />
+                            <span className={`text-[10px] font-bold uppercase tracking-wide ${active ? 'text-primary dark:text-primary-light' : ''}`}>
+                                {tab.label}
+                            </span>
+                        </Link>
+                    )
+                })}
             </div>
-        </div>
+        </nav>
     )
 }

@@ -7,7 +7,7 @@ import { useQuizStore } from '../../lib/quizStore'
 import { useAuth } from '../../contexts/AuthContext'
 import { getQuizSetByPath, getCustomQuizzes, createCustomQuiz } from '../../lib/db'
 import { assetPath } from '../../lib/paths'
-import Image from 'next/image'
+import Logo from '../../components/Logo'
 
 interface SharedQuiz {
     name: string
@@ -44,16 +44,16 @@ export default function QuizShareClient() {
     // Update document title and meta tags
     useEffect(() => {
         if (quizName) {
-            document.title = `${quizName} | SAT Vocabulary`
+            document.title = `${quizName} | OpenQuiz`
 
             // Update meta description
             const metaDescription = document.querySelector('meta[name="description"]')
             if (metaDescription) {
-                metaDescription.setAttribute('content', `${quizName} - Practice ${words.length} SAT vocabulary words with spaced repetition.`)
+                metaDescription.setAttribute('content', `${quizName} - Practice on OpenQuiz.`)
             } else {
                 const meta = document.createElement('meta')
                 meta.name = 'description'
-                meta.content = `${quizName} - Practice ${words.length} SAT vocabulary words with spaced repetition.`
+                meta.content = `${quizName} - Practice on OpenQuiz.`
                 document.head.appendChild(meta)
             }
         }
@@ -95,7 +95,7 @@ export default function QuizShareClient() {
                     const pathParts = normalizedPath.split('/')
                     const fileName = pathParts[pathParts.length - 1].replace('.json', '')
                     const setNumber = fileName.match(/\d+/)?.[0] || fileName
-                    nameToUse = `SAT Vocabulary - Set ${setNumber}`
+                    nameToUse = `OpenQuiz Set`
                 }
 
                 setQuizName(nameToUse)
@@ -187,23 +187,15 @@ export default function QuizShareClient() {
                 <div className="max-w-2xl mx-auto">
                     <div className="card mb-6">
                         <div className="flex items-center gap-4 mb-6">
-                            <div className="relative w-16 h-16 flex-shrink-0 rounded-xl bg-gradient-to-br from-primary/10 to-secondary/10 p-2 shadow-sm border border-primary/20 dark:border-primary/30">
-                                <div className="relative w-full h-full rounded-lg overflow-hidden">
-                                    <Image
-                                        src="/sat/logo.png"
-                                        alt="Logo"
-                                        fill
-                                        className="object-contain drop-shadow-sm"
-                                        sizes="64px"
-                                    />
-                                </div>
+                            <div className="w-16 h-16 flex-shrink-0 rounded-xl bg-gradient-to-br from-primary/10 to-secondary/10 p-1.5 shadow-sm border border-primary/20 dark:border-primary/30">
+                                <Logo className="w-full h-full" />
                             </div>
                             <div className="flex-1">
                                 <h1 className="text-3xl font-extrabold text-neutral-900 dark:text-neutral-100 mb-2">
                                     {quizName}
                                 </h1>
                                 <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                                    {authorName ? `Shared by ${authorName}` : 'Official SAT Vocabulary Set'}
+                                    {authorName ? `Shared by ${authorName}` : 'Official OpenQuiz Set'}
                                 </p>
                                 {description && (
                                     <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-1">

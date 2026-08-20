@@ -6,7 +6,7 @@ import { ArrowLeft, Play, BookOpen, Globe, Lock, Share2, Copy, Users, Check, Gam
 import { getCustomQuizById, getQuizSetByPath, getFolders, setQuizInFolder, createFolder, getQuizStats, loadOfficialQuiz, deleteCustomQuiz } from '../lib/db'
 import { useQuizStore } from '../lib/quizStore'
 import { useAuth } from '../contexts/AuthContext'
-import Image from 'next/image'
+import Logo from '../components/Logo'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export default function QuizDetailClient() {
@@ -44,7 +44,7 @@ export default function QuizDetailClient() {
 
     useEffect(() => {
         if (quiz && quiz.name) {
-            document.title = `${quiz.name} | SAT Vocabulary`
+            document.title = `${quiz.name} | OpenQuiz`
         }
     }, [quiz])
 
@@ -231,16 +231,8 @@ function kindLabel(kind: string): string {
                     {/* Quiz Header Card */}
                     <div className="card">
                         <div className="flex items-start gap-4 mb-6">
-                            <div className="relative w-20 h-20 flex-shrink-0 rounded-xl bg-gradient-to-br from-primary/10 to-secondary/10 p-2 shadow-sm border border-primary/20 dark:border-primary/30">
-                                <div className="relative w-full h-full rounded-lg overflow-hidden">
-                                    <Image
-                                        src="/sat/logo.png"
-                                        alt="Logo"
-                                        fill
-                                        className="object-contain drop-shadow-sm"
-                                        sizes="80px"
-                                    />
-                                </div>
+                            <div className="w-20 h-20 flex-shrink-0 rounded-xl bg-gradient-to-br from-primary/10 to-secondary/10 p-1.5 shadow-sm border border-primary/20 dark:border-primary/30">
+                                <Logo className="w-full h-full" />
                             </div>
                             <div className="flex-1">
                                 <div className="flex items-start justify-between mb-2">

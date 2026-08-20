@@ -4,8 +4,8 @@ import { AuthProvider } from './contexts/AuthContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 
 export const metadata: Metadata = {
-  title: 'SAT Vocabulary - Master words. Ace the test.',
-  description: 'Premium SAT vocabulary training with spaced repetition.',
+  title: 'OpenQuiz - Learn | Master',
+  description: 'Make and master quizzes with free pre-made sets, flashcards, simulations and match games.',
 }
 
 export default function RootLayout({

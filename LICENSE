@@ -1,0 +1,41 @@
+MIT License
+
+Copyright (c) 2024-present OpenQuiz contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+COMMERCIAL USE
+
+The MIT License above applies to the OpenQuiz source code ("the Software") and
+explicitly permits the copyright holder(s) to use, license, and SELL access to
+the Software — including offering the app as a hosted/saas product, charging
+for features, or licensing it commercially. Third parties may also use and
+sell the code under MIT, in keeping with the open-source grant.
+
+If you want a formal, mutually-exclusive commercial license (e.g. for a closed
+or white-label deployment, or to reserve exclusive rights), contact the
+maintainers. Openness does not restrict the owner's right to commercialize;
+it only guarantees the code can never be taken away from the community, and
+anyone who receives a copy can use it freely.
+
+Third-party content (quiz sets, practice tests, flashcards) included in this
+repository is licensed separately by its original authors and is attributed
+in THIRD-PARTY-NOTICES.md.

@@ -3,10 +3,10 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import Image from 'next/image'
 import { Dumbbell, Brain, Award, AlertCircle, ChevronRight, LogOut, ClipboardList, Gamepad2 } from 'lucide-react'
 import Header from './components/Header'
 import BottomNav from './components/BottomNav'
+import Logo from './components/Logo'
 import { Word } from './lib/satTypes'
 import { useAuth } from './contexts/AuthContext'
 import { getWordProgress, getStreak, getCustomQuizzes } from './lib/db'
@@ -104,20 +104,20 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen pb-24 bg-background-light dark:bg-background-dark dark:bg-stars">
+    <div className="min-h-screen pb-36 bg-background-light dark:bg-background-dark dark:bg-stars">
       <Header streak={streak} />
 
-      <main className="p-6 space-y-8">
+      <main className="max-w-6xl mx-auto p-4 sm:p-6 space-y-8">
         {/* Progress Card */}
-        <div className="bg-gradient-to-br from-primary to-secondary rounded-3xl p-6 text-white shadow-glow relative overflow-hidden">
+        <div className="bg-gradient-to-br from-primary via-primary to-secondary rounded-3xl p-6 sm:p-8 text-white shadow-glow relative overflow-hidden">
           <div className="relative z-10">
             <div className="flex justify-between items-end mb-4">
               <div>
-                <p className="text-purple-100 font-bold text-sm uppercase mb-1">Daily Goal</p>
-                <h2 className="text-3xl font-extrabold">{masteredCount} / 40</h2>
+                <p className="text-white/80 font-bold text-sm uppercase mb-1">Daily Goal</p>
+                <h2 className="text-3xl sm:text-4xl font-extrabold">{masteredCount} / 40</h2>
               </div>
               <div className="text-right">
-                <p className="text-purple-100 font-bold text-sm uppercase mb-1">Sprint</p>
+                <p className="text-white/80 font-bold text-sm uppercase mb-1">Sprint</p>
                 <p className="font-bold">4 days left</p>
               </div>
             </div>
@@ -131,15 +131,9 @@ export default function Home() {
           </div>
 
           {/* Logo decoration */}
-          <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-15 dark:opacity-10">
-            <div className="relative w-40 h-40">
-              <Image
-                src={assetPath('/sat/logo.png')}
-                alt="Logo"
-                fill
-                className="object-contain drop-shadow-2xl"
-                sizes="160px"
-              />
+          <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-15 dark:opacity-10 hidden sm:block">
+            <div className="w-40 h-40">
+              <Logo className="w-full h-full" />
             </div>
           </div>
 
@@ -149,7 +143,7 @@ export default function Home() {
         </div>
 
         {/* Modes */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
           <Link href={modeHref('/session/learn')} className="card hover:border-primary/50 transition-all group flex flex-col items-center text-center hover:shadow-glow">
             <Brain className="w-10 h-10 text-primary mb-3 group-hover:scale-110 transition-transform" />
             <h3 className="font-bold text-lg">Learn</h3>
@@ -189,7 +183,7 @@ export default function Home() {
 
         {/* Today's Focus */}
         <div>
-          <h3 className="font-bold text-gray-400 uppercase text-sm mb-4">Today&apos;s Focus</h3>
+          <h3 className="font-bold text-neutral-500 dark:text-neutral-400 uppercase text-sm mb-4">Today&apos;s Focus</h3>
           <div className="flex flex-wrap gap-2">
             {words.slice(0, 5).map(w => (
               <div key={w.word} className="px-4 py-2 bg-white dark:bg-surface-dark border-2 border-gray-200 dark:border-white/10 rounded-xl font-bold text-gray-700 dark:text-gray-300">
@@ -200,13 +194,6 @@ export default function Home() {
               View all <ChevronRight className="w-4 h-4" />
             </Link>
           </div>
-        </div>
-
-        {/* Continue Session */}
-        <div className="fixed bottom-24 left-6 right-6 z-30">
-          <Link href={modeHref('/session/learn')} className="block w-full btn-primary shadow-xl animate-bounce-short text-center">
-            {user.id === 'guest' ? 'Continue Session' : 'Choose a Quiz'}
-          </Link>
         </div>
       </main>
 

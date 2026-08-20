@@ -144,4 +144,37 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
+  /* Safe-area inset helper for fixed bottom bars on mobile */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* Shadow glow used on primary CTAs and cards */
+  .shadow-glow {
+    box-shadow: 0 8px 30px rgba(0, 102, 204, 0.28);
+  }
+  .dark .shadow-glow {
+    box-shadow: 0 8px 30px rgba(0, 102, 204, 0.35);
+  }
+
+  /* Subtle animated bounce for floating CTAs */
+  .animate-bounce-short {
+    animation: bounce-short 1.6s ease-in-out infinite;
+  }
+  @keyframes bounce-short {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+  }
+
+  /* Starry background for dark mode page heroes */
+  .dark .bg-stars {
+    background-color: #0F172A;
+    background-image:
+      radial-gradient(1.5px 1.5px at 20% 30%, rgba(255,255,255,0.25), transparent),
+      radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,0.2), transparent),
+      radial-gradient(1.5px 1.5px at 85% 20%, rgba(255,255,255,0.18), transparent),
+      radial-gradient(1px 1px at 40% 90%, rgba(255,255,255,0.15), transparent),
+      radial-gradient(1px 1px at 75% 55%, rgba(255,255,255,0.12), transparent);
+  }
 }
