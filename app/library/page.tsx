@@ -8,7 +8,7 @@ import WordModal from '../components/WordModal'
 import { Word } from '../lib/satTypes'
 import { AnimatePresence } from 'framer-motion'
 import { useAuth } from '../contexts/AuthContext'
-import { getWordProgress } from '../lib/db'
+import { getWordProgress, getCustomQuizzes } from '../lib/db'
 import { assetPath } from '../lib/paths'
 
 export default function LibraryPage() {
@@ -26,10 +26,30 @@ export default function LibraryPage() {
             return
         }
 
-        fetch(assetPath('/sat/1.json'))
-            .then(res => res.json())
-            .then(setWords)
+        const loadWords = async (): Promise<Word[]> => {
+            // Signed-in users only see words from their own quizzes.
+            if (user.id !== 'guest') {
+                const quizzes = await getCustomQuizzes(user.id)
+                const seen = new Set<string>()
+                const collected: Word[] = []
+                for (const quiz of quizzes) {
+                    if (!Array.isArray(quiz.words) || !quiz.words.length) continue
+                    for (const w of quiz.words) {
+                        if (w?.word && !seen.has(w.word)) {
+                            seen.add(w.word)
+                            collected.push(w)
+                        }
+                    }
+                }
+                return collected
+            }
 
+            // Guests get the pre-made official SAT set.
+            const res = await fetch(assetPath('/sat/1.json'))
+            return res.json()
+        }
+
+        loadWords().then(setWords)
         getWordProgress(user.id).then(setProgress)
     }, [user, router])
 
@@ -50,6 +70,11 @@ export default function LibraryPage() {
                 <h1 className="text-xl font-extrabold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
                     Library
                 </h1>
+                {user?.id !== 'guest' && (
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                        Your vocabulary from your quizzes
+                    </p>
+                )}
 
                 <div className="relative">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -79,6 +104,15 @@ export default function LibraryPage() {
             </div>
 
             <div className="p-4 space-y-2">
+                {words.length === 0 && (
+                    <div className="card text-center py-8">
+                        <p className="text-neutral-500 dark:text-neutral-400">
+                            {user?.id !== 'guest'
+                                ? 'No vocabulary found yet. Create a vocabulary quiz to see your words here.'
+                                : 'No words found'}
+                        </p>
+                    </div>
+                )}
                 {filteredWords.map(w => {
                     const status: 'new' | 'learning' | 'mastered' = (progress[w.word]?.status || 'new') as 'new' | 'learning' | 'mastered'
                     const statusColorMap: Record<'new' | 'learning' | 'mastered', string> = {

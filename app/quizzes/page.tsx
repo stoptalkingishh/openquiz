@@ -46,10 +46,13 @@ export default function QuizzesPage() {
     const loadQuizzes = async () => {
         if (!user) return
 
+        // Signed-in users only see their own quizzes — no pre-made content.
+        const isGuest = user.id === 'guest'
+
         const [sets, custom, peers] = await Promise.all([
-            getQuizSets(),
+            isGuest ? getQuizSets() : Promise.resolve<any[]>([]),
             getCustomQuizzes(user.id),
-            getPublicQuizzes(user.id)
+            isGuest ? getPublicQuizzes(user.id) : Promise.resolve<any[]>([])
         ])
 
         setQuizSets(sets)

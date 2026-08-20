@@ -9,7 +9,7 @@ import Header from './components/Header'
 import BottomNav from './components/BottomNav'
 import { Word } from './lib/satTypes'
 import { useAuth } from './contexts/AuthContext'
-import { getWordProgress, getStreak } from './lib/db'
+import { getWordProgress, getStreak, getCustomQuizzes } from './lib/db'
 import { useQuizStore } from './lib/quizStore'
 import { assetPath } from './lib/paths'
 
@@ -31,24 +31,47 @@ export default function Home() {
   useEffect(() => {
     if (!user) return
 
-    // Load words from selected quiz
-    if (selectedQuizPath) {
-      fetch(assetPath(selectedQuizPath))
-        .then(res => {
-          if (!res.ok) throw new Error('Failed to fetch quiz')
-          return res.json()
-        })
-        .then(data => {
-          setWords(data)
-          setLoading(false)
-        })
-        .catch(error => {
-          console.error('Error loading quiz:', error)
-          setLoading(false)
-        })
-    } else {
-      setLoading(false)
+    const loadPreviewWords = async () => {
+      // Signed-in users: gather words from their own quizzes only.
+      if (user.id !== 'guest') {
+        const quizzes = await getCustomQuizzes(user.id)
+        const seen = new Set<string>()
+        const collected: Word[] = []
+        for (const quiz of quizzes) {
+          if (!Array.isArray(quiz.words) || !quiz.words.length) continue
+          for (const w of quiz.words) {
+            if (w?.word && !seen.has(w.word)) {
+              seen.add(w.word)
+              collected.push(w)
+            }
+          }
+        }
+        setWords(collected)
+        setLoading(false)
+        return
+      }
+
+      // Guests preview the selected pre-made quiz.
+      if (selectedQuizPath) {
+        fetch(assetPath(selectedQuizPath))
+          .then(res => {
+            if (!res.ok) throw new Error('Failed to fetch quiz')
+            return res.json()
+          })
+          .then(data => {
+            setWords(data)
+            setLoading(false)
+          })
+          .catch(error => {
+            console.error('Error loading quiz:', error)
+            setLoading(false)
+          })
+      } else {
+        setLoading(false)
+      }
     }
+
+    loadPreviewWords()
 
     // Load progress
     getWordProgress(user.id).then(progress => {

@@ -32,6 +32,12 @@ export default function SessionModePage() {
             return
         }
 
+        // Signed-in users only run quizzes they own — never pre-made/official sets.
+        if (user.id !== 'guest' && !selectedQuizPath.startsWith('/custom-quiz/')) {
+            router.push('/quizzes')
+            return
+        }
+
         // Load words and progress
         const loadQuizData = async (): Promise<{ words?: Word[]; questions?: QuizQuestion[] }> => {
             // Check if it's a custom quiz (starts with /custom-quiz/)
