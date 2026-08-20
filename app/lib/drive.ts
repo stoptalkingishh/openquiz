@@ -22,7 +22,7 @@ declare global {
 const CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ''
 const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_API_KEY || ''
 
-const SCOPE = 'https://www.googleapis.com/auth/drive.file'
+const SCOPE = 'openid email profile https://www.googleapis.com/auth/drive.file'
 const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'
 const FOLDER_NAME = 'OpenQuiz'
 
@@ -42,6 +42,7 @@ let initialized = false
 let currentToken: string | null = null
 let currentUser: DriveUser | null = null
 let driveReady: Promise<boolean> | null = null
+let lastIdToken: string | null = null
 
 // ---------------------------------------------------------------------------
 // Script / client loading
@@ -103,6 +104,7 @@ function requestToken(prompt: 'consent' | ''): Promise<string> {
             scope: SCOPE,
             callback: (response: any) => {
                 if (response?.access_token) {
+                    lastIdToken = response.id_token || null
                     resolve(response.access_token)
                 } else {
                     reject(new Error(response?.error_description || response?.error || 'Google sign-in failed'))
@@ -116,13 +118,21 @@ function requestToken(prompt: 'consent' | ''): Promise<string> {
     })
 }
 
-async function fetchProfile(token: string): Promise<DriveUser> {
-    const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-        headers: { Authorization: `Bearer ${token}` }
-    })
-    if (!res.ok) throw new Error('Failed to fetch Google profile')
-    const info = await res.json()
+/**
+ * Decode the `id_token` Google returns alongside the access token. It contains
+ * sub/email/name/picture, so we never need the (scope-gated) userinfo endpoint.
+ */
+function profileFromIdToken(idToken: string): DriveUser | null {
+    try {
+        const [, payload] = idToken.split('.')
+        const json = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')))
+        return toDriveUser(json)
+    } catch {
+        return null
+    }
+}
 
+function toDriveUser(info: { sub?: string; email?: string; name?: string; picture?: string }): DriveUser {
     const joinedKey = `oquiz:joined_${info.sub}`
     let joined = ''
     try {
@@ -136,12 +146,26 @@ async function fetchProfile(token: string): Promise<DriveUser> {
     }
 
     return {
-        id: info.sub,
+        id: info.sub || 'google-user',
         email: info.email || '',
         name: info.name || info.email?.split('@')[0] || 'User',
         picture: info.picture || '',
         created_at: joined
     }
+}
+
+async function fetchProfile(token: string): Promise<DriveUser> {
+    if (lastIdToken) {
+        const fromIdToken = profileFromIdToken(lastIdToken)
+        if (fromIdToken) return fromIdToken
+    }
+
+    const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: { Authorization: `Bearer ${token}` }
+    })
+    if (!res.ok) throw new Error('Failed to fetch Google profile')
+    const info = await res.json()
+    return toDriveUser(info)
 }
 
 // ---------------------------------------------------------------------------
