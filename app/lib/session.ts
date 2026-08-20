@@ -1,4 +1,4 @@
-import { Word, WordProgress, Question, SessionMode } from './satTypes';
+import { Word, WordProgress, Question, SessionMode, QuizQuestion } from './satTypes';
 
 // Helper to shuffle array
 function shuffle<T>(array: T[]): T[] {
@@ -217,4 +217,70 @@ function makeSatClozeQuestion(word: Word, allWords: Word[]): Question {
             }
         }
     };
+}
+
+// ---------------------------------------------------------------------------
+// Generic (manual) quiz questions → session questions
+// ---------------------------------------------------------------------------
+
+export function buildQuestionSession(
+    mode: SessionMode,
+    questions: QuizQuestion[],
+    progressMap: Record<string, WordProgress>,
+    limit?: number
+): Question[] {
+    let list: QuizQuestion[] = [...questions];
+
+    if (mode === 'mistakes') {
+        list = list.filter(q => {
+            const p = progressMap[q.id];
+            return p && (p.wrongStreak || 0) > 0;
+        });
+        if (list.length === 0) return [];
+    }
+
+    if (limit !== undefined) {
+        list = list.slice(0, limit);
+    }
+
+    return shuffle(list).map(q => {
+        const base = {
+            id: q.id,
+            word: q.id,
+        };
+
+        if (q.kind === 'multiple_choice') {
+            return {
+                ...base,
+                type: 'generic_mc' as const,
+                payload: {
+                    prompt: q.prompt,
+                    options: q.options || [],
+                    correctIndex: q.correctIndex ?? 0,
+                    explanation: q.explanation || ''
+                }
+            };
+        }
+        if (q.kind === 'true_false') {
+            return {
+                ...base,
+                type: 'generic_tf' as const,
+                payload: {
+                    prompt: q.prompt,
+                    correctAnswer: q.correctAnswer === true,
+                    explanation: q.explanation || ''
+                }
+            };
+        }
+        // flashcard
+        return {
+            ...base,
+            type: 'generic_flashcard' as const,
+            payload: {
+                prompt: q.prompt,
+                answer: q.answer || '',
+                explanation: q.explanation || ''
+            }
+        };
+    });
 }

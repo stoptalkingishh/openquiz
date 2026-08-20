@@ -31,7 +31,10 @@ export type QuestionType =
   | "recall"
   | "simple_usage"
   | "contrast"
-  | "sat_cloze";
+  | "sat_cloze"
+  | "generic_mc"
+  | "generic_tf"
+  | "generic_flashcard";
 
 export interface Question {
   id: string;
@@ -115,3 +118,33 @@ export interface MistakesSession {
 
 // Union type for all sessions
 export type Session = LearnSession | DrillSession | ExamSession | MistakesSession;
+
+// ---------------------------------------------------------------------------
+// Generic (manual) quizzes — any subject, not just vocabulary
+// ---------------------------------------------------------------------------
+
+export type QuizQuestionKind = 'multiple_choice' | 'true_false' | 'flashcard';
+
+export interface QuizQuestion {
+  id: string;
+  kind: QuizQuestionKind;
+  prompt: string;
+  options?: string[];      // for multiple_choice
+  correctIndex?: number;   // for multiple_choice
+  correctAnswer?: boolean; // for true_false
+  answer?: string;         // answer shown for flashcard (and optional explanation)
+  explanation?: string;    // optional explanation shown after answering (MC/TF)
+}
+
+/** A custom quiz: either a vocabulary list (`words`) or generic questions (`questions`). */
+export interface CustomQuiz {
+  id: string;
+  user_id: string;
+  name: string;
+  description: string;
+  words?: Word[];
+  questions?: QuizQuestion[];
+  is_public: boolean;
+  author_name: string | null;
+  created_at: string;
+}

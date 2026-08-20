@@ -85,7 +85,8 @@ export default function QuizDetailClient() {
             name: quiz.name,
             description: quiz.description,
             author_name: quiz.author_name || null,
-            words: quiz.words || []
+            words: quiz.words || [],
+            questions: quiz.questions || []
         }))
     }
 
@@ -154,6 +155,18 @@ export default function QuizDetailClient() {
     }
 
     const words = Array.isArray(quiz.words) ? quiz.words : []
+const questions = Array.isArray(quiz.questions) ? quiz.questions : []
+const itemLabel = questions.length ? 'questions' : 'words'
+const itemCount = questions.length || words.length
+
+function kindLabel(kind: string): string {
+    switch (kind) {
+        case 'multiple_choice': return 'Multiple Choice'
+        case 'true_false': return 'True / False'
+        case 'flashcard': return 'Flashcard'
+        default: return 'Question'
+    }
+}
 
     return (
         <div className="min-h-screen bg-background-light dark:bg-background-dark pb-24">
@@ -212,7 +225,7 @@ export default function QuizDetailClient() {
                                 <div className="flex items-center gap-4 text-sm text-neutral-600 dark:text-neutral-400">
                                     <span className="flex items-center gap-2">
                                         <BookOpen className="w-4 h-4" />
-                                        {words.length} words
+                                        {itemCount} {itemLabel}
                                     </span>
                                 </div>
                             </div>
@@ -237,11 +250,57 @@ export default function QuizDetailClient() {
                         </div>
                     </div>
 
-                    {/* Words List */}
+                    {/* Content List */}
                     <div className="card">
                         <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-4">
-                            Vocabulary Words ({words.length})
+                            {questions.length ? `Questions (${questions.length})` : `Vocabulary Words (${words.length})`}
                         </h2>
+                        {questions.length ? (
+                            <div className="space-y-2">
+                                {questions.map((q: any, qIndex: number) => (
+                                    <div
+                                        key={q.id}
+                                        className="border-2 border-neutral-200 dark:border-neutral-700 rounded-xl overflow-hidden"
+                                    >
+                                        <div className="p-4">
+                                            <div className="flex items-center gap-3 mb-2">
+                                                <span className="text-sm font-semibold text-neutral-500 dark:text-neutral-400 w-8 shrink-0">
+                                                    {qIndex + 1}
+                                                </span>
+                                                <span className="badge-primary">{kindLabel(q.kind)}</span>
+                                            </div>
+                                            <h3 className="font-bold text-lg text-neutral-900 dark:text-neutral-100 pl-11">
+                                                {q.prompt}
+                                            </h3>
+                                            {q.kind === 'multiple_choice' && Array.isArray(q.options) && (
+                                                <div className="pl-11 mt-2 space-y-1">
+                                                    {q.options.map((opt: string, oi: number) => (
+                                                        <p key={oi} className={`text-sm ${oi === q.correctIndex ? 'text-secondary dark:text-secondary-light font-semibold' : 'text-neutral-600 dark:text-neutral-400'}`}>
+                                                            {String.fromCharCode(65 + oi)}. {opt} {oi === q.correctIndex && '(answer)'}
+                                                        </p>
+                                                    ))}
+                                                </div>
+                                            )}
+                                            {q.kind === 'true_false' && (
+                                                <p className="pl-11 mt-2 text-sm text-secondary dark:text-secondary-light font-semibold">
+                                                    Answer: {q.correctAnswer ? 'True' : 'False'}
+                                                </p>
+                                            )}
+                                            {q.kind === 'flashcard' && q.answer && (
+                                                <p className="pl-11 mt-2 text-sm text-neutral-600 dark:text-neutral-400">
+                                                    Answer: {q.answer}
+                                                </p>
+                                            )}
+                                            {q.explanation && (
+                                                <p className="pl-11 mt-2 text-sm italic text-neutral-500 dark:text-neutral-400">
+                                                    {q.explanation}
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
                         <div className="space-y-2">
                             {words.map((word: any, index: number) => {
                                 const isExpanded = expandedWord === word.word
@@ -369,6 +428,7 @@ export default function QuizDetailClient() {
                                 )
                             })}
                         </div>
+                        )}
                     </div>
                 </div>
             </div>

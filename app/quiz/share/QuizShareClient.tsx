@@ -13,6 +13,7 @@ interface SharedQuiz {
     name: string
     description: string
     words: any[]
+    questions?: any[]
     author_name?: string | null
     id?: string
 }
@@ -29,7 +30,7 @@ export default function QuizShareClient() {
     const [quizName, setQuizName] = useState('')
     const [authorName, setAuthorName] = useState<string | null>(null)
     const [description, setDescription] = useState('')
-    const [embeddedQuiz, setEmbeddedQuiz] = useState<{ id?: string } | null>(null)
+    const [embeddedQuiz, setEmbeddedQuiz] = useState<SharedQuiz | null>(null)
 
     useEffect(() => {
         if (!pathParam && !dataParam) {
@@ -124,15 +125,29 @@ export default function QuizShareClient() {
             const existing = await getCustomQuizzes(user.id)
             let id = embeddedQuiz.id
             if (!id || !existing.some(q => q.id === id)) {
-                const created = await createCustomQuiz(
-                    user.id,
-                    quizName,
-                    description,
-                    words,
-                    true,
-                    authorName || user.name || 'Guest'
-                )
-                id = created.id
+                if (Array.isArray(embeddedQuiz.questions) && embeddedQuiz.questions.length) {
+                    // Question-based quiz
+                    const created = await createCustomQuiz(
+                        user.id,
+                        quizName,
+                        description,
+                        [],
+                        true,
+                        authorName || user.name || 'Guest',
+                        embeddedQuiz.questions
+                    )
+                    id = created.id
+                } else {
+                    const created = await createCustomQuiz(
+                        user.id,
+                        quizName,
+                        description,
+                        words,
+                        true,
+                        authorName || user.name || 'Guest'
+                    )
+                    id = created.id
+                }
             }
             setSelectedQuizPath(`/custom-quiz/${id}`)
             router.push('/session/learn')
@@ -201,7 +216,9 @@ export default function QuizShareClient() {
                         <div className="flex items-center gap-6 text-sm text-neutral-600 dark:text-neutral-400 mb-6">
                             <span className="flex items-center gap-2">
                                 <BookOpen className="w-4 h-4" />
-                                {words.length} words
+                                {Array.isArray(embeddedQuiz?.questions) && embeddedQuiz.questions.length
+                                    ? `${embeddedQuiz.questions.length} questions`
+                                    : `${words.length} words`}
                             </span>
                         </div>
 

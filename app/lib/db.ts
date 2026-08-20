@@ -1,4 +1,4 @@
-import { WordProgress } from './satTypes'
+import { WordProgress, QuizQuestion } from './satTypes'
 import { assetPath } from './paths'
 import { isDriveConfigured, readDriveFile, writeDriveFile, getDriveUser } from './drive'
 
@@ -142,7 +142,8 @@ export async function createCustomQuiz(
     description: string,
     words: any[],
     isPublic: boolean = false,
-    authorName?: string
+    authorName?: string,
+    questions?: QuizQuestion[]
 ) {
     const id = typeof crypto !== 'undefined' && 'randomUUID' in crypto
         ? crypto.randomUUID()
@@ -153,7 +154,8 @@ export async function createCustomQuiz(
         user_id: userId,
         name,
         description,
-        words,
+        words: Array.isArray(words) ? words : [],
+        questions: Array.isArray(questions) && questions.length ? questions : undefined,
         is_public: isPublic,
         author_name: authorName || null,
         created_at: new Date().toISOString()

@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { X, AlertCircle } from 'lucide-react'
-import { buildSession, updateProgress } from '../../lib/session'
-import { Word, Question, SessionMode } from '../../lib/satTypes'
+import { buildSession, updateProgress, buildQuestionSession } from '../../lib/session'
+import { Word, Question, SessionMode, QuizQuestion } from '../../lib/satTypes'
 import QuestionCard from '../../components/QuestionCard'
 import { useAuth } from '../../contexts/AuthContext'
 import { getWordProgress, saveWordProgress, getCustomQuizById } from '../../lib/db'
@@ -33,34 +33,43 @@ export default function SessionModePage() {
         }
 
         // Load words and progress
-        const loadWords = async () => {
+        const loadQuizData = async (): Promise<{ words?: Word[]; questions?: QuizQuestion[] }> => {
             // Check if it's a custom quiz (starts with /custom-quiz/)
             if (selectedQuizPath.startsWith('/custom-quiz/')) {
                 const quizId = selectedQuizPath.replace('/custom-quiz/', '')
                 const quiz = await getCustomQuizById(quizId)
-                if (quiz && quiz.words) {
-                    return quiz.words
+                if (!quiz) return { words: [] }
+                if (Array.isArray(quiz.questions) && quiz.questions.length) {
+                    return { questions: quiz.questions }
                 }
-                return []
+                return { words: Array.isArray(quiz.words) ? quiz.words : [] }
             } else {
                 // Regular JSON file
                 const res = await fetch(assetPath(selectedQuizPath))
-                return res.json()
+                return { words: await res.json() }
             }
         }
 
         Promise.all([
-            loadWords(),
+            loadQuizData(),
             getWordProgress(user.id)
-        ]).then(([wordsData, progressData]) => {
-            setWords(wordsData)
+        ]).then(([quizData, progressData]) => {
+            setWords(quizData.words || [])
             setProgress(progressData)
+
+            if (quizData.questions && quizData.questions.length) {
+                // Question-based quiz: build directly from the manual questions.
+                const q = buildQuestionSession(mode, quizData.questions, progressData, Math.min(50, quizData.questions.length))
+                setQuestions(q)
+                setLoading(false)
+                return
+            }
 
             // Build session with all words or reasonable limit
             // For learn mode: use all words to ensure full coverage
             // For other modes: use larger limit to avoid cycling
-            const sessionLimit = mode === 'learn' ? undefined : Math.min(50, wordsData.length)
-            const q = buildSession(mode, wordsData, progressData, sessionLimit)
+            const sessionLimit = mode === 'learn' ? undefined : Math.min(50, (quizData.words || []).length)
+            const q = buildSession(mode, quizData.words || [], progressData, sessionLimit)
             setQuestions(q)
             setLoading(false)
         }).catch(err => {

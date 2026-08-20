@@ -9,6 +9,8 @@ import { getQuizSets, getCustomQuizzes, getPublicQuizzes, createCustomQuiz } fro
 import { useQuizStore } from '../lib/quizStore'
 import { assetPath, BASE_PATH } from '../lib/paths'
 import { motion, AnimatePresence } from 'framer-motion'
+import QuizBuilder from '../components/QuizBuilder'
+import { QuizQuestion } from '../lib/satTypes'
 
 export default function QuizzesPage() {
     const [quizSets, setQuizSets] = useState<any[]>([])
@@ -85,7 +87,8 @@ export default function QuizzesPage() {
                 name: quiz.name,
                 description: quiz.description,
                 author_name: quiz.author_name || null,
-                words: quiz.words || []
+                words: quiz.words || [],
+                questions: quiz.questions || []
             }))
             return `${origin}${BASE_PATH}/quiz/share?data=${data}`
         } else {
@@ -257,7 +260,7 @@ export default function QuizzesPage() {
                                             <div className="flex items-center gap-4 text-xs text-neutral-500 dark:text-neutral-400 mb-2">
                                                 <span className="flex items-center gap-1">
                                                     <BookOpen className="w-4 h-4" />
-                                                    {Array.isArray(quiz.words) ? quiz.words.length : 0} words
+                                                    {quizItemCount(quiz)} {quizItemLabel(quiz)}
                                                 </span>
                                                 {quiz.author_name && (
                                                     <span className="flex items-center gap-1">
@@ -356,7 +359,7 @@ export default function QuizzesPage() {
                                             <div className="flex items-center gap-4 text-xs text-neutral-500 dark:text-neutral-400 mb-2">
                                                 <span className="flex items-center gap-1">
                                                     <BookOpen className="w-4 h-4" />
-                                                    {Array.isArray(quiz.words) ? quiz.words.length : 0} words
+                                                    {quizItemCount(quiz)} {quizItemLabel(quiz)}
                                                 </span>
                                                 {quiz.author_name && (
                                                     <span className="flex items-center gap-1">
@@ -426,13 +429,24 @@ export default function QuizzesPage() {
     )
 }
 
+// Number of "things" a quiz contains (words for vocab quizzes, questions otherwise).
+function quizItemCount(quiz: any): number {
+    if (Array.isArray(quiz.questions) && quiz.questions.length) return quiz.questions.length
+    return Array.isArray(quiz.words) ? quiz.words.length : 0
+}
+
+function quizItemLabel(quiz: any): string {
+    return Array.isArray(quiz.questions) && quiz.questions.length ? 'questions' : 'words'
+}
+
 function CreateQuizModal({ onClose, onCreated }: { onClose: () => void, onCreated: () => void }) {
-    const [step, setStep] = useState<'info' | 'paste'>('info')
+    const [step, setStep] = useState<'info' | 'method' | 'json-mode' | 'builder'>('info')
     const [name, setName] = useState('')
     const [description, setDescription] = useState('')
     const [authorName, setAuthorName] = useState('')
     const [isPublic, setIsPublic] = useState(false)
     const [jsonText, setJsonText] = useState('')
+    const [questions, setQuestions] = useState<QuizQuestion[]>([])
     const [error, setError] = useState('')
     const [loading, setLoading] = useState(false)
     const { user } = useAuth()
@@ -605,17 +619,43 @@ Remember:
         setLoading(true)
 
         try {
-            const words = JSON.parse(jsonText)
+            if (step === 'json-mode') {
+                const words = JSON.parse(jsonText)
 
-            if (!Array.isArray(words)) {
-                throw new Error('JSON must be an array')
+                if (!Array.isArray(words)) {
+                    throw new Error('JSON must be an array')
+                }
+
+                await createCustomQuiz(user.id, name, description, words, isPublic, authorName || undefined)
+            } else {
+                const cleanQuestions = questions
+                    .filter(q => q.prompt.trim())
+                    .map(q => {
+                        if (q.kind === 'multiple_choice') {
+                            return {
+                                ...q,
+                                options: (q.options || []).map(o => o.trim()).filter(Boolean)
+                            }
+                        }
+                        return q
+                    })
+
+                if (cleanQuestions.length === 0) {
+                    throw new Error('Add at least one question with a prompt')
+                }
+
+                const mcInvalid = cleanQuestions.find(q => q.kind === 'multiple_choice' && (q.options || []).length < 2)
+                if (mcInvalid) {
+                    throw new Error('Every multiple-choice question needs at least 2 options')
+                }
+
+                await createCustomQuiz(user.id, name, description, [], isPublic, authorName || undefined, cleanQuestions)
             }
 
-            await createCustomQuiz(user.id, name, description, words, isPublic, authorName || undefined)
             onCreated()
             onClose()
         } catch (err: any) {
-            setError(err.message || 'Invalid JSON format')
+            setError(err.message || 'Failed to create quiz')
         } finally {
             setLoading(false)
         }
@@ -705,7 +745,7 @@ Remember:
                                 Cancel
                             </button>
                             <button
-                                onClick={() => setStep('paste')}
+                                onClick={() => setStep('method')}
                                 disabled={!name}
                                 className="btn-primary flex-1 disabled:opacity-50"
                             >
@@ -713,7 +753,48 @@ Remember:
                             </button>
                         </div>
                     </div>
-                ) : (
+                ) : step === 'method' ? (
+                    <div className="space-y-4">
+                        <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                            How do you want to add your questions?
+                        </p>
+
+                        <button
+                            onClick={() => setStep('json-mode')}
+                            className="w-full p-5 rounded-2xl border-2 border-neutral-200 dark:border-neutral-700 hover:border-primary hover:bg-primary/5 transition-all text-left"
+                        >
+                            <div className="font-bold text-lg text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
+                                <Sparkles className="w-5 h-5 text-primary" />
+                                Paste from an LLM (JSON)
+                            </div>
+                            <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-1">
+                                Generate an SAT vocabulary quiz with AI, then paste its JSON here. Great for building big lists fast.
+                            </p>
+                        </button>
+
+                        <button
+                            onClick={() => {
+                                setQuestions(questions.length ? questions : [])
+                                setStep('builder')
+                            }}
+                            className="w-full p-5 rounded-2xl border-2 border-neutral-200 dark:border-neutral-700 hover:border-primary hover:bg-primary/5 transition-all text-left"
+                        >
+                            <div className="font-bold text-lg text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
+                                <Plus className="w-5 h-5 text-primary" />
+                                Build It Yourself
+                            </div>
+                            <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-1">
+                                Add multiple-choice, true/false, or flashcard questions by hand. Works for any subject.
+                            </p>
+                        </button>
+
+                        <div className="flex gap-3">
+                            <button onClick={() => setStep('info')} className="btn-outline flex-1">
+                                Back
+                            </button>
+                        </div>
+                    </div>
+                ) : step === 'json-mode' ? (
                     <div className="space-y-4">
                         <div className="bg-neutral-100 dark:bg-neutral-800 p-4 rounded-xl">
                             <p className="text-sm font-bold mb-2 flex items-center gap-2">
@@ -750,12 +831,38 @@ Remember:
                         )}
 
                         <div className="flex gap-3">
-                            <button onClick={() => setStep('info')} className="btn-outline flex-1">
+                            <button onClick={() => setStep('method')} className="btn-outline flex-1">
                                 Back
                             </button>
                             <button
                                 onClick={handleCreate}
                                 disabled={!jsonText || loading}
+                                className="btn-primary flex-1 disabled:opacity-50"
+                            >
+                                {loading ? 'Creating...' : 'Create Quiz'}
+                            </button>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="space-y-4">
+                        <QuizBuilder
+                            onChange={setQuestions}
+                            initialQuestions={questions}
+                        />
+
+                        {error && (
+                            <div className="bg-error/10 border-2 border-error text-error-dark dark:text-error-light px-4 py-3 rounded-xl text-sm">
+                                {error}
+                            </div>
+                        )}
+
+                        <div className="flex gap-3">
+                            <button onClick={() => setStep('method')} className="btn-outline flex-1">
+                                Back
+                            </button>
+                            <button
+                                onClick={handleCreate}
+                                disabled={loading}
                                 className="btn-primary flex-1 disabled:opacity-50"
                             >
                                 {loading ? 'Creating...' : 'Create Quiz'}
@@ -787,7 +894,8 @@ function ShareQuizModal({
                 name: quiz.name,
                 description: quiz.description,
                 author_name: quiz.author_name || null,
-                words: quiz.words || []
+                words: quiz.words || [],
+                questions: quiz.questions || []
             }))
             return `${origin}${BASE_PATH}/quiz/share?data=${data}`
         } else {
