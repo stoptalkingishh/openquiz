@@ -10,7 +10,6 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.86.0",
     "@types/katex": "^0.16.7",
     "framer-motion": "^10.16.0",
     "katex": "^0.16.22",

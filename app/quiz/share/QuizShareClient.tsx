@@ -130,7 +130,7 @@ export default function QuizShareClient() {
                     description,
                     words,
                     true,
-                    authorName || user.user_metadata?.full_name || 'Guest'
+                    authorName || user.name || 'Guest'
                 )
                 id = created.id
             }

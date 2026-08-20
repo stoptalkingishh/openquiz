@@ -38,13 +38,22 @@ export default function ProfilePage() {
                 </h1>
 
                 <div className="card text-center">
-                    <div className="w-24 h-24 bg-gradient-to-br from-primary to-secondary rounded-full mx-auto mb-4 flex items-center justify-center text-white text-3xl font-bold">
-                        {user.email?.[0].toUpperCase()}
-                    </div>
-                    <h2 className="text-xl font-bold mb-1">{user.user_metadata?.full_name || 'User'}</h2>
+                    {user.picture ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                            src={user.picture}
+                            alt={user.name || 'User avatar'}
+                            className="w-24 h-24 rounded-full mx-auto mb-4 object-cover"
+                        />
+                    ) : (
+                        <div className="w-24 h-24 bg-gradient-to-br from-primary to-secondary rounded-full mx-auto mb-4 flex items-center justify-center text-white text-3xl font-bold">
+                            {(user.name?.[0] || user.email?.[0] || 'U').toUpperCase()}
+                        </div>
+                    )}
+                    <h2 className="text-xl font-bold mb-1">{user.name || 'User'}</h2>
                     <div className="flex items-center justify-center gap-2 text-gray-500 dark:text-gray-400 text-sm">
                         <Mail className="w-4 h-4" />
-                        {user.email}
+                        {user.email === 'guest' ? 'Guest account' : user.email}
                     </div>
                     <div className="flex items-center justify-center gap-2 text-gray-500 dark:text-gray-400 text-sm mt-2">
                         <Calendar className="w-4 h-4" />

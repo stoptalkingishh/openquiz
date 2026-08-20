@@ -26,13 +26,13 @@ Preparing for the SAT or language exams is hard enough. Existing tools are often
 - **🤖 LLM Integration** — Create custom quizzes for free. Just prompt your favorite AI and paste the JSON.
 - **📈 Spaced Repetition (SRS)** — The app tracks your strength score for each word and schedules reviews automatically.
 - **🎨 Premium Cosmic UI** — Beautiful dark mode, starfield effects, and smooth Framer Motion animations.
-- **💾 Local-first persistence** — Works entirely in the browser with `localStorage`; ready for cloud sync via Google sign-in.
+- **💾 Local-first persistence** — Works entirely in the browser with `localStorage`; optional Google Drive sync keeps quiz progress in the cloud.
 
 ---
 
 ## ⚡ Static / GitHub Pages Build
 
-This is a **fully static build** (Next.js `output: 'export'`) — it runs with zero servers in guest mode (localStorage), and optionally enables **Google sign-in + cloud storage** (created quizzes, progress, stats) when Supabase keys are configured at build time (see below).
+This is a **fully static build** (Next.js `output: 'export'`) — it runs with zero servers in guest mode (localStorage), and optionally enables **Google sign-in + cloud storage** (created quizzes, progress, stats) when Google Client ID/API key are configured at build time (see below).
 
 ### Local development
 ```bash
@@ -55,29 +55,23 @@ The workflow sets `NEXT_PUBLIC_BASE_PATH` to the repository name automatically, 
 
 Sharing works statically too: links to official sets reference the JSON path, and custom quizzes are embedded directly in the share URL.
 
-## 🔑 Google Sign-In + Cloud Storage (optional, via Supabase)
+## 🔑 Google Sign-In + Cloud Storage (optional, via Google Drive)
 
-Without any setup the app runs offline in **guest mode** (localStorage). To enable real accounts with **Continue with Google** and store created quizzes/progress in the cloud:
+Without any setup the app runs offline in **guest mode** (localStorage). To enable **Sign in with Google** and store created quizzes/progress in the cloud:
 
-1. **Create a free Supabase project** at https://supabase.com → New project.
-2. Run **`supabase_schema.sql`** in your project: **SQL Editor → New query → paste+run**.
-3. **Enable Google provider**:
-   - **Authentication → Providers → Google → Enable**.
-   - Create OAuth credentials at https://console.cloud.google.com/apis/credentials
-     (OAuth consent screen + **OAuth client ID → Web application**).
-   - Add callback URLs:
-     - Authorized redirect URI: `https://YOUR-PROJECT-REF.supabase.co/auth/v1/callback`
-     - Authorized JavaScript origins: `https://stoptalkingishh.github.io`
-   - Paste the **Client ID** and **Client Secret** into Supabase.
-4. **Supabase → Authentication → URL Configuration**, add the site URLs:
-   - Site URL: `https://stoptalkingishh.github.io/openquiz/`
-   - Redirect URLs: add `https://stoptalkingishh.github.io/openquiz/auth/callback`
+1. **Create a Google Cloud project** at https://console.cloud.google.com → New project.
+2. **Enable the Google Drive API**: **APIs & Services → Library → search "Google Drive API" → Enable**.
+3. **Create OAuth credentials**:
+   - **APIs & Services → Credentials → Create Credentials → OAuth client ID → Web application**.
+   - Under **Authorized JavaScript origins**, add your site, e.g. `https://stoptalkingishh.github.io`.
+   - Copy the **Client ID**.
+4. **Create an API key**: **Credentials → Create Credentials → API key** (you may restrict it to the Drive API and your site's referrer). Copy the key.
 5. **Add the keys as GitHub Actions secrets** in repo **Settings → Secrets and variables → Actions**:
-   - `NEXT_PUBLIC_SUPABASE_URL` = your project URL (`https://xyz.supabase.co`)
-   - `NEXT_PUBLIC_SUPABASE_ANON_KEY` = your anon/public key
-6. Push; the deploy workflow bakes the keys into the static bundle. Existing guest data (quizzes + progress) is **auto-migrated** into the user's account on first sign-in.
+   - `NEXT_PUBLIC_GOOGLE_CLIENT_ID` = your OAuth Client ID
+   - `NEXT_PUBLIC_GOOGLE_API_KEY` = your API key
+6. Push; the deploy workflow bakes the keys into the static bundle.
 
-Until secrets are added, the same code runs in guest mode — nothing breaks.
+On first sign-in, existing guest data (quizzes + progress) is **auto-migrated** into a private per-user **"OpenQuiz"** folder in the user's Google Drive (scope is `drive.file` — the app can only see files it created). Until secrets are added, the same code runs in guest mode — nothing breaks.
 
 ---
 
@@ -95,7 +89,7 @@ Then click **"Create Quiz"** in the app, paste the JSON, and start testing yours
 - **Framework**: Next.js 14 App Router (static export)
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS + Framer Motion
-- **Storage**: Browser-local (guest) with optional Supabase (PostgreSQL + RLS) for Google sign-in & cloud sync
+- **Storage**: Browser-local (guest) with optional Google Drive (`drive.file` scope) for Google sign-in & cloud sync
 
 ---
 

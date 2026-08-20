@@ -34,11 +34,11 @@ jobs:
           # Matches the GitHub Pages path for a project site (USER.github.io/REPO).
           # For a site deployed at the root (USER.github.io), set this to ''.
           NEXT_PUBLIC_BASE_PATH: /${{ github.event.repository.name }}
-          # Supabase cloud sync + Google sign-in. Add these as repository
-          # secrets (Settings -> Secrets and variables -> Actions). Until they
-          # are added, the site runs fully offline in guest mode.
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          # Google Drive cloud sync + "Sign in with Google". Add these as
+          # repository secrets (Settings -> Secrets and variables -> Actions).
+          # Until they are added, the site runs fully offline in guest mode.
+          NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${{ secrets.NEXT_PUBLIC_GOOGLE_CLIENT_ID }}
+          NEXT_PUBLIC_GOOGLE_API_KEY: ${{ secrets.NEXT_PUBLIC_GOOGLE_API_KEY }}
 
       - name: Configure Pages
         uses: actions/configure-pages@v5

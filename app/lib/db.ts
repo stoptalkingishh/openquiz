@@ -1,22 +1,35 @@
-import { supabase, isSupabaseConfigured } from './supabase'
 import { WordProgress } from './satTypes'
 import { assetPath } from './paths'
+import { isDriveConfigured, readDriveFile, writeDriveFile, getDriveUser } from './drive'
 
 /**
  * Hybrid data layer for the static (GitHub Pages) build.
  *
- * When Supabase keys are configured at build time, quizzes, progress and
- * stats are stored in the cloud (per signed-in user). Otherwise everything
- * is persisted to localStorage — the site works identically with no backend.
- * Every function keeps the same signature in both modes, so callers don't
- * know (or care) which backend is active.
+ * When Google Drive keys are configured at build time AND the user is signed
+ * in, quizzes, progress and stats are stored as JSON files in a per-user
+ * "OpenQuiz" folder in their Google Drive. Otherwise everything is persisted
+ * to localStorage — the site works identically with no backend. Every
+ * function keeps the same signature in both modes, so callers don't know (or
+ * care) which backend is active. Drive reads fall back to local data so guest
+ * progress is never lost.
  */
 
 const PROGRESS_KEY = 'oquiz:progress'
 const CUSTOM_QUIZZES_KEY = 'oquiz:custom_quizzes'
 const DAILY_STATS_KEY = 'oquiz:daily_stats'
 
+const PROGRESS_FILE = 'progress.json'
+const CUSTOM_QUIZZES_FILE = 'custom_quizzes.json'
+const DAILY_STATS_FILE = 'daily_stats.json'
+
 const MANIFEST_PATH = '/sat/quiz-sets.json'
+
+// A user is "cloud active" when Drive is configured and they're signed in.
+// Drive is used as the source of truth (read/write), then mirrored to
+// localStorage so the app still works offline.
+function isCloudActive(): boolean {
+    return isDriveConfigured() && typeof window !== 'undefined' && Boolean(getDriveUser())
+}
 
 // ---------------------------------------------------------------------------
 // localStorage helpers
@@ -42,63 +55,24 @@ function writeJson(key: string, value: unknown) {
 // ---------------------------------------------------------------------------
 
 export async function getWordProgress(userId: string): Promise<Record<string, WordProgress>> {
-    if (isSupabaseConfigured && supabase) {
-        const { data, error } = await supabase
-            .from('word_progress')
-            .select('*')
-            .eq('user_id', userId)
+    const local = readJson<Record<string, WordProgress>>(PROGRESS_KEY, {})
 
-        if (error) {
-            console.error('Error fetching progress:', error)
-            return {}
-        }
-
-        const progressMap: Record<string, WordProgress> = {}
-        data?.forEach((item: any) => {
-            progressMap[item.word] = {
-                word: item.word,
-                strength: item.strength,
-                lastSeen: new Date(item.last_seen).getTime(),
-                nextDue: new Date(item.next_due).getTime(),
-                seenCount: item.seen_count,
-                wrongStreak: item.wrong_streak,
-                status: item.status
-            }
-        })
-        return progressMap
+    if (isCloudActive()) {
+        const remote = await readDriveFile<Record<string, WordProgress>>(PROGRESS_FILE)
+        if (remote) return remote
     }
 
-    return readJson<Record<string, WordProgress>>(PROGRESS_KEY, {})
+    return local
 }
 
 export async function saveWordProgress(userId: string, word: string, progress: WordProgress) {
-    if (isSupabaseConfigured && supabase) {
-        const { error } = await supabase
-            .from('word_progress')
-            .upsert({
-                user_id: userId,
-                word: progress.word,
-                strength: progress.strength,
-                last_seen: new Date(progress.lastSeen).toISOString(),
-                next_due: progress.nextDue ? new Date(progress.nextDue).toISOString() : null,
-                seen_count: progress.seenCount,
-                wrong_streak: progress.wrongStreak,
-                status: progress.status,
-                updated_at: new Date().toISOString()
-            }, {
-                onConflict: 'user_id,word'
-            })
-
-        if (error) {
-            console.error('Error saving progress:', error)
-            throw error
-        }
-        return
-    }
-
     const all = await getWordProgress(userId)
     all[word] = progress
     writeJson(PROGRESS_KEY, all)
+
+    if (isCloudActive()) {
+        await writeDriveFile(PROGRESS_FILE, all)
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -131,65 +105,35 @@ export async function getQuizSetByPath(filePath: string) {
 // ---------------------------------------------------------------------------
 
 export async function getCustomQuizzes(userId: string) {
-    if (isSupabaseConfigured && supabase) {
-        const { data, error } = await supabase
-            .from('custom_quizzes')
-            .select('*')
-            .eq('user_id', userId)
-            .order('created_at', { ascending: false })
+    const local = readJson<any[]>(CUSTOM_QUIZZES_KEY, [])
+        .filter(q => q.user_id === userId)
 
-        if (error) {
-            console.error('Error fetching custom quizzes:', error)
-            return []
-        }
-        return data || []
+    if (isCloudActive()) {
+        const remote = await readDriveFile<any[]>(CUSTOM_QUIZZES_FILE)
+        if (remote) return remote
     }
 
-    const all = readJson<any[]>(CUSTOM_QUIZZES_KEY, [])
-    return all.filter(q => q.user_id === userId)
+    return local
 }
 
 export async function getPublicQuizzes(excludeUserId?: string) {
-    if (isSupabaseConfigured && supabase) {
-        let query = supabase
-            .from('custom_quizzes')
-            .select('*')
-            .eq('is_public', true)
-            .order('created_at', { ascending: false })
-
-        if (excludeUserId) {
-            query = query.neq('user_id', excludeUserId)
-        }
-
-        const { data, error } = await query
-        if (error) {
-            console.error('Error fetching public quizzes:', error)
-            return []
-        }
-        return data || []
-    }
-
+    // Public "community" quizzes are not shared via personal Drive storage.
+    // Guests can still share quizzes with each other locally.
     const all = readJson<any[]>(CUSTOM_QUIZZES_KEY, [])
     return all.filter(q => q.is_public && q.user_id !== excludeUserId)
 }
 
 export async function getCustomQuizById(quizId: string) {
-    if (isSupabaseConfigured && supabase) {
-        const { data, error } = await supabase
-            .from('custom_quizzes')
-            .select('*')
-            .eq('id', quizId)
-            .maybeSingle()
+    const local = readJson<any[]>(CUSTOM_QUIZZES_KEY, [])
+        .find(q => q.id === quizId) || null
 
-        if (error) {
-            console.error('Error fetching custom quiz:', error)
-            return null
-        }
-        return data
+    if (isCloudActive()) {
+        const remote = await readDriveFile<any[]>(CUSTOM_QUIZZES_FILE)
+        const remoteQuiz = (remote || []).find(q => q.id === quizId)
+        if (remoteQuiz) return remoteQuiz
     }
 
-    const all = readJson<any[]>(CUSTOM_QUIZZES_KEY, [])
-    return all.find(q => q.id === quizId) || null
+    return local
 }
 
 export async function createCustomQuiz(
@@ -200,27 +144,6 @@ export async function createCustomQuiz(
     isPublic: boolean = false,
     authorName?: string
 ) {
-    if (isSupabaseConfigured && supabase) {
-        const { data, error } = await supabase
-            .from('custom_quizzes')
-            .insert({
-                user_id: userId,
-                name,
-                description,
-                words,
-                is_public: isPublic,
-                author_name: authorName || null
-            })
-            .select()
-            .single()
-
-        if (error) {
-            console.error('Error creating custom quiz:', error)
-            throw error
-        }
-        return data
-    }
-
     const id = typeof crypto !== 'undefined' && 'randomUUID' in crypto
         ? crypto.randomUUID()
         : `quiz-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
@@ -236,29 +159,25 @@ export async function createCustomQuiz(
         created_at: new Date().toISOString()
     }
 
-    const all = readJson<any[]>(CUSTOM_QUIZZES_KEY, [])
+    const all = await getCustomQuizzes(userId)
     all.unshift(quiz)
     writeJson(CUSTOM_QUIZZES_KEY, all)
+
+    if (isCloudActive()) {
+        await writeDriveFile(CUSTOM_QUIZZES_FILE, all)
+    }
 
     return quiz
 }
 
 export async function deleteCustomQuiz(quizId: string) {
-    if (isSupabaseConfigured && supabase) {
-        const { error } = await supabase
-            .from('custom_quizzes')
-            .delete()
-            .eq('id', quizId)
-
-        if (error) {
-            console.error('Error deleting custom quiz:', error)
-            throw error
-        }
-        return
-    }
-
     const all = readJson<any[]>(CUSTOM_QUIZZES_KEY, [])
     writeJson(CUSTOM_QUIZZES_KEY, all.filter(q => q.id !== quizId))
+
+    if (isCloudActive()) {
+        const remote = (await readDriveFile<any[]>(CUSTOM_QUIZZES_FILE)) || []
+        await writeDriveFile(CUSTOM_QUIZZES_FILE, remote.filter(q => q.id !== quizId))
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -273,32 +192,7 @@ export async function updateDailyStats(userId: string, stats: {
     accuracy?: number
 }) {
     const today = new Date().toISOString().split('T')[0]
-
-    if (isSupabaseConfigured && supabase) {
-        const { error } = await supabase
-            .from('daily_stats')
-            .upsert({
-                user_id: userId,
-                date: today,
-                words_learned: stats.wordsLearned || 0,
-                words_drilled: stats.wordsDrilled || 0,
-                words_examined: stats.wordsExamined || 0,
-                mistakes_count: stats.mistakesCount || 0,
-                accuracy: stats.accuracy || 0,
-                updated_at: new Date().toISOString()
-            }, {
-                onConflict: 'user_id,date'
-            })
-
-        if (error) {
-            console.error('Error updating daily stats:', error)
-            throw error
-        }
-        return
-    }
-
-    const all = readJson<Record<string, any>>(DAILY_STATS_KEY, {})
-    all[`${userId}:${today}`] = {
+    const next = {
         user_id: userId,
         date: today,
         words_learned: stats.wordsLearned || 0,
@@ -308,25 +202,24 @@ export async function updateDailyStats(userId: string, stats: {
         accuracy: stats.accuracy || 0,
         updated_at: new Date().toISOString()
     }
+
+    const all = readJson<Record<string, any>>(DAILY_STATS_KEY, {})
+    all[`${userId}:${today}`] = next
     writeJson(DAILY_STATS_KEY, all)
+
+    if (isCloudActive()) {
+        const remote = (await readDriveFile<Record<string, any>>(DAILY_STATS_FILE)) || {}
+        remote[`${userId}:${today}`] = next
+        await writeDriveFile(DAILY_STATS_FILE, remote)
+    }
 }
 
 export async function getDailyStats(userId: string, date?: string) {
     const targetDate = date || new Date().toISOString().split('T')[0]
 
-    if (isSupabaseConfigured && supabase) {
-        const { data, error } = await supabase
-            .from('daily_stats')
-            .select('*')
-            .eq('user_id', userId)
-            .eq('date', targetDate)
-            .maybeSingle()
-
-        if (error && error.code !== 'PGRST116') {
-            console.error('Error fetching daily stats:', error)
-            return null
-        }
-        return data
+    if (isCloudActive()) {
+        const remote = await readDriveFile<Record<string, any>>(DAILY_STATS_FILE)
+        if (remote?.[`${userId}:${targetDate}`]) return remote[`${userId}:${targetDate}`]
     }
 
     const all = readJson<Record<string, any>>(DAILY_STATS_KEY, {})
@@ -336,20 +229,28 @@ export async function getDailyStats(userId: string, date?: string) {
 export async function getStreak(userId: string): Promise<number> {
     let dates: string[] = []
 
-    if (isSupabaseConfigured && supabase) {
-        const { data, error } = await supabase
-            .from('daily_stats')
-            .select('date')
-            .eq('user_id', userId)
-            .order('date', { ascending: false })
-            .limit(365)
-
-        if (error) {
-            console.error('Error fetching streak:', error)
-            return 0
+    if (isCloudActive()) {
+        const remote = await readDriveFile<Record<string, any>>(DAILY_STATS_FILE)
+        if (remote) {
+            dates = Object.values(remote)
+                .filter(d => d?.user_id === userId && d.date)
+                .map(d => d.date)
+                .sort()
+                .reverse()
         }
-        dates = (data || []).map((d: any) => d.date)
-    } else {
+    }
+
+    if (dates.length === 0) {
+        const all = readJson<Record<string, any>>(DAILY_STATS_KEY, {})
+        dates = Object.values(all)
+            .filter(d => d?.user_id === userId && d.date)
+            .map(d => d.date)
+            .sort()
+            .reverse()
+    }
+
+    if (dates.length === 0) {
+        // Fall back to activity dates derived from word progress.
         const progress = await getWordProgress(userId)
         if (!progress || Object.keys(progress).length === 0) return 0
         const activeDates = new Set<string>()
@@ -385,59 +286,44 @@ export async function getStreak(userId: string): Promise<number> {
 }
 
 // ---------------------------------------------------------------------------
-// One-time migration of guest (localStorage) data into the user's cloud
-// account. Called after a successful sign-in when Supabase is configured.
+// One-time migration of guest (localStorage) data into the user's Drive
+// account. Called after a successful sign-in. Drive always wins on conflict.
 // ---------------------------------------------------------------------------
 
-export async function syncLocalToCloud(userId: string) {
-    if (!isSupabaseConfigured || !supabase) return false
+export async function syncLocalToCloud(): Promise<boolean> {
+    if (!isCloudActive()) return false
     if (typeof window === 'undefined') return false
 
     const localQuizzes = readJson<any[]>(CUSTOM_QUIZZES_KEY, [])
     const localProgress = readJson<Record<string, WordProgress>>(PROGRESS_KEY, {})
+    const localStats = readJson<Record<string, any>>(DAILY_STATS_KEY, {})
 
     try {
-        if (Array.isArray(localQuizzes) && localQuizzes.length > 0) {
-            for (const q of localQuizzes) {
-                await supabase
-                    .from('custom_quizzes')
-                    .upsert({
-                        id: q.id,
-                        user_id: userId,
-                        name: q.name,
-                        description: q.description || '',
-                        words: q.words || [],
-                        is_public: q.is_public === true,
-                        author_name: q.author_name || null,
-                        created_at: q.created_at || new Date().toISOString()
-                    }, { onConflict: 'id' })
-            }
-            window.localStorage.removeItem(CUSTOM_QUIZZES_KEY)
+        // Quizzes: merge non-duplicates, Drive wins by id.
+        const remoteQuizzes = (await readDriveFile<any[]>(CUSTOM_QUIZZES_FILE)) || []
+        const remoteIds = new Set(remoteQuizzes.map(q => q.id))
+        const mergedQuizzes = [...remoteQuizzes, ...localQuizzes.filter(q => !remoteIds.has(q.id))]
+        if (remoteQuizzes.length || localQuizzes.length) {
+            await writeDriveFile(CUSTOM_QUIZZES_FILE, mergedQuizzes)
         }
 
-        const entries = Object.entries(localProgress)
-        if (entries.length > 0) {
-            for (const [word, p] of entries) {
-                await supabase
-                    .from('word_progress')
-                    .upsert({
-                        user_id: userId,
-                        word: p.word || word,
-                        strength: p.strength,
-                        last_seen: new Date(p.lastSeen || Date.now()).toISOString(),
-                        next_due: p.nextDue ? new Date(p.nextDue).toISOString() : null,
-                        seen_count: p.seenCount,
-                        wrong_streak: p.wrongStreak,
-                        status: p.status,
-                        updated_at: new Date().toISOString()
-                    }, { onConflict: 'user_id,word' })
-            }
-            window.localStorage.removeItem(PROGRESS_KEY)
+        // Progress: Drive wins per word.
+        const remoteProgress = (await readDriveFile<Record<string, WordProgress>>(PROGRESS_FILE)) || {}
+        const mergedProgress = { ...localProgress, ...remoteProgress }
+        if (Object.keys(localProgress).length || Object.keys(remoteProgress).length) {
+            await writeDriveFile(PROGRESS_FILE, mergedProgress)
+        }
+
+        // Stats: Drive wins per user/date key.
+        const remoteStats = (await readDriveFile<Record<string, any>>(DAILY_STATS_FILE)) || {}
+        const mergedStats = { ...localStats, ...remoteStats }
+        if (Object.keys(localStats).length || Object.keys(remoteStats).length) {
+            await writeDriveFile(DAILY_STATS_FILE, mergedStats)
         }
 
         return true
     } catch (error) {
-        console.error('Local->cloud sync failed (local data preserved):', error)
+        console.error('Local->Drive sync failed (local data preserved):', error)
         return false
     }
 }
