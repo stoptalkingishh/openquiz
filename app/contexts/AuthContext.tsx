@@ -1,24 +1,32 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState } from 'react'
+import { User } from '@supabase/supabase-js'
+import { supabase, isSupabaseConfigured } from '../lib/supabase'
+import { syncLocalToCloud } from '../lib/db'
+import { BASE_PATH } from '../lib/paths'
 
 /**
- * Local "guest" auth for the static GitHub Pages build.
+ * Hybrid auth:
+ *  - With Supabase keys configured at build time, this is real auth
+ *    (email/password + Google OAuth) and every sign-in migrates any
+ *    guest localStorage data into the user's cloud account.
+ *  - Without keys, a stable local "guest" profile is used so the app
+ *    works fully offline.
  *
- * The interface mirrors the original Supabase-backed context (user, loading,
- * signIn, signUp, signOut, signInWithGoogle) so Google sign-in via Supabase
- * can be dropped in later without touching any consuming component.
+ * The interface is the same in both modes (user, loading, signIn,
+ * signUp, signOut, signInWithGoogle).
  */
 
-export interface LocalUser {
+export type AuthUser = User | {
     id: string
-    email: string | null
-    user_metadata: { full_name?: string }
+    email?: string | null
+    user_metadata?: Record<string, any>
     created_at: string
 }
 
 interface AuthContextType {
-    user: LocalUser | null
+    user: AuthUser | null
     loading: boolean
     signIn: (email: string, password: string) => Promise<void>
     signUp: (email: string, password: string, fullName: string) => Promise<void>
@@ -28,7 +36,7 @@ interface AuthContextType {
 
 const GUEST_KEY = 'oquiz:guest_user'
 
-function defaultGuest(): LocalUser {
+function defaultGuest(): { id: string; email: string | null; user_metadata: Record<string, any>; created_at: string } {
     return {
         id: 'guest',
         email: 'guest',
@@ -37,11 +45,11 @@ function defaultGuest(): LocalUser {
     }
 }
 
-function readGuest(): LocalUser {
+function readGuest(): { id: string; email: string | null; user_metadata: Record<string, any>; created_at: string } {
     if (typeof window === 'undefined') return defaultGuest()
     try {
         const stored = window.localStorage.getItem(GUEST_KEY)
-        return stored ? (JSON.parse(stored) as LocalUser) : defaultGuest()
+        return stored ? JSON.parse(stored) : defaultGuest()
     } catch {
         return defaultGuest()
     }
@@ -50,45 +58,110 @@ function readGuest(): LocalUser {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-    const [user, setUser] = useState<LocalUser | null>(null)
+    const [user, setUser] = useState<AuthUser | null>(null)
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
-        const guest = readGuest()
-        window.localStorage.setItem(GUEST_KEY, JSON.stringify(guest))
-        setUser(guest)
-        setLoading(false)
+        let mounted = true
+
+        if (!isSupabaseConfigured) {
+            const guest = readGuest()
+            window.localStorage.setItem(GUEST_KEY, JSON.stringify(guest))
+            if (mounted) {
+                setUser(guest)
+                setLoading(false)
+            }
+            return
+        }
+
+        supabase!.auth.getSession().then(({ data: { session } }) => {
+            if (session?.user && mounted) {
+                setUser(session.user)
+                syncLocalToCloud(session.user.id).catch(() => { })
+            }
+            if (mounted) setLoading(false)
+        })
+
+        const { data: { subscription } } = supabase!.auth.onAuthStateChange((event, session) => {
+            if (!mounted) return
+            if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+                if (session?.user) {
+                    setUser(session.user)
+                    syncLocalToCloud(session.user.id).catch(() => { })
+                }
+            } else if (event === 'SIGNED_OUT') {
+                setUser(null)
+            }
+        })
+
+        return () => {
+            mounted = false
+            subscription.unsubscribe()
+        }
     }, [])
 
-    const signIn = async (email: string, _password: string) => {
-        const guest = readGuest()
-        guest.email = email
-        if (!guest.user_metadata?.full_name) {
-            guest.user_metadata = { full_name: email.split('@')[0] || 'Guest' }
+    const signIn = async (email: string, password: string) => {
+        if (!isSupabaseConfigured || !supabase) {
+            const guest = readGuest()
+            guest.email = email || guest.email
+            if (!guest.user_metadata?.full_name) {
+                guest.user_metadata = { full_name: email.split('@')[0] || 'Guest' }
+            }
+            window.localStorage.setItem(GUEST_KEY, JSON.stringify(guest))
+            setUser(guest)
+            return
         }
-        window.localStorage.setItem(GUEST_KEY, JSON.stringify(guest))
-        setUser(guest)
+
+        const { error } = await supabase.auth.signInWithPassword({ email, password })
+        if (error) throw error
     }
 
-    const signUp = async (email: string, _password: string, fullName: string) => {
-        const guest: LocalUser = {
-            id: readGuest().id,
-            email,
-            user_metadata: { full_name: fullName || email.split('@')[0] || 'Guest' },
-            created_at: new Date().toISOString()
+    const signUp = async (email: string, password: string, fullName: string) => {
+        if (!isSupabaseConfigured || !supabase) {
+            const guest = defaultGuest()
+            guest.email = email
+            guest.user_metadata = { full_name: fullName || email.split('@')[0] || 'Guest' }
+            window.localStorage.setItem(GUEST_KEY, JSON.stringify(guest))
+            setUser(guest)
+            return
         }
-        window.localStorage.setItem(GUEST_KEY, JSON.stringify(guest))
-        setUser(guest)
+
+        const { error } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+                data: {
+                    full_name: fullName
+                }
+            }
+        })
+        if (error) throw error
     }
 
     const signOut = async () => {
-        const guest = defaultGuest()
-        window.localStorage.setItem(GUEST_KEY, JSON.stringify(guest))
-        setUser(guest)
+        if (!isSupabaseConfigured || !supabase) {
+            const guest = defaultGuest()
+            window.localStorage.setItem(GUEST_KEY, JSON.stringify(guest))
+            setUser(guest)
+            return
+        }
+
+        const { error } = await supabase.auth.signOut()
+        if (error) throw error
     }
 
     const signInWithGoogle = async () => {
-        throw new Error('Google sign-in is coming soon. You are using the local offline build for now.')
+        if (!isSupabaseConfigured || !supabase) {
+            throw new Error('Online sign-in is coming soon — you are using the offline build right now.')
+        }
+
+        const { error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo: `${window.location.origin}${BASE_PATH}/auth/callback`
+            }
+        })
+        if (error) throw error
     }
 
     return (

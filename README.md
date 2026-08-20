@@ -32,7 +32,7 @@ Preparing for the SAT or language exams is hard enough. Existing tools are often
 
 ## ⚡ Static / GitHub Pages Build
 
-This is a **fully static build** (Next.js `output: 'export'`) — no server or database required. Progress, custom quizzes and stats are stored in your browser's `localStorage` (guest profile). Google sign-in / cloud sync can be layered on later behind the same auth/storage interface.
+This is a **fully static build** (Next.js `output: 'export'`) — it runs with zero servers in guest mode (localStorage), and optionally enables **Google sign-in + cloud storage** (created quizzes, progress, stats) when Supabase keys are configured at build time (see below).
 
 ### Local development
 ```bash
@@ -55,6 +55,30 @@ The workflow sets `NEXT_PUBLIC_BASE_PATH` to the repository name automatically, 
 
 Sharing works statically too: links to official sets reference the JSON path, and custom quizzes are embedded directly in the share URL.
 
+## 🔑 Google Sign-In + Cloud Storage (optional, via Supabase)
+
+Without any setup the app runs offline in **guest mode** (localStorage). To enable real accounts with **Continue with Google** and store created quizzes/progress in the cloud:
+
+1. **Create a free Supabase project** at https://supabase.com → New project.
+2. Run **`supabase_schema.sql`** in your project: **SQL Editor → New query → paste+run**.
+3. **Enable Google provider**:
+   - **Authentication → Providers → Google → Enable**.
+   - Create OAuth credentials at https://console.cloud.google.com/apis/credentials
+     (OAuth consent screen + **OAuth client ID → Web application**).
+   - Add callback URLs:
+     - Authorized redirect URI: `https://YOUR-PROJECT-REF.supabase.co/auth/v1/callback`
+     - Authorized JavaScript origins: `https://stoptalkingishh.github.io`
+   - Paste the **Client ID** and **Client Secret** into Supabase.
+4. **Supabase → Authentication → URL Configuration**, add the site URLs:
+   - Site URL: `https://stoptalkingishh.github.io/openquiz/`
+   - Redirect URLs: add `https://stoptalkingishh.github.io/openquiz/auth/callback`
+5. **Add the keys as GitHub Actions secrets** in repo **Settings → Secrets and variables → Actions**:
+   - `NEXT_PUBLIC_SUPABASE_URL` = your project URL (`https://xyz.supabase.co`)
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY` = your anon/public key
+6. Push; the deploy workflow bakes the keys into the static bundle. Existing guest data (quizzes + progress) is **auto-migrated** into the user's account on first sign-in.
+
+Until secrets are added, the same code runs in guest mode — nothing breaks.
+
 ---
 
 ## 📝 Create a Custom Quiz with AI
@@ -71,7 +95,7 @@ Then click **"Create Quiz"** in the app, paste the JSON, and start testing yours
 - **Framework**: Next.js 14 App Router (static export)
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS + Framer Motion
-- **Storage**: Browser-local persistence (guest profile) — cloud sync backend-agnostic
+- **Storage**: Browser-local (guest) with optional Supabase (PostgreSQL + RLS) for Google sign-in & cloud sync
 
 ---
 
