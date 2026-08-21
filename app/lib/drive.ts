@@ -278,7 +278,13 @@ export async function signOutFromDrive(): Promise<void> {
     if (typeof window === 'undefined') return
     try {
         if (currentToken && window.google?.accounts?.oauth2?.revoke) {
-            await new Promise<void>((resolve) => window.google.accounts.oauth2.revoke(currentToken, () => resolve()))
+            // The revoke callback only fires after a network round-trip — if
+            // we're offline it never resolves and Sign Out would freeze. Bound
+            // it with a timeout and continue either way.
+            await Promise.race([
+                new Promise<void>((resolve) => window.google.accounts.oauth2.revoke(currentToken, () => resolve())),
+                new Promise<void>((resolve) => setTimeout(resolve, 3000))
+            ])
         }
     } catch {
         // token may already be invalid — ignore
@@ -290,6 +296,15 @@ export async function signOutFromDrive(): Promise<void> {
 
 export function getDriveUser(): DriveUser | null {
     return currentUser
+}
+
+/**
+ * Whether a usable Google access token is currently held in memory. Used by
+ * the data layer to decide if cloud (Drive) reads/writes are actually live —
+ * a stored profile alone is not enough if the silent token restore failed.
+ */
+export function hasLiveToken(): boolean {
+    return Boolean(currentToken)
 }
 
 // ---------------------------------------------------------------------------

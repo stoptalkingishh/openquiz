@@ -7,6 +7,7 @@ export function generateStaticParams() {
         { mode: 'drill' },
         { mode: 'exam' },
         { mode: 'mistakes' },
+        { mode: 'test' },
     ]
 }
 
