@@ -1,6 +1,6 @@
 import { WordProgress, QuizQuestion, SimulationStep, Word, Folder, QuizStats } from './satTypes'
 import { assetPath } from './paths'
-import { isDriveConfigured, readDriveFile, writeDriveFile, getDriveUser } from './drive'
+import { isDriveConfigured, readDriveFile, writeDriveFile, getDriveUser, hasLiveToken } from './drive'
 
 /**
  * Hybrid data layer for the static (GitHub Pages) build.
@@ -28,11 +28,12 @@ const QUIZ_STATS_FILE = 'quiz_stats.json'
 
 const MANIFEST_PATH = '/sat/quiz-sets.json'
 
-// A user is "cloud active" when Drive is configured and they're signed in.
-// Drive is used as the source of truth (read/write), then mirrored to
-// localStorage so the app still works offline.
+// A user is "cloud active" when Drive is configured, they're signed in, AND a
+// usable token is actually available. A stored profile alone is not enough: if
+// the silent token restore failed, cloud reads/writes would silently no-op, so
+// we fall back to localStorage and surface the truth.
 function isCloudActive(): boolean {
-    return isDriveConfigured() && typeof window !== 'undefined' && Boolean(getDriveUser())
+    return isDriveConfigured() && typeof window !== 'undefined' && Boolean(getDriveUser()) && hasLiveToken()
 }
 
 // ---------------------------------------------------------------------------

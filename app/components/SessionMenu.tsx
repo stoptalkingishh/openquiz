@@ -39,8 +39,10 @@ function answerDisplay(question: Question): string {
             return p.answer || ''
         case 'generic_written':
             return p.answer || ''
-        case 'recall':
-            return p.ru || ''
+        case 'simulation': {
+            const steps = Array.isArray(p.steps) ? p.steps : []
+            return [p.prompt || '', 'Scenario steps: ' + steps.map((s: any) => s?.title).filter(Boolean).join('; ')].filter(Boolean).join(' ')
+        }
         default:
             return ''
     }
@@ -54,7 +56,8 @@ function questionText(question: Question): string {
     }
     if (question.type === 'simple_usage' || question.type === 'sat_cloze') return p.sentence || ''
     if (question.type === 'recall') return p.word || ''
-    return question.word || ''
+    if (question.type === 'simulation') return p.prompt || ''
+    return ''
 }
 
 export default function SessionMenu({

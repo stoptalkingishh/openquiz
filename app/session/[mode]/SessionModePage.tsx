@@ -125,10 +125,22 @@ export default function SessionModePage() {
         router.push('/')
     }
 
-    const handleAnswer = async (correct: boolean, chosen?: string | number | boolean | null) => {
+    const handleAnswer = async (correct: boolean, chosen?: string | number | boolean | null, answeredQuestion?: Question) => {
         if (!user) return
 
-        const currentQ = questions[index]
+        // Bind to the question that was actually answered. If the user
+        // navigated during the feedback delay, this is still the original
+        // question, not the one currently on screen.
+        const currentQ = answeredQuestion || questions[index]
+        if (!currentQ) return
+
+        // Stop reading aloud if audio was playing.
+        stopSpeech()
+
+        // Guard against double-submit of the same question (e.g. double tap
+        // on a simulation Continue button).
+        if (history[currentQ.id]) return
+
         const newProgress = updateProgress(progress[currentQ.word], correct, currentQ.word)
 
         if (correct) correctCountRef.current += 1
@@ -145,9 +157,10 @@ export default function SessionModePage() {
             [currentQ.word]: newProgress
         })
 
-        if (index + 1 < questions.length) {
+        if (index + 1 < questions.length && questions[index]?.id === currentQ.id) {
             setIndex(index + 1)
-        } else {
+        } else if (index + 1 >= questions.length && questions[index]?.id === currentQ.id) {
+            // Answered the last question and it is still the one on screen.
             finishSession(correctCountRef.current, questions.length)
         }
     }

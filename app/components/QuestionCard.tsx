@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 
 interface QuestionCardProps {
     question: Question
-    onAnswer: (correct: boolean, chosen?: string | number | boolean | null) => void
+    onAnswer: (correct: boolean, chosen?: string | number | boolean | null, question?: Question) => void
 }
 
 function MediaImage({ image }: { image?: string }) {
@@ -26,7 +26,6 @@ function MediaImage({ image }: { image?: string }) {
 
 export default function QuestionCard({ question, onAnswer }: QuestionCardProps) {
     if (question.type === 'recall') {
-        return <RecallCard question={question} onAnswer={onAnswer} />
         return <RecallCard question={question} onAnswer={onAnswer} />
     }
     if (question.type === 'simple_usage' || question.type === 'sat_cloze') {
@@ -158,7 +157,7 @@ function MultipleChoiceCard({ question, onAnswer }: QuestionCardProps) {
         setSubmitted(true)
 
         setTimeout(() => {
-            onAnswer(selected === correctIndex, opts[selected] || null)
+            onAnswer(selected === correctIndex, opts[selected] || null, question)
         }, 3000) // Give time to read the explanation
     }
 
@@ -321,7 +320,7 @@ function GenericMultipleChoiceCard({ question, onAnswer }: QuestionCardProps) {
         if (selected === null) return
         setSubmitted(true)
         setTimeout(() => {
-            onAnswer(selected === correctIndex, opts[selected] || null)
+            onAnswer(selected === correctIndex, opts[selected] || null, question)
         }, 3500)
     }
 
@@ -452,7 +451,7 @@ function GenericTrueFalseCard({ question, onAnswer }: QuestionCardProps) {
         setSelected(value)
         setSubmitted(true)
         setTimeout(() => {
-            onAnswer(value === correctAnswer, value ? 'True' : 'False')
+            onAnswer(value === correctAnswer, value ? 'True' : 'False', question)
         }, 3500)
     }
 
@@ -650,7 +649,7 @@ function GenericWrittenCard({ question, onAnswer }: QuestionCardProps) {
         setSubmitted(true)
         const correct = normalize(value) === normalize(answer || '')
         setTimeout(() => {
-            onAnswer(correct, value)
+            onAnswer(correct, value, question)
         }, 3500)
     }
 
@@ -1030,7 +1029,10 @@ function SimulationCard({ question, onAnswer }: QuestionCardProps) {
                                 })}
                             </div>
 
-                            <button onClick={() => onAnswer(allCorrect)} className="w-full btn-primary mt-4 py-3">
+                            <button
+                                onClick={() => onAnswer(allCorrect, null, question)}
+                                className="w-full btn-primary mt-4 py-3"
+                            >
                                 Continue
                             </button>
                         </motion.div>

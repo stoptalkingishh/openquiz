@@ -9,9 +9,8 @@ import BottomNav from './components/BottomNav'
 import Logo from './components/Logo'
 import { Word } from './lib/satTypes'
 import { useAuth } from './contexts/AuthContext'
-import { getWordProgress, getStreak, getCustomQuizzes } from './lib/db'
+import { getWordProgress, getStreak, getCustomQuizzes, loadOfficialQuiz } from './lib/db'
 import { useQuizStore } from './lib/quizStore'
-import { assetPath } from './lib/paths'
 
 export default function Home() {
   const [words, setWords] = useState<Word[]>([])
@@ -34,19 +33,9 @@ export default function Home() {
     const loadPreviewWords = async () => {
       // Preview the selected pre-made/official quiz (works for everyone).
       if (selectedQuizPath && !selectedQuizPath.startsWith('/custom-quiz/')) {
-        fetch(assetPath(selectedQuizPath))
-          .then(res => {
-            if (!res.ok) throw new Error('Failed to fetch quiz')
-            return res.json()
-          })
-          .then(data => {
-            setWords(Array.isArray(data) ? data : [])
-            setLoading(false)
-          })
-          .catch(error => {
-            console.error('Error loading quiz:', error)
-            setLoading(false)
-          })
+        const loaded = await loadOfficialQuiz(selectedQuizPath)
+        setWords(loaded.words.filter(w => w?.word))
+        setLoading(false)
         return
       }
 
