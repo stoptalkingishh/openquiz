@@ -2,14 +2,16 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { X, AlertCircle } from 'lucide-react'
+import { X, AlertCircle, Menu } from 'lucide-react'
 import { buildSession, updateProgress, buildQuestionSession, buildTestSession } from '../../lib/session'
 import { Word, Question, SessionMode, QuizQuestion } from '../../lib/satTypes'
 import QuestionCard from '../../components/QuestionCard'
+import SessionMenu, { ReviewRecord } from '../../components/SessionMenu'
 import { useAuth } from '../../contexts/AuthContext'
 import { getWordProgress, saveWordProgress, getCustomQuizById, getQuizSetByPath, recordQuizSession, loadOfficialQuiz } from '../../lib/db'
 import { useQuizStore } from '../../lib/quizStore'
 import { assetPath } from '../../lib/paths'
+import { stopSpeech } from '../../lib/tts'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export default function SessionModePage() {
@@ -27,6 +29,8 @@ export default function SessionModePage() {
     const [loadError, setLoadError] = useState<string | null>(null)
     const [showExitConfirm, setShowExitConfirm] = useState(false)
     const [retryKey, setRetryKey] = useState(0)
+    const [menuOpen, setMenuOpen] = useState(false)
+    const [history, setHistory] = useState<Record<string, ReviewRecord>>({})
 
     const startTimeRef = useRef<number>(Date.now())
     const correctCountRef = useRef(0)
@@ -52,7 +56,6 @@ export default function SessionModePage() {
 
         // Load words and progress
         const loadQuizData = async (): Promise<{ words?: Word[]; questions?: QuizQuestion[] }> => {
-            // Check if it's a custom quiz (starts with /custom-quiz/)
             if (selectedQuizPath.startsWith('/custom-quiz/')) {
                 const quizId = selectedQuizPath.replace('/custom-quiz/', '')
                 const quiz = await getCustomQuizById(quizId)
@@ -63,7 +66,6 @@ export default function SessionModePage() {
                 }
                 return { words: Array.isArray(quiz.words) ? quiz.words : [] }
             } else {
-                // Regular JSON file — may be vocab words OR manual questions.
                 const official = await getQuizSetByPath(selectedQuizPath)
                 const setName = official?.name || selectedQuizPath.split('/').pop()?.replace('.json', '') || selectedQuizPath
                 quizMetaRef.current = { id: selectedQuizPath, name: setName }
@@ -95,7 +97,6 @@ export default function SessionModePage() {
             }
 
             if (quizData.questions && quizData.questions.length) {
-                // Question-based quiz: build directly from the manual questions.
                 const q = mode === 'test'
                     ? buildTestSession(undefined, quizData.questions, Math.min(20, quizData.questions.length))
                     : buildQuestionSession(mode, quizData.questions, progressData, Math.min(50, quizData.questions.length))
@@ -103,9 +104,6 @@ export default function SessionModePage() {
                 return
             }
 
-            // Build session with all words or reasonable limit
-            // For learn mode: use all words to ensure full coverage
-            // For other modes: use larger limit to avoid cycling
             const wordsOrUndefined = quizData.words || []
             const sessionLimit = mode === 'learn' ? undefined : Math.min(50, wordsOrUndefined.length)
             const q = mode === 'test'
@@ -127,13 +125,16 @@ export default function SessionModePage() {
         router.push('/')
     }
 
-    const handleAnswer = async (correct: boolean) => {
+    const handleAnswer = async (correct: boolean, chosen?: string | number | boolean | null) => {
         if (!user) return
 
         const currentQ = questions[index]
         const newProgress = updateProgress(progress[currentQ.word], correct, currentQ.word)
 
         if (correct) correctCountRef.current += 1
+
+        // Record the submitted answer so the menu can explain wrong/correct.
+        setHistory(h => ({ ...h, [currentQ.id]: { correct, chosen: chosen ?? null } }))
 
         // Persist progress locally (cloud sync comes later)
         await saveWordProgress(user.id, currentQ.word, newProgress)
@@ -147,13 +148,42 @@ export default function SessionModePage() {
         if (index + 1 < questions.length) {
             setIndex(index + 1)
         } else {
-            // Finish
             finishSession(correctCountRef.current, questions.length)
         }
     }
 
+    const goPrev = () => {
+        stopSpeech()
+        setIndex(i => Math.max(0, i - 1))
+    }
+
+    const goNext = () => {
+        stopSpeech()
+        if (index + 1 < questions.length) setIndex(i => i + 1)
+    }
+
+    const googleSearch = () => {
+        const q = questions[index]
+        const payload = q?.payload || {}
+        let query = q?.word || String(payload.prompt || payload.sentence || '') || ''
+        let answer = ''
+        const options = Array.isArray(payload.options) ? payload.options : []
+        if (options.length) {
+            answer = String(options[payload.correctIndex ?? 0] ?? '')
+        } else if (typeof payload.correctAnswer === 'boolean') {
+            answer = payload.correctAnswer ? 'True' : 'False'
+        } else if (payload.answer) {
+            answer = String(payload.answer)
+        } else if (q?.type === 'recall' && payload.ru) {
+            answer = String(payload.ru)
+        }
+        const search = `${query} ${answer}`.trim()
+        if (search) {
+            window.open(`https://www.google.com/search?q=${encodeURIComponent(search)}`, '_blank', 'noopener,noreferrer')
+        }
+    }
+
     const handleExit = async () => {
-        // Save current progress before exiting
         if (user && questions[index]) {
             const currentQ = questions[index]
             const currentProgress = progress[currentQ.word]
@@ -166,10 +196,8 @@ export default function SessionModePage() {
 
     const handleExitClick = () => {
         if (index > 0) {
-            // Show confirmation if there's progress
             setShowExitConfirm(true)
         } else {
-            // No progress, exit immediately
             handleExit()
         }
     }
@@ -203,8 +231,8 @@ export default function SessionModePage() {
         <div className="min-h-screen bg-background-light dark:bg-background-dark dark:bg-stars flex flex-col">
             {/* Header */}
             <div className="px-6 py-6 flex items-center gap-4">
-                <button 
-                    onClick={handleExitClick} 
+                <button
+                    onClick={handleExitClick}
                     className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
                     title="Exit session"
                 >
@@ -219,6 +247,14 @@ export default function SessionModePage() {
                 <span className="text-sm font-bold text-gray-600 dark:text-gray-400">
                     {index + 1}/{questions.length}
                 </span>
+                <button
+                    onClick={() => setMenuOpen(true)}
+                    className="p-2 rounded-xl bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+                    title="Session tools"
+                    aria-label="Open session tools"
+                >
+                    <Menu className="w-6 h-6" />
+                </button>
             </div>
 
             {/* Content */}
@@ -229,6 +265,19 @@ export default function SessionModePage() {
                     onAnswer={handleAnswer}
                 />
             </div>
+
+            {/* Session tools drawer */}
+            <SessionMenu
+                open={menuOpen}
+                onClose={() => setMenuOpen(false)}
+                question={current}
+                history={history[current.id]}
+                index={index}
+                total={questions.length}
+                onPrev={goPrev}
+                onNext={goNext}
+                onGoogleSearch={googleSearch}
+            />
 
             {/* Exit Confirmation Modal */}
             <AnimatePresence>

@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 
 interface QuestionCardProps {
     question: Question
-    onAnswer: (correct: boolean) => void
+    onAnswer: (correct: boolean, chosen?: string | number | boolean | null) => void
 }
 
 function MediaImage({ image }: { image?: string }) {
@@ -158,7 +158,7 @@ function MultipleChoiceCard({ question, onAnswer }: QuestionCardProps) {
         setSubmitted(true)
 
         setTimeout(() => {
-            onAnswer(selected === correctIndex)
+            onAnswer(selected === correctIndex, opts[selected] || null)
         }, 3000) // Give time to read the explanation
     }
 
@@ -321,7 +321,7 @@ function GenericMultipleChoiceCard({ question, onAnswer }: QuestionCardProps) {
         if (selected === null) return
         setSubmitted(true)
         setTimeout(() => {
-            onAnswer(selected === correctIndex)
+            onAnswer(selected === correctIndex, opts[selected] || null)
         }, 3500)
     }
 
@@ -452,7 +452,7 @@ function GenericTrueFalseCard({ question, onAnswer }: QuestionCardProps) {
         setSelected(value)
         setSubmitted(true)
         setTimeout(() => {
-            onAnswer(value === correctAnswer)
+            onAnswer(value === correctAnswer, value ? 'True' : 'False')
         }, 3500)
     }
 
@@ -650,7 +650,7 @@ function GenericWrittenCard({ question, onAnswer }: QuestionCardProps) {
         setSubmitted(true)
         const correct = normalize(value) === normalize(answer || '')
         setTimeout(() => {
-            onAnswer(correct)
+            onAnswer(correct, value)
         }, 3500)
     }
 
