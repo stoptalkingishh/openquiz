@@ -87,7 +87,7 @@ Issues to fix by upgrading:
 
 
 
-Organization:      overflytester1
+Organization:      ...
 Package manager:   npm
 Target file:       package-lock.json
 Project name:      quiz-app
