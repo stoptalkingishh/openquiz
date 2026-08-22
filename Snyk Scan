@@ -1,0 +1,113 @@
+# snyk test
+
+Testing /home/greenpepper52/projects/ismael/openquiz...
+
+Tested 39 dependencies for known issues, found 38 issues, 38 vulnerable paths.
+
+
+Issues to fix by upgrading:
+
+  Upgrade next@14.0.0 to next@16.3.0 to fix
+  ✗ Cross-site Scripting (XSS) [Low Severity][https://security.snyk.io/vuln/SNYK-JS-NEXT-16638684] in next@14.0.0
+    introduced by next@14.0.0
+  ✗ Missing Origin Validation in WebSockets [Low Severity][https://security.snyk.io/vuln/SNYK-JS-NEXT-10259370] in next@14.0.0
+    introduced by next@14.0.0
+  ✗ Missing Source Correlation of Multiple Independent Data [Low Severity][https://security.snyk.io/vuln/SNYK-JS-NEXT-12265451] in next@14.0.0
+    introduced by next@14.0.0
+  ✗ Cross-site Scripting (XSS) [Medium Severity][https://security.snyk.io/vuln/SNYK-JS-POSTCSS-16189065] in postcss@8.4.31
+    introduced by next@14.0.0 > postcss@8.4.31
+  ✗ Directory Traversal (new) [Medium Severity][https://security.snyk.io/vuln/SNYK-JS-POSTCSS-18512282] in postcss@8.4.31
+    introduced by next@14.0.0 > postcss@8.4.31
+  ✗ Allocation of Resources Without Limits or Throttling [Medium Severity][https://security.snyk.io/vuln/SNYK-JS-NEXT-15674556] in next@14.0.0
+    introduced by next@14.0.0
+  ✗ Improper Encoding or Escaping of Output [Medium Severity][https://security.snyk.io/vuln/SNYK-JS-NEXT-18230947] in next@14.0.0
+    introduced by next@14.0.0
+  ✗ Allocation of Resources Without Limits or Throttling [Medium Severity][https://security.snyk.io/vuln/SNYK-JS-NEXT-18232299] in next@14.0.0
+    introduced by next@14.0.0
+  ✗ Insertion of Sensitive Information Into Sent Data [Medium Severity][https://security.snyk.io/vuln/SNYK-JS-NEXT-18233109] in next@14.0.0
+    introduced by next@14.0.0
+  ✗ Use of Cache Containing Sensitive Information [Medium Severity][https://security.snyk.io/vuln/SNYK-JS-NEXT-18233146] in next@14.0.0
+    introduced by next@14.0.0
+  ✗ Acceptance of Extraneous Untrusted Data With Trusted Data [Medium Severity][https://security.snyk.io/vuln/SNYK-JS-NEXT-16638675] in next@14.0.0
+    introduced by next@14.0.0
+  ✗ Use of Weak Hash [Medium Severity][https://security.snyk.io/vuln/SNYK-JS-NEXT-16638677] in next@14.0.0
+    introduced by next@14.0.0
+  ✗ Cross-site Scripting (XSS) [Medium Severity][https://security.snyk.io/vuln/SNYK-JS-NEXT-16638681] in next@14.0.0
+    introduced by next@14.0.0
+  ✗ HTTP Request Smuggling [Medium Severity][https://security.snyk.io/vuln/SNYK-JS-NEXT-15674558] in next@14.0.0
+    introduced by next@14.0.0
+  ✗ Race Condition [Medium Severity][https://security.snyk.io/vuln/SNYK-JS-NEXT-10176058] in next@14.0.0
+    introduced by next@14.0.0
+  ✗ Use of Cache Containing Sensitive Information [Medium Severity][https://security.snyk.io/vuln/SNYK-JS-NEXT-12301496] in next@14.0.0
+    introduced by next@14.0.0
+  ✗ Allocation of Resources Without Limits or Throttling [Medium Severity][https://security.snyk.io/vuln/SNYK-JS-NEXT-8602067] in next@14.0.0
+    introduced by next@14.0.0
+  ✗ Directory Traversal (new) [High Severity][https://security.snyk.io/vuln/SNYK-JS-POSTCSS-18313036] in postcss@8.4.31
+    introduced by next@14.0.0 > postcss@8.4.31
+  ✗ Directory Traversal (new) [High Severity][https://security.snyk.io/vuln/SNYK-JS-POSTCSS-18313038] in postcss@8.4.31
+    introduced by next@14.0.0 > postcss@8.4.31
+  ✗ Allocation of Resources Without Limits or Throttling [High Severity][https://security.snyk.io/vuln/SNYK-JS-NEXT-18233133] in next@14.0.0
+    introduced by next@14.0.0
+  ✗ Server-side Request Forgery (SSRF) [High Severity][https://security.snyk.io/vuln/SNYK-JS-NEXT-18233752] in next@14.0.0
+    introduced by next@14.0.0
+  ✗ Allocation of Resources Without Limits or Throttling [High Severity][https://security.snyk.io/vuln/SNYK-JS-NEXT-16638674] in next@14.0.0
+    introduced by next@14.0.0
+  ✗ Allocation of Resources Without Limits or Throttling [High Severity][https://security.snyk.io/vuln/SNYK-JS-NEXT-16638680] in next@14.0.0
+    introduced by next@14.0.0
+  ✗ Server-side Request Forgery (SSRF) [High Severity][https://security.snyk.io/vuln/SNYK-JS-NEXT-16638682] in next@14.0.0
+    introduced by next@14.0.0
+  ✗ Incorrect Authorization [High Severity][https://security.snyk.io/vuln/SNYK-JS-NEXT-16638683] in next@14.0.0
+    introduced by next@14.0.0
+  ✗ Allocation of Resources Without Limits or Throttling [High Severity][https://security.snyk.io/vuln/SNYK-JS-NEXT-15954202] in next@14.0.0
+    introduced by next@14.0.0
+  ✗ Allocation of Resources Without Limits or Throttling [High Severity][https://security.snyk.io/vuln/SNYK-JS-NEXT-15104645] in next@14.0.0
+    introduced by next@14.0.0
+  ✗ Allocation of Resources Without Limits or Throttling [High Severity][https://security.snyk.io/vuln/SNYK-JS-NEXT-15921797] in next@14.0.0
+    introduced by next@14.0.0
+  ✗ Infinite loop (new) [High Severity][https://security.snyk.io/vuln/SNYK-JS-NANOID-18506894] in nanoid@3.3.11
+    introduced by next@14.0.0 > postcss@8.4.31 > nanoid@3.3.11
+  ✗ Infinite loop (new) [High Severity][https://security.snyk.io/vuln/SNYK-JS-NANOID-18506897] in nanoid@3.3.11
+    introduced by next@14.0.0 > postcss@8.4.31 > nanoid@3.3.11
+  ✗ Integer Overflow or Wraparound (new) [High Severity][https://security.snyk.io/vuln/SNYK-JS-NANOID-18748186] in nanoid@3.3.11
+    introduced by next@14.0.0 > postcss@8.4.31 > nanoid@3.3.11
+  ✗ Server-side Request Forgery (SSRF) [High Severity][https://security.snyk.io/vuln/SNYK-JS-NEXT-12299318] in next@14.0.0
+    introduced by next@14.0.0
+  ✗ Deserialization of Untrusted Data [High Severity][https://security.snyk.io/vuln/SNYK-JS-NEXT-14400636] in next@14.0.0
+    introduced by next@14.0.0
+  ✗ Server-Side Request Forgery (SSRF) [High Severity][https://security.snyk.io/vuln/SNYK-JS-NEXT-6828457] in next@14.0.0
+    introduced by next@14.0.0
+  ✗ Acceptance of Extraneous Untrusted Data With Trusted Data [High Severity][https://security.snyk.io/vuln/SNYK-JS-NEXT-8025427] in next@14.0.0
+    introduced by next@14.0.0
+  ✗ Uncontrolled Recursion [High Severity][https://security.snyk.io/vuln/SNYK-JS-NEXT-8186172] in next@14.0.0
+    introduced by next@14.0.0
+  ✗ Missing Authorization [High Severity][https://security.snyk.io/vuln/SNYK-JS-NEXT-8520073] in next@14.0.0
+    introduced by next@14.0.0
+  ✗ Improper Authorization [Critical Severity][https://security.snyk.io/vuln/SNYK-JS-NEXT-9508709] in next@14.0.0
+    introduced by next@14.0.0
+
+
+
+Organization:      overflytester1
+Package manager:   npm
+Target file:       package-lock.json
+Project name:      quiz-app
+Open source:       no
+Project path:      /home/greenpepper52/projects/ismael/openquiz
+Licenses:          enabled
+
+
+
+# snyk code test
+
+Testing /home/greenpepper52/projects/ismael/openquiz ...
+
+
+╭──────────────────────────────────────────────────────────────────────╮
+│ Test Summary                                                         │
+│                                                                      │
+│   Organization:                                                      │
+│   Test type:         Static code analysis                            │
+│   Project path:      /home/greenpepper52/projects/ismael/openquiz    │
+│                                                                      │
+│   Total issues:   0                                                  │
+╰──────────────────────────────────────────────────────────────────────╯
