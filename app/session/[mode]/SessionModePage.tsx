@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { X, AlertCircle, Menu } from 'lucide-react'
+import { X, AlertCircle, Menu, Volume2, VolumeX } from 'lucide-react'
 import { buildSession, updateProgress, buildQuestionSession, buildTestSession } from '../../lib/session'
 import { Word, Question, SessionMode, QuizQuestion } from '../../lib/satTypes'
 import QuestionCard from '../../components/QuestionCard'
@@ -11,7 +11,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { getWordProgress, saveWordProgress, getCustomQuizById, getQuizSetByPath, recordQuizSession, loadOfficialQuiz } from '../../lib/db'
 import { useQuizStore } from '../../lib/quizStore'
 import { assetPath } from '../../lib/paths'
-import { stopSpeech } from '../../lib/tts'
+import { stopSpeech, isSpeaking, setOnTtsEnd } from '../../lib/tts'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export default function SessionModePage() {
@@ -31,10 +31,21 @@ export default function SessionModePage() {
     const [retryKey, setRetryKey] = useState(0)
     const [menuOpen, setMenuOpen] = useState(false)
     const [history, setHistory] = useState<Record<string, ReviewRecord>>({})
+    const [reading, setReading] = useState(false)
 
     const startTimeRef = useRef<number>(Date.now())
     const correctCountRef = useRef(0)
     const quizMetaRef = useRef<{ id: string; name: string }>({ id: selectedQuizPath, name: selectedQuizPath })
+
+    // Reflect TTS state so a floating "reading" pill can appear even while the
+    // tools menu is closed.
+    useEffect(() => {
+        const tick = () => setReading(isSpeaking())
+        tick()
+        const iv = setInterval(tick, 500)
+        setOnTtsEnd(() => setReading(false))
+        return () => { clearInterval(iv); setOnTtsEnd(null) }
+    }, [])
 
     useEffect(() => {
         if (!user) {
@@ -278,6 +289,32 @@ export default function SessionModePage() {
                     onAnswer={handleAnswer}
                 />
             </div>
+
+            {/* Floating "reading aloud" pill when the menu is closed */}
+            <AnimatePresence>
+                {reading && !menuOpen && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 20 }}
+                        className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40"
+                    >
+                        <button
+                            onClick={() => stopSpeech()}
+                            className="flex items-center gap-2 pl-4 pr-3 py-2.5 rounded-full bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 shadow-xl"
+                            title="Stop reading"
+                        >
+                            <span className="flex gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" style={{ animationDelay: '150ms' }} />
+                                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" style={{ animationDelay: '300ms' }} />
+                            </span>
+                            <span className="text-sm font-semibold">Reading</span>
+                            <VolumeX className="w-4 h-4" />
+                        </button>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Session tools drawer */}
             <SessionMenu

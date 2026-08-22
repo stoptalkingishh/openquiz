@@ -1,13 +1,16 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-    X, ChevronLeft, ChevronRight, Volume2, Pause,
-    Check, Search,
+    X, ChevronLeft, ChevronRight, Volume2, Pause, VolumeX,
+    Check, Search, BookOpen,
 } from 'lucide-react'
 import { Question } from '../lib/satTypes'
-import { questionSpeechText, toggleSpeech, stopSpeech, ttsAvailable } from '../lib/tts'
+import {
+    questionSpeechText, answerSpeechText, speakQuestion, speakAnswer,
+    stopSpeech, ttsAvailable, isSpeaking, setOnTtsEnd, getLastSpokenText,
+} from '../lib/tts'
 
 export interface ReviewRecord {
     correct: boolean
@@ -41,7 +44,7 @@ function answerDisplay(question: Question): string {
             return p.answer || ''
         case 'simulation': {
             const steps = Array.isArray(p.steps) ? p.steps : []
-            return [p.prompt || '', 'Scenario steps: ' + steps.map((s: any) => s?.title).filter(Boolean).join('; ')].filter(Boolean).join(' ')
+            return [p.prompt || '', 'Steps: ' + steps.map((s: any) => s?.title).filter(Boolean).join('; ')].filter(Boolean).join(' ')
         }
         default:
             return ''
@@ -67,15 +70,38 @@ export default function SessionMenu({
     const [speaking, setSpeaking] = useState(false)
     const ttsOk = ttsAvailable()
 
-    const toggleRead = () => {
-        const text = questionSpeechText(question)
-        const nowSpeaking = toggleSpeech(text)
-        setSpeaking(nowSpeaking)
+    // Keep our local state in sync with the module-level TTS state. This also
+    // lets us keep speaking even after the menu closes.
+    useEffect(() => {
+        if (!open) {
+            setSpeaking(isSpeaking())
+            return
+        }
+        setSpeaking(isSpeaking())
+        setOnTtsEnd(() => setSpeaking(false))
+        return () => setOnTtsEnd(null)
+    }, [open, question])
+
+    const readQuestion = () => {
+        if (speakQuestion(question)) setSpeaking(true)
+        else setSpeaking(false)
+    }
+
+    const readAnswer = () => {
+        const ans = answerSpeechText(question)
+        if (!ans) return
+        if (speakAnswer(question)) setSpeaking(true)
+        else setSpeaking(false)
+    }
+
+    const stopReading = () => {
+        stopSpeech()
+        setSpeaking(false)
     }
 
     const closeMenu = () => {
-        stopSpeech()
-        setSpeaking(false)
+        // Intentional: do NOT stop speech — audio keeps playing behind the quiz.
+        setOnTtsEnd(null)
         onClose()
     }
 
@@ -98,7 +124,7 @@ export default function SessionMenu({
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        onClick={onClose}
+                        onClick={closeMenu}
                         className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
                     />
                     <motion.div
@@ -127,16 +153,45 @@ export default function SessionMenu({
                             {/* Reading / TTS */}
                             <div>
                                 <h3 className="text-sm font-bold text-neutral-700 dark:text-neutral-300 uppercase tracking-wide mb-3">
-                                    Read Aloud
+                                    Read Aloud {speaking && <span className="ml-1 inline-flex gap-1 align-middle">
+                                        <span className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" />
+                                        <span className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" style={{ animationDelay: '150ms' }} />
+                                        <span className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" style={{ animationDelay: '300ms' }} />
+                                    </span>}
                                 </h3>
-                                <button
-                                    onClick={toggleRead}
-                                    disabled={!ttsOk}
-                                    className="w-full py-3 rounded-xl bg-primary/10 text-primary dark:text-primary-light font-semibold flex items-center justify-center gap-2 disabled:opacity-40"
-                                >
-                                    {speaking ? <Pause className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
-                                    {ttsOk ? (speaking ? 'Pause' : 'Read aloud') : 'TTS not available'}
-                                </button>
+                                <div className="space-y-2">
+                                    <button
+                                        onClick={readQuestion}
+                                        disabled={!ttsOk}
+                                        className="w-full py-3 rounded-xl bg-primary/10 text-primary dark:text-primary-light font-semibold flex items-center justify-center gap-2 disabled:opacity-40"
+                                    >
+                                        {speaking && getLastSpokenText() === questionSpeechText(question)
+                                            ? <Pause className="w-5 h-5" />
+                                            : <Volume2 className="w-5 h-5" />}
+                                        {ttsOk ? 'Read the question' : 'TTS not available'}
+                                    </button>
+
+                                    <button
+                                        onClick={readAnswer}
+                                        disabled={!ttsOk || !answerSpeechText(question)}
+                                        className="w-full py-3 rounded-xl btn-outline flex items-center justify-center gap-2 disabled:opacity-40"
+                                    >
+                                        <BookOpen className="w-5 h-5" />
+                                        {answerSpeechText(question) ? 'Read the answer' : 'No answer to read'}
+                                    </button>
+
+                                    {speaking && (
+                                        <button
+                                            onClick={stopReading}
+                                            className="w-full py-3 rounded-xl bg-error/10 text-error dark:text-error-light font-semibold flex items-center justify-center gap-2"
+                                        >
+                                            <VolumeX className="w-5 h-5" /> Stop reading
+                                        </button>
+                                    )}
+                                </div>
+                                <p className="text-[10px] text-neutral-500 dark:text-neutral-400 mt-1">
+                                    Audio keeps playing after you close this menu.
+                                </p>
                             </div>
 
                             {/* Navigation */}
