@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Plus, Sparkles, BookOpen, Check, Users, Play, Globe, Lock, Share2, Copy, Twitter, Facebook, MessageCircle, X, Folder, FolderPlus, FolderOpen, Gamepad2, ClipboardList, Trash2 } from 'lucide-react'
 import BottomNav from '../components/BottomNav'
 import { useAuth } from '../contexts/AuthContext'
-import { getQuizSets, getCustomQuizzes, getPublicQuizzes, createCustomQuiz, getFolders, createFolder, normalizeImportedQuizItems, validateQuizJSON, deleteCustomQuiz } from '../lib/db'
+import { getQuizSets, getCustomQuizzes, getPublicQuizzes, createCustomQuiz, getFolders, createFolder, normalizeImportedQuizItems, validateQuizJSON, deleteCustomQuiz, csvToWords, delimitedToWords } from '../lib/db'
 import { useQuizStore } from '../lib/quizStore'
 import { assetPath, BASE_PATH } from '../lib/paths'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -897,21 +897,39 @@ Remember:
 
         try {
             if (step === 'json-mode') {
-                const parsed = JSON.parse(jsonText)
+                let parsed: any
+                let isJson = true
+                try {
+                    parsed = JSON.parse(jsonText)
+                } catch {
+                    isJson = false
+                }
 
-                if (!Array.isArray(parsed)) {
+                if (!isJson) {
+                    const csv = csvToWords(jsonText)
+                    if (csv.words.length) {
+                        await createCustomQuiz(user.id, name, description, csv.words, isPublic, authorName || undefined)
+                    } else {
+                        const delimited = delimitedToWords(jsonText)
+                        if (delimited.words.length) {
+                            await createCustomQuiz(user.id, name, description, delimited.words, isPublic, authorName || undefined)
+                        } else {
+                            throw new Error('Could not parse the pasted text as JSON, CSV, or a simple word list.')
+                        }
+                    }
+                } else if (!Array.isArray(parsed)) {
                     throw new Error('JSON must be an array')
-                }
-
-                const { words, questions, errors } = normalizeImportedQuizItems(parsed)
-                if (errors.length) {
-                    throw new Error('Some items were invalid:\n' + errors.slice(0, 10).map((e: string) => `• ${e}`).join('\n'))
-                }
-                if (questions.length) {
-                    await createCustomQuiz(user.id, name, description, [], isPublic, authorName || undefined, questions)
                 } else {
-                    if (!words.length) throw new Error('No valid quiz content found in JSON')
-                    await createCustomQuiz(user.id, name, description, words, isPublic, authorName || undefined)
+                    const { words, questions, errors } = normalizeImportedQuizItems(parsed)
+                    if (errors.length) {
+                        throw new Error('Some items were invalid:\n' + errors.slice(0, 10).map((e: string) => `• ${e}`).join('\n'))
+                    }
+                    if (questions.length) {
+                        await createCustomQuiz(user.id, name, description, [], isPublic, authorName || undefined, questions)
+                    } else {
+                        if (!words.length) throw new Error('No valid quiz content found in JSON')
+                        await createCustomQuiz(user.id, name, description, words, isPublic, authorName || undefined)
+                    }
                 }
             } else {
                 const cleanQuestions = questions
@@ -1124,10 +1142,25 @@ Remember:
                                 onClick={() => {
                                     setError('')
                                     const result = validateQuizJSON(jsonText)
-                                    if (!result.ok) {
-                                        setError('Validation failed:\n' + result.errors.map((e: string) => `• ${e}`).join('\n'))
-                                    } else {
+                                    if (result.ok) {
                                         setError(`Valid! ${result.count} item${result.count === 1 ? '' : 's'} ready to create.`)
+                                        return
+                                    }
+                                    try {
+                                        JSON.parse(jsonText)
+                                        setError('Validation failed:\n' + result.errors.map((e: string) => `• ${e}`).join('\n'))
+                                    } catch {
+                                        const csv = csvToWords(jsonText)
+                                        if (csv.words.length) {
+                                            setError(`Detected CSV — ${csv.words.length} word${csv.words.length === 1 ? '' : 's'} ready to create.`)
+                                            return
+                                        }
+                                        const delimited = delimitedToWords(jsonText)
+                                        if (delimited.words.length) {
+                                            setError(`Detected a word list — ${delimited.words.length} word${delimited.words.length === 1 ? '' : 's'} ready to create.`)
+                                            return
+                                        }
+                                        setError('Could not parse the pasted text as JSON, CSV, or a simple word list.')
                                     }
                                 }}
                                 disabled={!jsonText || loading}
