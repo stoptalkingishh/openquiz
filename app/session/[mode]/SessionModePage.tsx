@@ -184,6 +184,20 @@ export default function SessionModePage() {
         }
     }
 
+    const handleRate = async (quality: number) => {
+        if (!user) return
+
+        const currentQ = questions[index]
+        if (!currentQ) return
+
+        const prev = progressRef.current[currentQ.word]
+        if (!prev) return
+
+        const updated = updateProgress(prev, quality >= 3, currentQ.word, quality)
+        progressRef.current = { ...progressRef.current, [currentQ.word]: updated }
+        await saveWordProgress(user.id, currentQ.word, updated)
+    }
+
     const goPrev = () => {
         stopSpeech()
         setIndex(i => Math.max(0, i - 1))
@@ -295,6 +309,7 @@ export default function SessionModePage() {
                     key={current.id}
                     question={current}
                     onAnswer={handleAnswer}
+                    onRate={handleRate}
                 />
             </div>
 

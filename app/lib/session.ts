@@ -24,7 +24,7 @@ function uniqueOptions(correct: string, distractors: string[]): string[] {
     })
 }
 
-export function updateProgress(prev: WordProgress | undefined, correct: boolean, word: string): WordProgress {
+export function updateProgress(prev: WordProgress | undefined, correct: boolean, word: string, quality?: number): WordProgress {
     const now = Date.now();
     const base = prev ?? {
         word: word,
@@ -37,21 +37,33 @@ export function updateProgress(prev: WordProgress | undefined, correct: boolean,
     };
 
     const seenCount = (base.seenCount || 0) + 1;
-    let strength = base.strength || 0;
     let wrongStreak = base.wrongStreak || 0;
 
     if (correct) {
         wrongStreak = 0;
-        strength = Math.min(1, strength + 0.15);
     } else {
         wrongStreak += 1;
-        strength = Math.max(0, strength - 0.2);
     }
 
-    // Intervals: 10m, 8h, 2d, 5d
-    const intervals = [10 * 60e3, 8 * 60 * 60e3, 2 * 24 * 60 * 60e3, 5 * 24 * 60 * 60e3];
-    const idx = Math.min(intervals.length - 1, Math.floor(strength * intervals.length));
-    const nextDue = now + intervals[idx];
+    // SM-2-lite: quality (0–5) either comes from an explicit self-rating or is
+    // derived from the boolean result (correct → "Good", wrong → "Again").
+    const q = quality != null ? quality : (correct ? 4 : 1);
+    const ease = Math.max(1.3, (base.ease ?? 2.5) + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02)));
+
+    let repetitions = base.repetitions || 0;
+    let interval = base.interval || 0;
+
+    if (q < 3) {
+        repetitions = 0;
+        interval = 0;
+    } else {
+        repetitions += 1;
+        interval = repetitions === 1 ? 1 : repetitions === 2 ? 6 : Math.round((base.interval || 1) * ease);
+    }
+
+    const nextDue = now + interval * 24 * 60 * 60 * 1000;
+
+    const strength = Math.min(1, Math.max(0, (ease - 1.3) / 1.7));
 
     let status: 'new' | 'learning' | 'mastered' = 'learning';
     if (strength > 0.8) status = 'mastered';
@@ -63,7 +75,10 @@ export function updateProgress(prev: WordProgress | undefined, correct: boolean,
         strength,
         wrongStreak,
         nextDue,
-        status
+        status,
+        ease,
+        repetitions,
+        interval
     };
 }
 
