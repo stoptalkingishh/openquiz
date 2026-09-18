@@ -32,7 +32,7 @@ function shuffle<T>(array: T[]): T[] {
 
 export default function MatchPage() {
     const router = useRouter()
-    const { user } = useAuth()
+    const { user, loading: authLoading } = useAuth()
     const { selectedQuizPath } = useQuizStore()
 
     const [loading, setLoading] = useState(true)
@@ -48,12 +48,13 @@ export default function MatchPage() {
     const isDone = totalPairs > 0 && matchedPairs === totalPairs
 
     useEffect(() => {
-        if (!user) {
+        if (!authLoading && !user) {
             router.push('/auth')
             return
         }
+        if (authLoading) return
         loadQuiz()
-    }, [user, router, selectedQuizPath])
+    }, [user, authLoading, router, selectedQuizPath])
 
     const loadQuiz = async () => {
         try {

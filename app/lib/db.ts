@@ -211,10 +211,11 @@ export function normalizeImportedQuizItems(
         return { words, questions: [], errors }
     }
 
-    const makeId = () =>
-        typeof crypto !== 'undefined' && 'randomUUID' in crypto
-            ? crypto.randomUUID()
-            : `q-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
+    const makeId = (it: any, i: number) =>
+        it?.id ? String(it.id) :
+            typeof crypto !== 'undefined' && 'randomUUID' in crypto
+                ? crypto.randomUUID()
+                : `q-${i}-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
 
     const stripPrefix = (opt: unknown): string =>
         String(opt ?? '')
@@ -238,7 +239,7 @@ export function normalizeImportedQuizItems(
         if (it.kind === 'simulation') {
             const steps = Array.isArray(it.steps) ? it.steps.map((s: any, si: number): SimulationStep => {
                 const base: SimulationStep = {
-                    id: s?.id || `step-${makeId()}-${si}`,
+                    id: s?.id || `step-${makeId(it, i)}-${si}`,
                     kind: (s?.kind === 'choice' || s?.kind === 'checkbox' || s?.kind === 'config' || s?.kind === 'placement') ? s.kind : 'choice',
                     title: String(s?.title || ''),
                     explanation: s?.explanation ? String(s.explanation) : ''
@@ -249,14 +250,14 @@ export function normalizeImportedQuizItems(
                 }
                 if (base.kind === 'checkbox') {
                     base.items = Array.isArray(s?.items) ? s.items.map((it2: any, ix: number) => ({
-                        id: it2?.id || `it-${makeId()}-${ix}`,
+                        id: it2?.id || `it-${makeId(it, i)}-${ix}`,
                         label: String(it2?.label || ''),
                         correct: !!it2?.correct
                     })) : []
                 }
                 if (base.kind === 'config') {
                     base.config = Array.isArray(s?.config) ? s.config.map((it2: any, ix: number) => ({
-                        id: it2?.id || `it-${makeId()}-${ix}`,
+                        id: it2?.id || `it-${makeId(it, i)}-${ix}`,
                         label: String(it2?.label || ''),
                         correct: !!it2?.correct
                     })) : []
@@ -270,7 +271,7 @@ export function normalizeImportedQuizItems(
                 return base
             }) : []
             const q: QuizQuestion = {
-                id: it.id ? String(it.id) : makeId(),
+                id: makeId(it, i),
                 kind: 'simulation',
                 prompt,
                 steps,
@@ -300,7 +301,7 @@ export function normalizeImportedQuizItems(
                 }
             }
             const q: QuizQuestion = {
-                id: makeId(),
+                id: makeId(it, i),
                 kind: 'multiple_choice',
                 prompt,
                 options,
@@ -309,12 +310,12 @@ export function normalizeImportedQuizItems(
             }
             if (it.image) q.image = String(it.image)
             questions.push(q)
-        } else if (typeof it.answer === 'boolean' || /^(true|false|t|f)$/i.test(String(it.answer ?? '').trim())) {
+        } else if (it.kind === 'true_false' || typeof it.answer === 'boolean' || /^(true|false|t|f)$/i.test(String(it.answer ?? '').trim())) {
             const q: QuizQuestion = {
-                id: makeId(),
+                id: makeId(it, i),
                 kind: 'true_false',
                 prompt,
-                correctAnswer: it.answer === true || /^(true|t)$/i.test(String(it.answer).trim()),
+                correctAnswer: it.correctAnswer === true || it.answer === true || /^(true|t)$/i.test(String(it.answer).trim()),
                 explanation: it.explanation ? String(it.explanation) : ''
             }
             if (it.image) q.image = String(it.image)
@@ -322,7 +323,7 @@ export function normalizeImportedQuizItems(
         } else {
             const answer = String(it.answer ?? it.correct_answer ?? '').trim()
             const q: QuizQuestion = {
-                id: makeId(),
+                id: makeId(it, i),
                 kind: 'flashcard',
                 prompt,
                 answer,
@@ -633,17 +634,28 @@ export async function recordQuizSession(
 
     const now = new Date().toISOString()
     const all = readJson<Record<string, QuizStats>>(QUIZ_STATS_KEY, {})
-    const existing = all[quizId]
     const accuracy = Math.round((result.correct / result.total) * 100)
 
+    // A new device may have an empty local cache while Drive already has
+    // history. Read both sides before building the replacement record.
+    const remote = isCloudActive()
+        ? ((await readDriveFile<Record<string, QuizStats>>(QUIZ_STATS_FILE)) || {})
+        : {}
+    const localExisting = all[quizId]
+    const remoteExisting = remote[quizId]
+    const existing = localExisting || remoteExisting
+    const priorHistory = [...(localExisting?.history || []), ...(remoteExisting?.history || [])]
+        .filter((entry, index, entries) => entries.findIndex(other => other.date === entry.date && other.correct === entry.correct && other.total === entry.total) === index)
+        .sort((a, b) => a.date.localeCompare(b.date))
+
     const stats: QuizStats = {
-        plays: (existing?.plays || 0) + 1,
-        bestCorrect: Math.max(existing?.bestCorrect || 0, result.correct),
-        bestAccuracy: Math.max(existing?.bestAccuracy || 0, accuracy),
+        plays: Math.max(localExisting?.plays || 0, remoteExisting?.plays || 0) + 1,
+        bestCorrect: Math.max(localExisting?.bestCorrect || 0, remoteExisting?.bestCorrect || 0, result.correct),
+        bestAccuracy: Math.max(localExisting?.bestAccuracy || 0, remoteExisting?.bestAccuracy || 0, accuracy),
         lastStudied: now,
         quizName,
         history: [
-            ...(existing?.history || []),
+            ...priorHistory,
             {
                 date: now,
                 correct: result.correct,
@@ -657,7 +669,6 @@ export async function recordQuizSession(
     writeJson(QUIZ_STATS_KEY, all)
 
     if (isCloudActive()) {
-        const remote = (await readDriveFile<Record<string, QuizStats>>(QUIZ_STATS_FILE)) || {}
         remote[quizId] = stats
         await writeDriveFile(QUIZ_STATS_FILE, remote)
     }
@@ -694,7 +705,9 @@ export async function syncLocalToCloud(): Promise<boolean> {
     if (!isCloudActive()) return false
     if (typeof window === 'undefined') return false
 
+    const currentUserId = getDriveUser()?.id
     const localQuizzes = readJson<any[]>(CUSTOM_QUIZZES_KEY, [])
+        .filter(q => q.user_id === 'guest' || q.user_id === currentUserId)
     const localProgress = readJson<Record<string, WordProgress>>(PROGRESS_KEY, {})
     const localStats = readJson<Record<string, any>>(DAILY_STATS_KEY, {})
 
@@ -723,6 +736,7 @@ export async function syncLocalToCloud(): Promise<boolean> {
 
         // Folders: Drive wins by id.
         const localFolders = readJson<Folder[]>(FOLDERS_KEY, [])
+            .filter(f => f.user_id === 'guest' || f.user_id === currentUserId)
         const remoteFolders = (await readDriveFile<Folder[]>(FOLDERS_FILE)) || []
         const remoteFolderIds = new Set(remoteFolders.map(f => f.id))
         const mergedFolders = [...remoteFolders, ...localFolders.filter(f => !remoteFolderIds.has(f.id))]

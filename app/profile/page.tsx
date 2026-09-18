@@ -8,29 +8,31 @@ import { useAuth } from '../contexts/AuthContext'
 import { getStreak, getDailyStats, getRecentActivity } from '../lib/db'
 
 export default function ProfilePage() {
-    const { user, signOut } = useAuth()
+    const { user, loading: authLoading, signOut } = useAuth()
     const router = useRouter()
     const [streak, setStreak] = useState(0)
     const [stats, setStats] = useState<any>(null)
     const [recent, setRecent] = useState<any[]>([])
 
     useEffect(() => {
-        if (!user) {
+        if (!authLoading && !user) {
             router.push('/auth')
             return
         }
+        if (authLoading || !user) return
+        const currentUser = user
 
-        getStreak(user.id).then(setStreak)
-        getDailyStats(user.id).then(setStats)
+        getStreak(currentUser.id).then(setStreak)
+        getDailyStats(currentUser.id).then(setStats)
         getRecentActivity(8).then(setRecent)
-    }, [user, router])
+    }, [user, authLoading, router])
 
     const handleSignOut = async () => {
         await signOut()
         router.push('/auth')
     }
 
-    if (!user) return null
+    if (authLoading || !user) return null
 
     return (
         <div className="min-h-screen bg-background-light dark:bg-background-dark dark:bg-stars pb-40">

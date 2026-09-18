@@ -18,7 +18,7 @@ export default function SessionModePage() {
     const params = useParams()
     const router = useRouter()
     const mode = params.mode as SessionMode
-    const { user } = useAuth()
+    const { user, loading: authLoading } = useAuth()
     const { selectedQuizPath } = useQuizStore()
 
     const [words, setWords] = useState<Word[]>([])
@@ -48,10 +48,12 @@ export default function SessionModePage() {
     }, [])
 
     useEffect(() => {
-        if (!user) {
+        if (!authLoading && !user) {
             router.push('/auth')
             return
         }
+        if (authLoading || !user) return
+        const currentUser = user
 
         // Everyone may run both custom quizzes and pre-made/official sets.
 
@@ -91,7 +93,7 @@ export default function SessionModePage() {
 
         Promise.all([
             loadQuizData(),
-            getWordProgress(user.id)
+            getWordProgress(currentUser.id)
         ]).then(([quizData, progressData]) => {
             clearTimeout(timeout)
             setWords(quizData.words || [])
@@ -127,7 +129,7 @@ export default function SessionModePage() {
             setLoadError('Something went wrong while loading this quiz. Please try again.')
             setLoading(false)
         })
-    }, [user, mode, router, selectedQuizPath, retryKey])
+    }, [user, authLoading, mode, router, selectedQuizPath, retryKey])
 
     const finishSession = (correct: number, total: number) => {
         const elapsed = Math.round((Date.now() - startTimeRef.current) / 1000)

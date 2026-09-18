@@ -23,18 +23,19 @@ export default function QuizzesPage() {
     const [showShareModal, setShowShareModal] = useState(false)
     const [shareQuiz, setShareQuiz] = useState<any>(null)
     const [wordCounts, setWordCounts] = useState<Record<string, number>>({})
-    const { user } = useAuth()
+    const { user, loading: authLoading } = useAuth()
     const router = useRouter()
     const { selectedQuizPath, setSelectedQuizPath } = useQuizStore()
 
     useEffect(() => {
-        if (!user) {
+        if (!authLoading && !user) {
             router.push('/auth')
             return
         }
 
+        if (authLoading) return
         loadQuizzes()
-    }, [user, router])
+    }, [user, authLoading, router])
 
     const loadItemCount = async (filePath: string): Promise<number> => {
         try {

@@ -10,6 +10,20 @@ function shuffle<T>(array: T[]): T[] {
     return newArray;
 }
 
+function escapeRegExp(value: string): string {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function uniqueOptions(correct: string, distractors: string[]): string[] {
+    const seen = new Set<string>()
+    return [correct, ...distractors].filter(value => {
+        const key = String(value).trim().toLocaleLowerCase()
+        if (!key || seen.has(key)) return false
+        seen.add(key)
+        return true
+    })
+}
+
 export function updateProgress(prev: WordProgress | undefined, correct: boolean, word: string): WordProgress {
     const now = Date.now();
     const base = prev ?? {
@@ -170,7 +184,7 @@ function makeSimpleUsageQuestion(word: Word, allWords: Word[]): Question {
     // Simple cloze: replace word with blank
     let sentenceWithBlank
     if (correctSentence) {
-        const parts = correctSentence.split(new RegExp(`\\b${word.word}\\w*\\b`, 'i'))
+        const parts = correctSentence.split(new RegExp(`\\b${escapeRegExp(word.word)}\\w*\\b`, 'i'))
         sentenceWithBlank = parts.length > 1 ? parts.join('_______') : correctSentence.replace(word.word, '_______')
     } else {
         sentenceWithBlank = word.word
@@ -179,10 +193,10 @@ function makeSimpleUsageQuestion(word: Word, allWords: Word[]): Question {
     // Distractors: confusions + random
     const distractors = shuffle([
         ...(word.confusions || []),
-        ...shuffle(allWords).slice(0, 3).map(w => w.word)
+        ...shuffle(allWords.filter(candidate => candidate.word.toLocaleLowerCase() !== word.word.toLocaleLowerCase())).slice(0, 3).map(w => w.word)
     ]).slice(0, 3);
 
-    const options = shuffle([word.word, ...distractors]);
+    const options = shuffle(uniqueOptions(word.word, distractors));
 
     return {
         id: `usage-${word.word}-${Date.now()}-${Math.random()}`,
@@ -207,7 +221,7 @@ function makeSatClozeQuestion(word: Word, allWords: Word[]): Question {
     // For simplicity, we just look for the word stem or exact match if possible
     let sentenceWithBlank: string
     if (correctSentence) {
-        const regex = new RegExp(`\\b${word.word}\\w*\\b`, 'i')
+        const regex = new RegExp(`\\b${escapeRegExp(word.word)}\\w*\\b`, 'i')
         const replaced = correctSentence.replace(regex, '_______')
         sentenceWithBlank = replaced === correctSentence ? correctSentence.replace(word.word, '_______') : replaced
     } else {
@@ -216,10 +230,10 @@ function makeSatClozeQuestion(word: Word, allWords: Word[]): Question {
 
     const distractors = shuffle([
         ...(word.confusions || []),
-        ...shuffle(allWords).slice(0, 3).map(w => w.word)
+        ...shuffle(allWords.filter(candidate => candidate.word.toLocaleLowerCase() !== word.word.toLocaleLowerCase())).slice(0, 3).map(w => w.word)
     ]).slice(0, 3);
 
-    const options = shuffle([word.word, ...distractors]);
+    const options = shuffle(uniqueOptions(word.word, distractors));
 
     return {
         id: `sat-${word.word}-${Date.now()}-${Math.random()}`,
