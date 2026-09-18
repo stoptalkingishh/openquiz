@@ -349,6 +349,42 @@ export function buildQuestionSession(
 // from a vocabulary list OR from a generic question quiz.
 // ---------------------------------------------------------------------------
 
+export function buildWriteSession(words: Word[], limit = 20): Question[] {
+    const safe = (words || []).filter(w =>
+        w && typeof w.word === 'string' && w.word.trim() && typeof w.ru === 'string'
+    )
+    if (!safe.length) return []
+
+    const list = shuffle(safe).slice(0, limit)
+
+    const questions: Question[] = []
+    for (const w of list) {
+        const ts = `${Date.now()}-${Math.random()}`
+        questions.push({
+            id: `write-word-${w.word}-${ts}`,
+            word: w.word,
+            type: 'generic_written',
+            payload: {
+                prompt: `Type the word that means: "${w.ru}"`,
+                answer: w.word,
+                explanation: ''
+            }
+        })
+        questions.push({
+            id: `write-meaning-${w.word}-${ts}`,
+            word: w.word,
+            type: 'generic_written',
+            payload: {
+                prompt: `Type the meaning of: "${w.word}"`,
+                answer: w.ru,
+                explanation: ''
+            }
+        })
+    }
+
+    return shuffle(questions).slice(0, limit)
+}
+
 export function buildTestSession(
     words: Word[] | undefined,
     questions: QuizQuestion[] | undefined,

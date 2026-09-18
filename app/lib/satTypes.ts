@@ -48,7 +48,7 @@ export interface Question {
   payload: any;
 }
 
-export type SessionMode = 'learn' | 'drill' | 'exam' | 'mistakes' | 'test';
+export type SessionMode = 'learn' | 'drill' | 'exam' | 'mistakes' | 'test' | 'write';
 
 export interface DailyProgress {
   date: string;

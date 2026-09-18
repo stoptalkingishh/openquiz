@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { X, AlertCircle, Menu, Volume2, VolumeX } from 'lucide-react'
-import { buildSession, updateProgress, buildQuestionSession, buildTestSession } from '../../lib/session'
+import { buildSession, updateProgress, buildQuestionSession, buildTestSession, buildWriteSession } from '../../lib/session'
 import { Word, Question, SessionMode, QuizQuestion } from '../../lib/satTypes'
 import QuestionCard from '../../components/QuestionCard'
 import SessionMenu, { ReviewRecord } from '../../components/SessionMenu'
@@ -126,7 +126,9 @@ export default function SessionModePage() {
             const sessionLimit = mode === 'learn' ? undefined : Math.min(50, wordsOrUndefined.length)
             const q = mode === 'test'
                 ? buildTestSession(wordsOrUndefined, undefined, 20)
-                : buildSession(mode, wordsOrUndefined, progressData, sessionLimit)
+                : mode === 'write'
+                    ? buildWriteSession(wordsOrUndefined, 20)
+                    : buildSession(mode, wordsOrUndefined, progressData, sessionLimit)
             buildFromQuestions(q)
         }).catch(err => {
             clearTimeout(timeout)
