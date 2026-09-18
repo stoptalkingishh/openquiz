@@ -19,7 +19,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         setMounted(true)
         // Check localStorage and system preference
-        const stored = localStorage.getItem('darkMode')
+        let stored: string | null = null
+        try {
+            stored = localStorage.getItem('darkMode')
+        } catch {
+            stored = null
+        }
         if (stored !== null) {
             setDarkMode(stored === 'true')
         } else {
@@ -35,7 +40,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         } else {
             document.documentElement.classList.remove('dark')
         }
-        localStorage.setItem('darkMode', String(darkMode))
+        try {
+            localStorage.setItem('darkMode', String(darkMode))
+        } catch {
+            // theme persistence is best-effort
+        }
     }, [darkMode, mounted])
 
     const toggleDarkMode = () => setDarkMode(!darkMode)

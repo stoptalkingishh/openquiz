@@ -42,6 +42,8 @@ function answerDisplay(question: Question): string {
             return p.answer || ''
         case 'generic_written':
             return p.answer || ''
+        case 'recall':
+            return p.ru || ''
         case 'simulation': {
             const steps = Array.isArray(p.steps) ? p.steps : []
             return [p.prompt || '', 'Steps: ' + steps.map((s: any) => s?.title).filter(Boolean).join('; ')].filter(Boolean).join(' ')

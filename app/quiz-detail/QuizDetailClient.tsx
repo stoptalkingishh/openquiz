@@ -174,7 +174,7 @@ export default function QuizDetailClient() {
                 break
         }
 
-        window.open(shareUrl, '_blank', 'width=600,height=400')
+        window.open(shareUrl, '_blank', 'width=600,height=400,noopener,noreferrer')
     }
 
     if (loading) {
