@@ -103,7 +103,7 @@ export default function Home() {
             <div className="flex justify-between items-end mb-4">
               <div>
                 <p className="text-white/80 font-bold text-sm uppercase mb-1">Daily Goal</p>
-                <h2 className="text-3xl sm:text-4xl font-extrabold">{masteredCount} / 40</h2>
+                <h2 className="text-3xl sm:text-4xl font-extrabold">{Math.min(masteredCount, 40)} / 40</h2>
               </div>
               <div className="text-right">
                 <p className="text-white/80 font-bold text-sm uppercase mb-1">Sprint</p>
@@ -114,7 +114,7 @@ export default function Home() {
             <div className="h-3 bg-black/20 rounded-full overflow-hidden">
               <div
                 className="h-full bg-white rounded-full transition-all duration-500"
-                style={{ width: `${(masteredCount / 40) * 100}%` }}
+                style={{ width: `${Math.min(100, (masteredCount / 40) * 100)}%` }}
               />
             </div>
           </div>

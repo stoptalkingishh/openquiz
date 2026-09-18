@@ -6,7 +6,6 @@ import {
     signInToDrive,
     restoreDriveSession,
     signOutFromDrive,
-    getDriveUser,
     getStoredDriveUser,
     rememberDriveUser,
     DriveUser
@@ -150,10 +149,4 @@ export function useAuth() {
         throw new Error('useAuth must be used within an AuthProvider')
     }
     return context
-}
-
-// Re-export helper so components that only need the current Drive user
-// (if any) don't have to reach into the drive module directly.
-export function useDriveUser(): DriveUser | null {
-    return typeof window !== 'undefined' ? getDriveUser() : null
 }

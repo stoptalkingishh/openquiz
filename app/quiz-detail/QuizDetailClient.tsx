@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { ArrowLeft, Play, BookOpen, Globe, Lock, Share2, Copy, Users, Check, Gamepad2, ClipboardList, Folder, FolderPlus, Trophy, Trash2 } from 'lucide-react'
 import { getCustomQuizById, getQuizSetByPath, getFolders, setQuizInFolder, createFolder, getQuizStats, loadOfficialQuiz, deleteCustomQuiz } from '../lib/db'
@@ -25,30 +25,7 @@ export default function QuizDetailClient() {
     const [showFolderPicker, setShowFolderPicker] = useState(false)
     const [newFolderName, setNewFolderName] = useState('')
 
-    useEffect(() => {
-        if (!quizId && !pathParam) {
-            router.push('/quizzes')
-            return
-        }
-        loadQuiz()
-    }, [quizId, pathParam, router])
-
-    useEffect(() => {
-        getFolders().then(setFolders)
-    }, [])
-
-    useEffect(() => {
-        if (!quiz) return
-        getQuizStats(quiz.isCustom ? quizId || '' : quiz.file_path || '').then(setStats)
-    }, [quiz, quizId])
-
-    useEffect(() => {
-        if (quiz && quiz.name) {
-            document.title = `${quiz.name} | OpenQuiz`
-        }
-    }, [quiz])
-
-    const loadQuiz = async () => {
+    const loadQuiz = useCallback(async () => {
         try {
             if (quizId) {
                 const customQuiz = await getCustomQuizById(quizId)
@@ -79,7 +56,30 @@ export default function QuizDetailClient() {
             console.error('Error loading quiz:', error)
             router.push('/quizzes')
         }
-    }
+    }, [quizId, pathParam, router])
+
+    useEffect(() => {
+        if (!quizId && !pathParam) {
+            router.push('/quizzes')
+            return
+        }
+        loadQuiz()
+    }, [quizId, pathParam, router, loadQuiz])
+
+    useEffect(() => {
+        getFolders().then(setFolders)
+    }, [])
+
+    useEffect(() => {
+        if (!quiz) return
+        getQuizStats(quiz.isCustom ? quizId || '' : quiz.file_path || '').then(setStats)
+    }, [quiz, quizId])
+
+    useEffect(() => {
+        if (quiz && quiz.name) {
+            document.title = `${quiz.name} | OpenQuiz`
+        }
+    }, [quiz])
 
     const handleStart = () => {
         if (quiz.isCustom) {

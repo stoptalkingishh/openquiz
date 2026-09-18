@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Timer, Trophy, RotateCcw, Gamepad2 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
@@ -30,9 +30,38 @@ function shuffle<T>(array: T[]): T[] {
     return arr
 }
 
+function buildPairs(words: Word[], questions: QuizQuestion[]): MatchPair[] {
+    const pairs: MatchPair[] = []
+    if (questions && questions.length) {
+        for (const q of questions) {
+            if (q.kind === 'flashcard' && q.prompt && q.answer) {
+                pairs.push({ id: q.id, term: q.prompt, answer: q.answer })
+            } else if (q.kind === 'multiple_choice' && q.options && q.options.length) {
+                const correct = q.options[q.correctIndex ?? 0]
+                if (correct) pairs.push({ id: q.id, term: q.prompt, answer: correct })
+            }
+        }
+    } else {
+        for (const w of words) {
+            if (!w.word) continue
+            const answer = (w.ru || '').trim() || (Array.isArray(w.synonyms) && w.synonyms[0]) || ''
+            if (!answer) continue
+            pairs.push({ id: w.word, term: w.word, answer })
+        }
+    }
+    return shuffle(pairs).slice(0, 8)
+}
+
+function buildCards(pairs: MatchPair[]): MatchCard[] {
+    return shuffle(pairs.flatMap(p => ([
+        { pairId: p.id, side: 'term' as const, text: p.term },
+        { pairId: p.id, side: 'answer' as const, text: p.answer }
+    ])))
+}
+
 export default function MatchPage() {
     const router = useRouter()
-    const { user } = useAuth()
+    const { user, loading: authLoading } = useAuth()
     const { selectedQuizPath } = useQuizStore()
 
     const [loading, setLoading] = useState(true)
@@ -47,15 +76,7 @@ export default function MatchPage() {
     const matchedPairs = Object.keys(matched).length
     const isDone = totalPairs > 0 && matchedPairs === totalPairs
 
-    useEffect(() => {
-        if (!user) {
-            router.push('/auth')
-            return
-        }
-        loadQuiz()
-    }, [user, router, selectedQuizPath])
-
-    const loadQuiz = async () => {
+    const loadQuiz = useCallback(async () => {
         try {
             let words: Word[] = []
             let questions: QuizQuestion[] = []
@@ -92,35 +113,16 @@ export default function MatchPage() {
             console.error('Error loading quiz:', err)
             router.push('/quizzes')
         }
-    }
+    }, [selectedQuizPath, router])
 
-    const buildPairs = (words: Word[], questions: QuizQuestion[]): MatchPair[] => {
-        const pairs: MatchPair[] = []
-        if (questions && questions.length) {
-            for (const q of questions) {
-                if (q.kind === 'flashcard' && q.prompt && q.answer) {
-                    pairs.push({ id: q.id, term: q.prompt, answer: q.answer })
-                } else if (q.kind === 'multiple_choice' && q.options && q.options.length) {
-                    const correct = q.options[q.correctIndex ?? 0]
-                    if (correct) pairs.push({ id: q.id, term: q.prompt, answer: correct })
-                }
-            }
-        } else {
-            for (const w of words) {
-                if (!w.word) continue
-                const answer = (w.ru || '').trim() || (Array.isArray(w.synonyms) && w.synonyms[0]) || ''
-                if (!answer) continue
-                pairs.push({ id: w.word, term: w.word, answer })
-            }
+    useEffect(() => {
+        if (!authLoading && !user) {
+            router.push('/auth')
+            return
         }
-        return shuffle(pairs).slice(0, 8)
-    }
-
-    const buildCards = (pairs: MatchPair[]): MatchCard[] =>
-        shuffle(pairs.flatMap(p => ([
-            { pairId: p.id, side: 'term' as const, text: p.term },
-            { pairId: p.id, side: 'answer' as const, text: p.answer }
-        ])))
+        if (authLoading) return
+        loadQuiz()
+    }, [user, authLoading, router, selectedQuizPath, loadQuiz])
 
     useEffect(() => {
         if (isDone && !finished) {

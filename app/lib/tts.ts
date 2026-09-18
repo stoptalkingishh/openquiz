@@ -73,7 +73,7 @@ export function speakText(text: string): boolean {
         const voices = s.getVoices?.() || []
         const en = voices.find((v: any) => /^en/i.test(v.lang)) || voices.find((v: any) => /^en/i.test(v.name))
         if (en) u.voice = en
-        u.onend = () => {
+        const finish = () => {
             lastTextValue = ''
             if (onEndHandler) {
                 const cb = onEndHandler
@@ -81,6 +81,8 @@ export function speakText(text: string): boolean {
                 cb()
             }
         }
+        u.onend = finish
+        u.onerror = finish
         lastTextValue = text
         s.speak(u)
         return true

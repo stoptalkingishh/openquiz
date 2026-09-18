@@ -18,13 +18,12 @@ export default function SessionModePage() {
     const params = useParams()
     const router = useRouter()
     const mode = params.mode as SessionMode
-    const { user } = useAuth()
+    const { user, loading: authLoading } = useAuth()
     const { selectedQuizPath } = useQuizStore()
 
     const [words, setWords] = useState<Word[]>([])
     const [questions, setQuestions] = useState<Question[]>([])
     const [index, setIndex] = useState(0)
-    const [progress, setProgress] = useState<Record<string, any>>({})
     const [loading, setLoading] = useState(true)
     const [loadError, setLoadError] = useState<string | null>(null)
     const [showExitConfirm, setShowExitConfirm] = useState(false)
@@ -36,6 +35,7 @@ export default function SessionModePage() {
     const startTimeRef = useRef<number>(Date.now())
     const correctCountRef = useRef(0)
     const quizMetaRef = useRef<{ id: string; name: string }>({ id: selectedQuizPath, name: selectedQuizPath })
+    const progressRef = useRef<Record<string, any>>({})
 
     // Reflect TTS state so a floating "reading" pill can appear even while the
     // tools menu is closed.
@@ -48,12 +48,16 @@ export default function SessionModePage() {
     }, [])
 
     useEffect(() => {
-        if (!user) {
+        if (!authLoading && !user) {
             router.push('/auth')
             return
         }
+        if (authLoading || !user) return
+        const currentUser = user
 
         // Everyone may run both custom quizzes and pre-made/official sets.
+
+        let cancelled = false
 
         setLoading(true)
         setLoadError(null)
@@ -61,6 +65,7 @@ export default function SessionModePage() {
         // If the quiz data or Drive cannot be reached, fail fast instead of
         // sitting on an infinite spinner.
         const timeout = setTimeout(() => {
+            if (cancelled) return
             setLoadError('This is taking too long. Check your connection and try again.')
             setLoading(false)
         }, 12000)
@@ -91,13 +96,15 @@ export default function SessionModePage() {
 
         Promise.all([
             loadQuizData(),
-            getWordProgress(user.id)
+            getWordProgress(currentUser.id)
         ]).then(([quizData, progressData]) => {
             clearTimeout(timeout)
+            if (cancelled) return
             setWords(quizData.words || [])
-            setProgress(progressData)
+            progressRef.current = progressData
 
             const buildFromQuestions = (q: Question[]) => {
+                if (cancelled) return
                 if (!q.length) {
                     setLoadError('This quiz has no studyable content. Try another quiz.')
                     setLoading(false)
@@ -123,11 +130,17 @@ export default function SessionModePage() {
             buildFromQuestions(q)
         }).catch(err => {
             clearTimeout(timeout)
+            if (cancelled) return
             console.error('Error loading quiz:', err)
             setLoadError('Something went wrong while loading this quiz. Please try again.')
             setLoading(false)
         })
-    }, [user, mode, router, selectedQuizPath, retryKey])
+
+        return () => {
+            cancelled = true
+            clearTimeout(timeout)
+        }
+    }, [user, authLoading, mode, router, selectedQuizPath, retryKey])
 
     const finishSession = (correct: number, total: number) => {
         const elapsed = Math.round((Date.now() - startTimeRef.current) / 1000)
@@ -152,7 +165,8 @@ export default function SessionModePage() {
         // on a simulation Continue button).
         if (history[currentQ.id]) return
 
-        const newProgress = updateProgress(progress[currentQ.word], correct, currentQ.word)
+        const newProgress = updateProgress(progressRef.current[currentQ.word], correct, currentQ.word)
+        progressRef.current = { ...progressRef.current, [currentQ.word]: newProgress }
 
         if (correct) correctCountRef.current += 1
 
@@ -161,12 +175,6 @@ export default function SessionModePage() {
 
         // Persist progress locally (cloud sync comes later)
         await saveWordProgress(user.id, currentQ.word, newProgress)
-
-        // Update local state
-        setProgress({
-            ...progress,
-            [currentQ.word]: newProgress
-        })
 
         if (index + 1 < questions.length && questions[index]?.id === currentQ.id) {
             setIndex(index + 1)
@@ -210,7 +218,7 @@ export default function SessionModePage() {
     const handleExit = async () => {
         if (user && questions[index]) {
             const currentQ = questions[index]
-            const currentProgress = progress[currentQ.word]
+            const currentProgress = progressRef.current[currentQ.word]
             if (currentProgress) {
                 await saveWordProgress(user.id, currentQ.word, currentProgress)
             }
