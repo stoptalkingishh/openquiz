@@ -170,7 +170,7 @@ export default function QuizzesPage() {
                 break
         }
 
-        window.open(shareUrl, '_blank', 'width=600,height=400')
+        window.open(shareUrl, '_blank', 'width=600,height=400,noopener,noreferrer')
     }
 
     // Group official sets by category so pre-made content stays tidy

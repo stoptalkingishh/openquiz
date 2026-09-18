@@ -14,6 +14,8 @@ function makeId(): string {
     return `q-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
 }
 
+const MAX_IMAGE_BYTES = 500 * 1024
+
 function fileToDataUrl(file: File, onDone: (url: string) => void) {
     const reader = new FileReader()
     reader.onload = () => onDone(typeof reader.result === 'string' ? reader.result : '')
@@ -50,7 +52,12 @@ function ImagePicker({ value, onChange }: { value: string; onChange: (url: strin
                     className="hidden"
                     onChange={(e) => {
                         const f = e.target.files && e.target.files[0]
-                        if (f) fileToDataUrl(f, onChange)
+                        if (!f) return
+                        if (f.size > MAX_IMAGE_BYTES) {
+                            alert('Image is too large (max 500KB). Use a smaller image or paste an image URL.')
+                            return
+                        }
+                        fileToDataUrl(f, onChange)
                     }}
                 />
                 {value && (

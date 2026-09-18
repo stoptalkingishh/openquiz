@@ -52,7 +52,13 @@ function readJson<T>(key: string, fallback: T): T {
 
 function writeJson(key: string, value: unknown) {
     if (typeof window === 'undefined') return
-    window.localStorage.setItem(key, JSON.stringify(value))
+    try {
+        window.localStorage.setItem(key, JSON.stringify(value))
+    } catch (err) {
+        // QuotaExceededError (e.g. oversized images) must not throw out of the
+        // data layer — callers assume writes are best-effort, like readJson.
+        console.error('localStorage write failed:', err)
+    }
 }
 
 // Serialize read-modify-write cycles per storage key so overlapping saves
@@ -271,6 +277,20 @@ export function normalizeImportedQuizItems(
                 ? crypto.randomUUID()
                 : `q-${i}-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
 
+    // Imported quizzes may reuse ids; ensure question ids stay unique so
+    // progress/history keys never collide.
+    const seenIds = new Set<string>()
+    const uniqueId = (base: string): string => {
+        let id = base
+        let n = 1
+        while (seenIds.has(id)) {
+            id = `${base}-${n}`
+            n += 1
+        }
+        seenIds.add(id)
+        return id
+    }
+
     const stripPrefix = (opt: unknown): string =>
         String(opt ?? '')
             .trim()
@@ -325,7 +345,7 @@ export function normalizeImportedQuizItems(
                 return base
             }) : []
             const q: QuizQuestion = {
-                id: makeId(it, i),
+                id: uniqueId(makeId(it, i)),
                 kind: 'simulation',
                 prompt,
                 steps,
@@ -355,7 +375,7 @@ export function normalizeImportedQuizItems(
                 }
             }
             const q: QuizQuestion = {
-                id: makeId(it, i),
+                id: uniqueId(makeId(it, i)),
                 kind: 'multiple_choice',
                 prompt,
                 options,
@@ -373,7 +393,7 @@ export function normalizeImportedQuizItems(
         ) {
             const rawAnswer = it.correctAnswer !== undefined && it.correctAnswer !== null ? it.correctAnswer : it.answer
             const q: QuizQuestion = {
-                id: makeId(it, i),
+                id: uniqueId(makeId(it, i)),
                 kind: 'true_false',
                 prompt,
                 correctAnswer: parseTrueFalse(rawAnswer),
@@ -384,7 +404,7 @@ export function normalizeImportedQuizItems(
         } else {
             const answer = String(it.answer ?? it.correct_answer ?? '').trim()
             const q: QuizQuestion = {
-                id: makeId(it, i),
+                id: uniqueId(makeId(it, i)),
                 kind: 'flashcard',
                 prompt,
                 answer,
