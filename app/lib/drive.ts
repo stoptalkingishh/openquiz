@@ -368,11 +368,12 @@ async function ensureFolder(): Promise<string | null> {
     try {
         // Find the app folder this app already created (drive.file scope only
         // exposes files the app created), otherwise create it.
-        const found = await withTimeout<{ result?: { files?: { id?: string }[] } }>(window.gapi.client.drive.files.list({
+        const found = await withTimeout<{ result?: { files?: { id?: string }[] } } | null>(window.gapi.client.drive.files.list({
             q: `name = '${FOLDER_NAME}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
             fields: 'files(id, name)',
             pageSize: 1
-        }), 8000, { result: { files: [] } })
+        }), 8000, null)
+        if (!found) return null
         const existing = found?.result?.files?.[0]
         if (existing?.id) {
             localSet(folderKey, existing.id)
@@ -433,7 +434,7 @@ export function readDriveFile<T>(fileName: string): Promise<T | null> {
                 path: `/drive/v3/files/${fileId}`,
                 method: 'GET',
                 params: { alt: 'media' }
-            }), 8000, {})
+            }), 8000, null)
             const text = typeof res?.body === 'string' ? res.body : JSON.stringify(res?.result ?? res)
             return JSON.parse(text) as T
         } catch (err) {

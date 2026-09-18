@@ -54,7 +54,6 @@ export function updateProgress(prev: WordProgress | undefined, correct: boolean,
     const nextDue = now + intervals[idx];
 
     let status: 'new' | 'learning' | 'mastered' = 'learning';
-    if ((base.seenCount || 0) === 0) status = 'new';
     if (strength > 0.8) status = 'mastered';
 
     return {
@@ -81,8 +80,14 @@ export function buildSession(
         w && typeof w.word === 'string' && w.word.trim() && typeof w.ru === 'string'
     );
 
+    // "Mistakes" mode should only draw from words the user actually got wrong,
+    // otherwise brand-new words (highest priority) crowd the mistakes out.
+    const sourceWords = mode === 'mistakes'
+        ? safeWords.filter(w => (progressMap[w.word]?.wrongStreak || 0) > 0)
+        : safeWords
+
     // 1. Select candidates by priority - prioritize new/weak words, avoid recently seen
-    const candidates = safeWords
+    const candidates = sourceWords
         .map(w => {
             const p = progressMap[w.word];
             const progress = p ?? { 
@@ -413,7 +418,9 @@ export function buildTestSession(
         return shuffle(built)
     }
 
-    const list = words || []
+    const list = (words || []).filter(w =>
+        w && typeof w.word === 'string' && w.word.trim() && typeof w.ru === 'string'
+    )
     if (!list.length) return []
 
     const picked = shuffle(list).slice(0, limit)

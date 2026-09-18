@@ -22,9 +22,9 @@ export default function ProfilePage() {
         if (authLoading || !user) return
         const currentUser = user
 
-        getStreak(currentUser.id).then(setStreak)
-        getDailyStats(currentUser.id).then(setStats)
-        getRecentActivity(8).then(setRecent)
+        getStreak(currentUser.id).then(setStreak).catch(() => {})
+        getDailyStats(currentUser.id).then(setStats).catch(() => {})
+        getRecentActivity(8).then(setRecent).catch(() => {})
     }, [user, authLoading, router])
 
     const handleSignOut = async () => {

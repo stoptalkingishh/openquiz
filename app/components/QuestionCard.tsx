@@ -762,12 +762,12 @@ interface SimAnswers {
     placement: Record<string, Record<number, number>>
 }
 
-// Last-selected placement chip (module-level so the editor and card share it).
-const chipRequestRef = { current: null as number | null }
+// Last-selected placement chip.
 function useChipRequest(): { current: number | null; set: (n: number | null) => void } {
+    const [chip, setChip] = useState<number | null>(null)
     return {
-        current: chipRequestRef.current,
-        set: (n) => { chipRequestRef.current = n }
+        current: chip,
+        set: setChip
     }
 }
 

@@ -57,12 +57,15 @@ export default function SessionModePage() {
 
         // Everyone may run both custom quizzes and pre-made/official sets.
 
+        let cancelled = false
+
         setLoading(true)
         setLoadError(null)
 
         // If the quiz data or Drive cannot be reached, fail fast instead of
         // sitting on an infinite spinner.
         const timeout = setTimeout(() => {
+            if (cancelled) return
             setLoadError('This is taking too long. Check your connection and try again.')
             setLoading(false)
         }, 12000)
@@ -96,10 +99,12 @@ export default function SessionModePage() {
             getWordProgress(currentUser.id)
         ]).then(([quizData, progressData]) => {
             clearTimeout(timeout)
+            if (cancelled) return
             setWords(quizData.words || [])
             progressRef.current = progressData
 
             const buildFromQuestions = (q: Question[]) => {
+                if (cancelled) return
                 if (!q.length) {
                     setLoadError('This quiz has no studyable content. Try another quiz.')
                     setLoading(false)
@@ -125,10 +130,16 @@ export default function SessionModePage() {
             buildFromQuestions(q)
         }).catch(err => {
             clearTimeout(timeout)
+            if (cancelled) return
             console.error('Error loading quiz:', err)
             setLoadError('Something went wrong while loading this quiz. Please try again.')
             setLoading(false)
         })
+
+        return () => {
+            cancelled = true
+            clearTimeout(timeout)
+        }
     }, [user, authLoading, mode, router, selectedQuizPath, retryKey])
 
     const finishSession = (correct: number, total: number) => {

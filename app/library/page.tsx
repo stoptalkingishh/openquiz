@@ -17,10 +17,11 @@ export default function LibraryPage() {
     const [filter, setFilter] = useState<'all' | 'new' | 'learning' | 'mastered'>('all')
     const [selectedWord, setSelectedWord] = useState<Word | null>(null)
     const [progress, setProgress] = useState<Record<string, any>>({})
-    const { user } = useAuth()
+    const { user, loading: authLoading } = useAuth()
     const router = useRouter()
 
     useEffect(() => {
+        if (authLoading) return
         if (!user) {
             router.push('/auth')
             return
@@ -63,13 +64,15 @@ export default function LibraryPage() {
             return collected
         }
 
-        loadWords().then(setWords)
-        getWordProgress(user.id).then(setProgress)
-    }, [user, router])
+        loadWords().then(setWords).catch(() => {})
+        getWordProgress(user.id).then(setProgress).catch(() => {})
+    }, [user, authLoading, router])
+
+    if (authLoading) return null
 
     const filteredWords = words.filter(w => {
-        const matchesSearch = w.word.toLowerCase().includes(search.toLowerCase()) ||
-            w.ru.toLowerCase().includes(search.toLowerCase())
+        const matchesSearch = (w.word || '').toLowerCase().includes(search.toLowerCase()) ||
+            (w.ru || '').toLowerCase().includes(search.toLowerCase())
 
         if (!matchesSearch) return false
 

@@ -37,7 +37,7 @@ export default function LaTeX({ children, displayMode = false, className = '' }:
             displayMode,
             throwOnError: true, // Throw error to try next strategy
             strict: 'ignore',
-            trust: true,
+            trust: false,
             macros: {
               '\\tfrac': '\\frac',
               '\\dfrac': '\\frac',

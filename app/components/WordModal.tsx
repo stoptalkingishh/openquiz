@@ -50,7 +50,7 @@ export default function WordModal({ word, onClose }: WordModalProps) {
                     <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-2xl">
                         <h3 className="text-sm font-bold text-gray-400 uppercase mb-2">Examples</h3>
                         <ul className="space-y-3">
-                            {word.simple_examples.map((ex, i) => (
+                            {(Array.isArray(word.simple_examples) ? word.simple_examples : []).map((ex, i) => (
                                 <li key={i} className="text-gray-700 dark:text-gray-300 leading-relaxed">
                                     &ldquo;{ex}&rdquo;
                                 </li>
@@ -66,7 +66,7 @@ export default function WordModal({ word, onClose }: WordModalProps) {
                     </div>
 
                     <div className="flex flex-wrap gap-2">
-                        {word.synonyms.map(syn => (
+                        {(Array.isArray(word.synonyms) ? word.synonyms : []).map(syn => (
                             <span key={syn} className="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg font-medium text-sm">
                                 {syn}
                             </span>
