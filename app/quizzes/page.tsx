@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, Sparkles, BookOpen, Check, Users, Play, Globe, Lock, Share2, Copy, Twitter, Facebook, MessageCircle, X, Folder, FolderPlus, FolderOpen, Gamepad2, ClipboardList, Trash2 } from 'lucide-react'
 import BottomNav from '../components/BottomNav'
@@ -11,6 +11,16 @@ import { assetPath, BASE_PATH } from '../lib/paths'
 import { motion, AnimatePresence } from 'framer-motion'
 import QuizBuilder from '../components/QuizBuilder'
 import { QuizQuestion } from '../lib/satTypes'
+
+const loadItemCount = async (filePath: string): Promise<number> => {
+    try {
+        const response = await fetch(assetPath(filePath))
+        const data = await response.json()
+        return Array.isArray(data) ? data.length : 0
+    } catch {
+        return 0
+    }
+}
 
 export default function QuizzesPage() {
     const [quizSets, setQuizSets] = useState<any[]>([])
@@ -27,27 +37,7 @@ export default function QuizzesPage() {
     const router = useRouter()
     const { selectedQuizPath, setSelectedQuizPath } = useQuizStore()
 
-    useEffect(() => {
-        if (!authLoading && !user) {
-            router.push('/auth')
-            return
-        }
-
-        if (authLoading) return
-        loadQuizzes()
-    }, [user, authLoading, router])
-
-    const loadItemCount = async (filePath: string): Promise<number> => {
-        try {
-            const response = await fetch(assetPath(filePath))
-            const data = await response.json()
-            return Array.isArray(data) ? data.length : 0
-        } catch {
-            return 0
-        }
-    }
-
-    const loadQuizzes = async () => {
+    const loadQuizzes = useCallback(async () => {
         if (!user) return
 
         // Everyone sees pre-made Official sets. "Peer Sets" (locally shared
@@ -72,7 +62,17 @@ export default function QuizzesPage() {
             counts[set.file_path] = await loadItemCount(set.file_path)
         }
         setWordCounts(counts)
-    }
+    }, [user])
+
+    useEffect(() => {
+        if (!authLoading && !user) {
+            router.push('/auth')
+            return
+        }
+
+        if (authLoading) return
+        loadQuizzes()
+    }, [user, authLoading, router, loadQuizzes])
 
     const handleQuizSelect = (filePath: string) => {
         setSelectedQuizPath(filePath)

@@ -24,7 +24,6 @@ export default function SessionModePage() {
     const [words, setWords] = useState<Word[]>([])
     const [questions, setQuestions] = useState<Question[]>([])
     const [index, setIndex] = useState(0)
-    const [progress, setProgress] = useState<Record<string, any>>({})
     const [loading, setLoading] = useState(true)
     const [loadError, setLoadError] = useState<string | null>(null)
     const [showExitConfirm, setShowExitConfirm] = useState(false)
@@ -36,6 +35,7 @@ export default function SessionModePage() {
     const startTimeRef = useRef<number>(Date.now())
     const correctCountRef = useRef(0)
     const quizMetaRef = useRef<{ id: string; name: string }>({ id: selectedQuizPath, name: selectedQuizPath })
+    const progressRef = useRef<Record<string, any>>({})
 
     // Reflect TTS state so a floating "reading" pill can appear even while the
     // tools menu is closed.
@@ -97,7 +97,7 @@ export default function SessionModePage() {
         ]).then(([quizData, progressData]) => {
             clearTimeout(timeout)
             setWords(quizData.words || [])
-            setProgress(progressData)
+            progressRef.current = progressData
 
             const buildFromQuestions = (q: Question[]) => {
                 if (!q.length) {
@@ -154,7 +154,8 @@ export default function SessionModePage() {
         // on a simulation Continue button).
         if (history[currentQ.id]) return
 
-        const newProgress = updateProgress(progress[currentQ.word], correct, currentQ.word)
+        const newProgress = updateProgress(progressRef.current[currentQ.word], correct, currentQ.word)
+        progressRef.current = { ...progressRef.current, [currentQ.word]: newProgress }
 
         if (correct) correctCountRef.current += 1
 
@@ -163,12 +164,6 @@ export default function SessionModePage() {
 
         // Persist progress locally (cloud sync comes later)
         await saveWordProgress(user.id, currentQ.word, newProgress)
-
-        // Update local state
-        setProgress({
-            ...progress,
-            [currentQ.word]: newProgress
-        })
 
         if (index + 1 < questions.length && questions[index]?.id === currentQ.id) {
             setIndex(index + 1)
@@ -212,7 +207,7 @@ export default function SessionModePage() {
     const handleExit = async () => {
         if (user && questions[index]) {
             const currentQ = questions[index]
-            const currentProgress = progress[currentQ.word]
+            const currentProgress = progressRef.current[currentQ.word]
             if (currentProgress) {
                 await saveWordProgress(user.id, currentQ.word, currentProgress)
             }

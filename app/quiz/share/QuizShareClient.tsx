@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { ArrowLeft, Play, BookOpen } from 'lucide-react'
 import { useQuizStore } from '../../lib/quizStore'
@@ -32,34 +32,7 @@ export default function QuizShareClient() {
     const [description, setDescription] = useState('')
     const [embeddedQuiz, setEmbeddedQuiz] = useState<SharedQuiz | null>(null)
 
-    useEffect(() => {
-        if (!pathParam && !dataParam) {
-            router.push('/quizzes')
-            return
-        }
-
-        loadQuiz()
-    }, [pathParam, dataParam, router])
-
-    // Update document title and meta tags
-    useEffect(() => {
-        if (quizName) {
-            document.title = `${quizName} | OpenQuiz`
-
-            // Update meta description
-            const metaDescription = document.querySelector('meta[name="description"]')
-            if (metaDescription) {
-                metaDescription.setAttribute('content', `${quizName} - Practice on OpenQuiz.`)
-            } else {
-                const meta = document.createElement('meta')
-                meta.name = 'description'
-                meta.content = `${quizName} - Practice on OpenQuiz.`
-                document.head.appendChild(meta)
-            }
-        }
-    }, [quizName, words.length])
-
-    const loadQuiz = async () => {
+    const loadQuiz = useCallback(async () => {
         try {
             // Case 1: custom quiz embedded in the URL (fully static sharing)
             if (dataParam) {
@@ -114,7 +87,34 @@ export default function QuizShareClient() {
             console.error('Error loading quiz:', error)
             router.push('/quizzes')
         }
-    }
+    }, [dataParam, pathParam, router])
+
+    useEffect(() => {
+        if (!pathParam && !dataParam) {
+            router.push('/quizzes')
+            return
+        }
+
+        loadQuiz()
+    }, [pathParam, dataParam, router, loadQuiz])
+
+    // Update document title and meta tags
+    useEffect(() => {
+        if (quizName) {
+            document.title = `${quizName} | OpenQuiz`
+
+            // Update meta description
+            const metaDescription = document.querySelector('meta[name="description"]')
+            if (metaDescription) {
+                metaDescription.setAttribute('content', `${quizName} - Practice on OpenQuiz.`)
+            } else {
+                const meta = document.createElement('meta')
+                meta.name = 'description'
+                meta.content = `${quizName} - Practice on OpenQuiz.`
+                document.head.appendChild(meta)
+            }
+        }
+    }, [quizName, words.length])
 
     const handleStart = async () => {
         if (!user) {
