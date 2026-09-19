@@ -133,6 +133,29 @@ function mergeProgress(local: ProgressMap, remote: ProgressMap): ProgressMap {
     return merged
 }
 
+// Newer builds persist progress under scoped keys (`${quizPath}::${questionId}`,
+// e.g. `/sat/1.json::q1`) while older builds used the bare question id (`q1`).
+// A question that only exists under a bare key would otherwise be invisible to
+// scoped reads. Adopt each bare entry into its scoped key on read (the scoped
+// entry wins on field conflicts) and drop the bare key so the migration runs
+// once and the next write cannot recreate it.
+function migrateScopedKeys(bucket: ProgressMap): ProgressMap {
+    let changed = false
+    const migrated: ProgressMap = { ...bucket }
+    for (const scopedKey of Object.keys(migrated)) {
+        const sep = scopedKey.lastIndexOf('::')
+        if (sep < 0) continue
+        const bareKey = scopedKey.slice(sep + 2)
+        if (!bareKey || bareKey === scopedKey) continue
+        const bareEntry = migrated[bareKey]
+        if (!bareEntry || typeof bareEntry !== 'object' || Array.isArray(bareEntry)) continue
+        migrated[scopedKey] = { ...bareEntry, ...migrated[scopedKey] }
+        delete migrated[bareKey]
+        changed = true
+    }
+    return changed ? migrated : bucket
+}
+
 function mergeQuizStats(local: Record<string, QuizStats>, remote: Record<string, QuizStats>) {
     const merged = { ...remote }
     for (const [key, value] of Object.entries(local)) {
@@ -158,16 +181,22 @@ function readProgressStore(): ProgressStore {
     const values = Object.values(raw) as any[]
     const isFlat = values.some(v => v && typeof v === 'object' && typeof v.word === 'string')
     if (isFlat) {
-        const store: ProgressStore = { guest: raw as ProgressMap }
+        const store: ProgressStore = { guest: migrateScopedKeys(raw as ProgressMap) }
         try { writeJson(PROGRESS_KEY, store) } catch { /* ignore */ }
         return store
     }
 
     const store: ProgressStore = {}
+    let changed = false
     for (const [key, value] of Object.entries(raw)) {
         if (value && typeof value === 'object' && !Array.isArray(value)) {
-            store[key] = value as ProgressMap
+            const migrated = migrateScopedKeys(value as ProgressMap)
+            store[key] = migrated
+            if (migrated !== value) changed = true
         }
+    }
+    if (changed) {
+        try { writeJson(PROGRESS_KEY, store) } catch { /* ignore */ }
     }
     return store
 }

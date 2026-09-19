@@ -29,6 +29,7 @@ export default function BottomNav() {
                         <Link
                             key={tab.href}
                             href={tab.href}
+                            aria-current={active ? 'page' : undefined}
                             className={`flex flex-1 flex-col items-center gap-0.5 rounded-xl px-1 py-1.5 transition-colors ${active
                                     ? 'text-primary dark:text-primary-light bg-primary/10'
                                     : 'text-neutral-500 dark:text-neutral-400 hover:text-primary dark:hover:text-primary-light'

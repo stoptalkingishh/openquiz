@@ -99,3 +99,34 @@ describe('account storage and failed saves', () => {
         expect(JSON.parse(data.get(accountKey('oquiz:quiz_stats'))!).quiz.history).toHaveLength(2)
     })
 })
+
+describe('scoped-key progress migration', () => {
+    it('adopts a bare progress key under its scoped key', async () => {
+        const scoped = { word: 'Prompt A', lastSeen: 200, seenCount: 2 }
+        const bare = { word: 'Prompt A', lastSeen: 100, seenCount: 1, wrongStreak: 1 }
+        data.set(accountKey('oquiz:progress'), JSON.stringify({ alice: { '/sat/1.json::q1': scoped, q1: bare } }))
+        const progress = await getWordProgress('alice')
+        expect(Object.keys(progress)).toEqual(['/sat/1.json::q1'])
+        expect(progress['/sat/1.json::q1']).toEqual({ ...bare, ...scoped })
+    })
+
+    it('lets the scoped entry win on conflict while keeping bare-only fields', async () => {
+        data.set(accountKey('oquiz:progress'), JSON.stringify({
+            alice: {
+                '/sat/1.json::q1': { word: 'New label', lastSeen: 300, repetitions: 5 },
+                q1: { word: 'Old label', lastSeen: 100, wrongStreak: 2 }
+            }
+        }))
+        const progress = await getWordProgress('alice')
+        expect(progress['/sat/1.json::q1']).toEqual({ word: 'New label', lastSeen: 300, repetitions: 5, wrongStreak: 2 })
+    })
+
+    it('removes the adopted bare key from storage after the read', async () => {
+        data.set(accountKey('oquiz:progress'), JSON.stringify({
+            alice: { '/sat/1.json::q1': { word: 'Prompt A', lastSeen: 200 }, q1: { word: 'Prompt A', lastSeen: 100 } }
+        }))
+        await getWordProgress('alice')
+        const persisted = JSON.parse(data.get(accountKey('oquiz:progress'))!)
+        expect(persisted).toEqual({ alice: { '/sat/1.json::q1': { word: 'Prompt A', lastSeen: 200 } } })
+    })
+})

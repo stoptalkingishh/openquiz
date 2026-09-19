@@ -63,6 +63,46 @@ describe('updateProgress', () => {
         strong = updateProgress(strong, true, 'cat', 4)
         expect(strong.nextDue!).toBeGreaterThan(weak.nextDue!)
     })
+
+    it('resets repetitions and interval when self-rated below 3', () => {
+        const progress = updateProgress(
+            { word: 'cat', lastSeen: 0, strength: 0.8, ease: 2.5, repetitions: 4, interval: 20 },
+            true,
+            'cat',
+            1
+        )
+        expect(progress.repetitions).toBe(0)
+        expect(progress.interval).toBe(0)
+        expect(progress.nextDue).toBe(progress.lastSeen)
+    })
+
+    it('maps a Hard self-rating (3) to ease ~2.36', () => {
+        const progress = updateProgress(undefined, true, 'cat', 3)
+        expect(progress.ease).toBeCloseTo(2.36, 2)
+    })
+
+    it('maps an Easy self-rating (5) to ease ~2.6', () => {
+        const progress = updateProgress(undefined, true, 'cat', 5)
+        expect(progress.ease).toBeCloseTo(2.6, 2)
+    })
+
+    it('floors ease at 1.3 even after repeated failures', () => {
+        let progress: WordProgress | undefined = { word: 'cat', lastSeen: 0, strength: 0.9, ease: 1.5 }
+        for (let i = 0; i < 5; i++) progress = updateProgress(progress, false, 'cat', 1)
+        expect(progress?.ease).toBeGreaterThanOrEqual(1.3)
+        expect(progress?.ease).toBe(1.3)
+    })
+
+    it('never lets strength fall below 0 on a self-rated failure', () => {
+        const progress = updateProgress(
+            { word: 'cat', lastSeen: 0, strength: 0.1 },
+            false,
+            'cat',
+            1
+        )
+        expect(progress.strength).toBe(0)
+        expect(progress.wrongStreak).toBe(1)
+    })
 })
 
 describe('buildSession', () => {
@@ -147,7 +187,7 @@ describe('buildQuestionSession', () => {
     it('keeps a generic display word separate from its scoped progress key', () => {
         const questions = [{
             id: 'q1', kind: 'flashcard', word: 'Display label', prompt: 'Prompt', answer: 'Answer'
-        }] as QuizQuestion[]
+        }] as (QuizQuestion & { word?: string })[]
         const result = buildQuestionSession('drill', questions, {}, undefined, 'quiz-a')
         expect(result[0]?.word).toBe('Display label')
         expect((result[0] as Question & { progressKey?: string }).progressKey).toBe('quiz-a::q1')

@@ -63,7 +63,7 @@ export default function Header({ streak = 0 }: HeaderProps) {
 
                     <button
                         onClick={toggleDarkMode}
-                        className="p-2.5 rounded-xl bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+                        className="p-3.5 rounded-xl bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
                         aria-label="Toggle theme"
                     >
                         {darkMode ? (
