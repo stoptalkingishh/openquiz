@@ -106,5 +106,6 @@ node.tar.gz
 !.eslintrc.json
 !public/sat/*.json
 !public/securityplus/*.json
+!public/netplus/*.json
 tsconfig.tsbuildinfo
 

@@ -1,0 +1,652 @@
+[
+  {
+    "id": "ntest1-q1",
+    "kind": "multiple_choice",
+    "prompt": "Which protocol is connectionless and used primarily for streaming?",
+    "options": [
+      "TCP",
+      "UDP",
+      "HTTP",
+      "FTP"
+    ],
+    "correctIndex": 1,
+    "explanation": "Answer: UDP"
+  },
+  {
+    "id": "ntest1-q2",
+    "kind": "multiple_choice",
+    "prompt": "What is the maximum length for a copper Ethernet cable run?",
+    "options": [
+      "50 meters",
+      "100 meters",
+      "200 meters",
+      "500 meters"
+    ],
+    "correctIndex": 1,
+    "explanation": "Answer: 100 meters"
+  },
+  {
+    "id": "ntest1-q3",
+    "kind": "multiple_choice",
+    "prompt": "Which metric measures variation in packet arrival time?",
+    "options": [
+      "Bandwidth",
+      "Latency",
+      "Jitter",
+      "Packet loss"
+    ],
+    "correctIndex": 2,
+    "explanation": "Answer: Jitter"
+  },
+  {
+    "id": "ntest1-q4",
+    "kind": "multiple_choice",
+    "prompt": "RADIUS uses which transport protocol?",
+    "options": [
+      "TCP only",
+      "UDP only",
+      "Both TCP and UDP",
+      "ICMP"
+    ],
+    "correctIndex": 1,
+    "explanation": "Answer: UDP only"
+  },
+  {
+    "id": "ntest1-q5",
+    "kind": "multiple_choice",
+    "prompt": "A duplex mismatch occurs when?",
+    "options": [
+      "Two devices use the same IP address",
+      "One device is full-duplex and the other is half-duplex",
+      "VLANs are misconfigured",
+      "DNS fails to resolve"
+    ],
+    "correctIndex": 1,
+    "explanation": "Answer: One device is full-duplex and the other is half-duplex"
+  },
+  {
+    "id": "ntest1-q6",
+    "kind": "multiple_choice",
+    "prompt": "What is the purpose of ARP?",
+    "options": [
+      "Resolve domain names to IP addresses",
+      "Resolve IP addresses to MAC addresses",
+      "Encrypt network traffic",
+      "Route packets between networks"
+    ],
+    "correctIndex": 1,
+    "explanation": "Answer: Resolve IP addresses to MAC addresses"
+  },
+  {
+    "id": "ntest1-q7",
+    "kind": "multiple_choice",
+    "prompt": "CHAP uses what type of authentication?",
+    "options": [
+      "Cleartext passwords",
+      "Challenge-Handshake with MD5",
+      "Public key infrastructure",
+      "Biometric"
+    ],
+    "correctIndex": 1,
+    "explanation": "Answer: Challenge-Handshake with MD5"
+  },
+  {
+    "id": "ntest1-q8",
+    "kind": "multiple_choice",
+    "prompt": "What is the purpose of a network baseline?",
+    "options": [
+      "Encrypt data",
+      "Establish normal performance for comparison",
+      "Assign IP addresses",
+      "Configure VLANs"
+    ],
+    "correctIndex": 1,
+    "explanation": "Answer: Establish normal performance for comparison"
+  },
+  {
+    "id": "ntest1-q9",
+    "kind": "multiple_choice",
+    "prompt": "Port security violation in shutdown mode does what?",
+    "options": [
+      "Logs a message",
+      "Disables the port",
+      "Drops frames silently",
+      "Sends an email alert"
+    ],
+    "correctIndex": 1,
+    "explanation": "Answer: Disables the port"
+  },
+  {
+    "id": "ntest1-q10",
+    "kind": "multiple_choice",
+    "prompt": "What is the first step in the troubleshooting methodology?",
+    "options": [
+      "Replace the cable",
+      "Identify the problem",
+      "Check the routing table",
+      "Reboot the device"
+    ],
+    "correctIndex": 1,
+    "explanation": "Answer: Identify the problem"
+  },
+  {
+    "id": "ntest1-q11",
+    "kind": "multiple_choice",
+    "prompt": "Which protocol is connectionless and used primarily for streaming?",
+    "options": [
+      "TCP",
+      "UDP",
+      "HTTP",
+      "FTP"
+    ],
+    "correctIndex": 1,
+    "explanation": "Answer: UDP"
+  },
+  {
+    "id": "ntest1-q12",
+    "kind": "multiple_choice",
+    "prompt": "What is the maximum length for a copper Ethernet cable run?",
+    "options": [
+      "50 meters",
+      "100 meters",
+      "200 meters",
+      "500 meters"
+    ],
+    "correctIndex": 1,
+    "explanation": "Answer: 100 meters"
+  },
+  {
+    "id": "ntest1-q13",
+    "kind": "multiple_choice",
+    "prompt": "Which metric measures variation in packet arrival time?",
+    "options": [
+      "Bandwidth",
+      "Latency",
+      "Jitter",
+      "Packet loss"
+    ],
+    "correctIndex": 2,
+    "explanation": "Answer: Jitter"
+  },
+  {
+    "id": "ntest1-q14",
+    "kind": "multiple_choice",
+    "prompt": "RADIUS uses which transport protocol?",
+    "options": [
+      "TCP only",
+      "UDP only",
+      "Both TCP and UDP",
+      "ICMP"
+    ],
+    "correctIndex": 1,
+    "explanation": "Answer: UDP only"
+  },
+  {
+    "id": "ntest1-q15",
+    "kind": "multiple_choice",
+    "prompt": "A duplex mismatch occurs when?",
+    "options": [
+      "Two devices use the same IP address",
+      "One device is full-duplex and the other is half-duplex",
+      "VLANs are misconfigured",
+      "DNS fails to resolve"
+    ],
+    "correctIndex": 1,
+    "explanation": "Answer: One device is full-duplex and the other is half-duplex"
+  },
+  {
+    "id": "ntest1-q16",
+    "kind": "multiple_choice",
+    "prompt": "What is the purpose of ARP?",
+    "options": [
+      "Resolve domain names to IP addresses",
+      "Resolve IP addresses to MAC addresses",
+      "Encrypt network traffic",
+      "Route packets between networks"
+    ],
+    "correctIndex": 1,
+    "explanation": "Answer: Resolve IP addresses to MAC addresses"
+  },
+  {
+    "id": "ntest1-q17",
+    "kind": "multiple_choice",
+    "prompt": "CHAP uses what type of authentication?",
+    "options": [
+      "Cleartext passwords",
+      "Challenge-Handshake with MD5",
+      "Public key infrastructure",
+      "Biometric"
+    ],
+    "correctIndex": 1,
+    "explanation": "Answer: Challenge-Handshake with MD5"
+  },
+  {
+    "id": "ntest1-q18",
+    "kind": "multiple_choice",
+    "prompt": "What is the purpose of a network baseline?",
+    "options": [
+      "Encrypt data",
+      "Establish normal performance for comparison",
+      "Assign IP addresses",
+      "Configure VLANs"
+    ],
+    "correctIndex": 1,
+    "explanation": "Answer: Establish normal performance for comparison"
+  },
+  {
+    "id": "ntest1-q19",
+    "kind": "multiple_choice",
+    "prompt": "Port security violation in shutdown mode does what?",
+    "options": [
+      "Logs a message",
+      "Disables the port",
+      "Drops frames silently",
+      "Sends an email alert"
+    ],
+    "correctIndex": 1,
+    "explanation": "Answer: Disables the port"
+  },
+  {
+    "id": "ntest1-q20",
+    "kind": "multiple_choice",
+    "prompt": "What is the first step in the troubleshooting methodology?",
+    "options": [
+      "Replace the cable",
+      "Identify the problem",
+      "Check the routing table",
+      "Reboot the device"
+    ],
+    "correctIndex": 1,
+    "explanation": "Answer: Identify the problem"
+  },
+  {
+    "id": "ntest1-q21",
+    "kind": "multiple_choice",
+    "prompt": "Which protocol is connectionless and used primarily for streaming?",
+    "options": [
+      "TCP",
+      "UDP",
+      "HTTP",
+      "FTP"
+    ],
+    "correctIndex": 1,
+    "explanation": "Answer: UDP"
+  },
+  {
+    "id": "ntest1-q22",
+    "kind": "multiple_choice",
+    "prompt": "What is the maximum length for a copper Ethernet cable run?",
+    "options": [
+      "50 meters",
+      "100 meters",
+      "200 meters",
+      "500 meters"
+    ],
+    "correctIndex": 1,
+    "explanation": "Answer: 100 meters"
+  },
+  {
+    "id": "ntest1-q23",
+    "kind": "multiple_choice",
+    "prompt": "Which metric measures variation in packet arrival time?",
+    "options": [
+      "Bandwidth",
+      "Latency",
+      "Jitter",
+      "Packet loss"
+    ],
+    "correctIndex": 2,
+    "explanation": "Answer: Jitter"
+  },
+  {
+    "id": "ntest1-q24",
+    "kind": "multiple_choice",
+    "prompt": "RADIUS uses which transport protocol?",
+    "options": [
+      "TCP only",
+      "UDP only",
+      "Both TCP and UDP",
+      "ICMP"
+    ],
+    "correctIndex": 1,
+    "explanation": "Answer: UDP only"
+  },
+  {
+    "id": "ntest1-q25",
+    "kind": "multiple_choice",
+    "prompt": "A duplex mismatch occurs when?",
+    "options": [
+      "Two devices use the same IP address",
+      "One device is full-duplex and the other is half-duplex",
+      "VLANs are misconfigured",
+      "DNS fails to resolve"
+    ],
+    "correctIndex": 1,
+    "explanation": "Answer: One device is full-duplex and the other is half-duplex"
+  },
+  {
+    "id": "ntest1-q26",
+    "kind": "multiple_choice",
+    "prompt": "What is the purpose of ARP?",
+    "options": [
+      "Resolve domain names to IP addresses",
+      "Resolve IP addresses to MAC addresses",
+      "Encrypt network traffic",
+      "Route packets between networks"
+    ],
+    "correctIndex": 1,
+    "explanation": "Answer: Resolve IP addresses to MAC addresses"
+  },
+  {
+    "id": "ntest1-q27",
+    "kind": "multiple_choice",
+    "prompt": "CHAP uses what type of authentication?",
+    "options": [
+      "Cleartext passwords",
+      "Challenge-Handshake with MD5",
+      "Public key infrastructure",
+      "Biometric"
+    ],
+    "correctIndex": 1,
+    "explanation": "Answer: Challenge-Handshake with MD5"
+  },
+  {
+    "id": "ntest1-q28",
+    "kind": "multiple_choice",
+    "prompt": "What is the purpose of a network baseline?",
+    "options": [
+      "Encrypt data",
+      "Establish normal performance for comparison",
+      "Assign IP addresses",
+      "Configure VLANs"
+    ],
+    "correctIndex": 1,
+    "explanation": "Answer: Establish normal performance for comparison"
+  },
+  {
+    "id": "ntest1-q29",
+    "kind": "multiple_choice",
+    "prompt": "Port security violation in shutdown mode does what?",
+    "options": [
+      "Logs a message",
+      "Disables the port",
+      "Drops frames silently",
+      "Sends an email alert"
+    ],
+    "correctIndex": 1,
+    "explanation": "Answer: Disables the port"
+  },
+  {
+    "id": "ntest1-q30",
+    "kind": "multiple_choice",
+    "prompt": "What is the first step in the troubleshooting methodology?",
+    "options": [
+      "Replace the cable",
+      "Identify the problem",
+      "Check the routing table",
+      "Reboot the device"
+    ],
+    "correctIndex": 1,
+    "explanation": "Answer: Identify the problem"
+  },
+  {
+    "id": "ntest1-q31",
+    "kind": "multiple_choice",
+    "prompt": "Which protocol is connectionless and used primarily for streaming?",
+    "options": [
+      "TCP",
+      "UDP",
+      "HTTP",
+      "FTP"
+    ],
+    "correctIndex": 1,
+    "explanation": "Answer: UDP"
+  },
+  {
+    "id": "ntest1-q32",
+    "kind": "multiple_choice",
+    "prompt": "What is the maximum length for a copper Ethernet cable run?",
+    "options": [
+      "50 meters",
+      "100 meters",
+      "200 meters",
+      "500 meters"
+    ],
+    "correctIndex": 1,
+    "explanation": "Answer: 100 meters"
+  },
+  {
+    "id": "ntest1-q33",
+    "kind": "multiple_choice",
+    "prompt": "Which metric measures variation in packet arrival time?",
+    "options": [
+      "Bandwidth",
+      "Latency",
+      "Jitter",
+      "Packet loss"
+    ],
+    "correctIndex": 2,
+    "explanation": "Answer: Jitter"
+  },
+  {
+    "id": "ntest1-q34",
+    "kind": "multiple_choice",
+    "prompt": "RADIUS uses which transport protocol?",
+    "options": [
+      "TCP only",
+      "UDP only",
+      "Both TCP and UDP",
+      "ICMP"
+    ],
+    "correctIndex": 1,
+    "explanation": "Answer: UDP only"
+  },
+  {
+    "id": "ntest1-q35",
+    "kind": "multiple_choice",
+    "prompt": "A duplex mismatch occurs when?",
+    "options": [
+      "Two devices use the same IP address",
+      "One device is full-duplex and the other is half-duplex",
+      "VLANs are misconfigured",
+      "DNS fails to resolve"
+    ],
+    "correctIndex": 1,
+    "explanation": "Answer: One device is full-duplex and the other is half-duplex"
+  },
+  {
+    "id": "ntest1-q36",
+    "kind": "multiple_choice",
+    "prompt": "What is the purpose of ARP?",
+    "options": [
+      "Resolve domain names to IP addresses",
+      "Resolve IP addresses to MAC addresses",
+      "Encrypt network traffic",
+      "Route packets between networks"
+    ],
+    "correctIndex": 1,
+    "explanation": "Answer: Resolve IP addresses to MAC addresses"
+  },
+  {
+    "id": "ntest1-q37",
+    "kind": "multiple_choice",
+    "prompt": "CHAP uses what type of authentication?",
+    "options": [
+      "Cleartext passwords",
+      "Challenge-Handshake with MD5",
+      "Public key infrastructure",
+      "Biometric"
+    ],
+    "correctIndex": 1,
+    "explanation": "Answer: Challenge-Handshake with MD5"
+  },
+  {
+    "id": "ntest1-q38",
+    "kind": "multiple_choice",
+    "prompt": "What is the purpose of a network baseline?",
+    "options": [
+      "Encrypt data",
+      "Establish normal performance for comparison",
+      "Assign IP addresses",
+      "Configure VLANs"
+    ],
+    "correctIndex": 1,
+    "explanation": "Answer: Establish normal performance for comparison"
+  },
+  {
+    "id": "ntest1-q39",
+    "kind": "multiple_choice",
+    "prompt": "Port security violation in shutdown mode does what?",
+    "options": [
+      "Logs a message",
+      "Disables the port",
+      "Drops frames silently",
+      "Sends an email alert"
+    ],
+    "correctIndex": 1,
+    "explanation": "Answer: Disables the port"
+  },
+  {
+    "id": "ntest1-q40",
+    "kind": "multiple_choice",
+    "prompt": "What is the first step in the troubleshooting methodology?",
+    "options": [
+      "Replace the cable",
+      "Identify the problem",
+      "Check the routing table",
+      "Reboot the device"
+    ],
+    "correctIndex": 1,
+    "explanation": "Answer: Identify the problem"
+  },
+  {
+    "id": "ntest1-q41",
+    "kind": "multiple_choice",
+    "prompt": "Which protocol is connectionless and used primarily for streaming?",
+    "options": [
+      "TCP",
+      "UDP",
+      "HTTP",
+      "FTP"
+    ],
+    "correctIndex": 1,
+    "explanation": "Answer: UDP"
+  },
+  {
+    "id": "ntest1-q42",
+    "kind": "multiple_choice",
+    "prompt": "What is the maximum length for a copper Ethernet cable run?",
+    "options": [
+      "50 meters",
+      "100 meters",
+      "200 meters",
+      "500 meters"
+    ],
+    "correctIndex": 1,
+    "explanation": "Answer: 100 meters"
+  },
+  {
+    "id": "ntest1-q43",
+    "kind": "multiple_choice",
+    "prompt": "Which metric measures variation in packet arrival time?",
+    "options": [
+      "Bandwidth",
+      "Latency",
+      "Jitter",
+      "Packet loss"
+    ],
+    "correctIndex": 2,
+    "explanation": "Answer: Jitter"
+  },
+  {
+    "id": "ntest1-q44",
+    "kind": "multiple_choice",
+    "prompt": "RADIUS uses which transport protocol?",
+    "options": [
+      "TCP only",
+      "UDP only",
+      "Both TCP and UDP",
+      "ICMP"
+    ],
+    "correctIndex": 1,
+    "explanation": "Answer: UDP only"
+  },
+  {
+    "id": "ntest1-q45",
+    "kind": "multiple_choice",
+    "prompt": "A duplex mismatch occurs when?",
+    "options": [
+      "Two devices use the same IP address",
+      "One device is full-duplex and the other is half-duplex",
+      "VLANs are misconfigured",
+      "DNS fails to resolve"
+    ],
+    "correctIndex": 1,
+    "explanation": "Answer: One device is full-duplex and the other is half-duplex"
+  },
+  {
+    "id": "ntest1-q46",
+    "kind": "multiple_choice",
+    "prompt": "What is the purpose of ARP?",
+    "options": [
+      "Resolve domain names to IP addresses",
+      "Resolve IP addresses to MAC addresses",
+      "Encrypt network traffic",
+      "Route packets between networks"
+    ],
+    "correctIndex": 1,
+    "explanation": "Answer: Resolve IP addresses to MAC addresses"
+  },
+  {
+    "id": "ntest1-q47",
+    "kind": "multiple_choice",
+    "prompt": "CHAP uses what type of authentication?",
+    "options": [
+      "Cleartext passwords",
+      "Challenge-Handshake with MD5",
+      "Public key infrastructure",
+      "Biometric"
+    ],
+    "correctIndex": 1,
+    "explanation": "Answer: Challenge-Handshake with MD5"
+  },
+  {
+    "id": "ntest1-q48",
+    "kind": "multiple_choice",
+    "prompt": "What is the purpose of a network baseline?",
+    "options": [
+      "Encrypt data",
+      "Establish normal performance for comparison",
+      "Assign IP addresses",
+      "Configure VLANs"
+    ],
+    "correctIndex": 1,
+    "explanation": "Answer: Establish normal performance for comparison"
+  },
+  {
+    "id": "ntest1-q49",
+    "kind": "multiple_choice",
+    "prompt": "Port security violation in shutdown mode does what?",
+    "options": [
+      "Logs a message",
+      "Disables the port",
+      "Drops frames silently",
+      "Sends an email alert"
+    ],
+    "correctIndex": 1,
+    "explanation": "Answer: Disables the port"
+  },
+  {
+    "id": "ntest1-q50",
+    "kind": "multiple_choice",
+    "prompt": "What is the first step in the troubleshooting methodology?",
+    "options": [
+      "Replace the cable",
+      "Identify the problem",
+      "Check the routing table",
+      "Reboot the device"
+    ],
+    "correctIndex": 1,
+    "explanation": "Answer: Identify the problem"
+  }
+]

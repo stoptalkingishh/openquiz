@@ -1,0 +1,142 @@
+[
+  {
+    "id": "sec-f1",
+    "kind": "flashcard",
+    "prompt": "Network Security Layers",
+    "answer": "Defense in depth: Multiple layers of security controls (physical, network, host, application, data). Zero Trust: Never trust, always verify. Least privilege: Minimum access needed. Defense in depth: Multiple security controls.",
+    "explanation": ""
+  },
+  {
+    "id": "sec-f2",
+    "kind": "flashcard",
+    "prompt": "Network Hardening",
+    "answer": "Disable unused services and ports. Change default passwords and credentials. Disable unnecessary accounts. Enable encryption (WPA3, SSH). Apply patches and updates. Configure firewalls and ACLs. Implement network segmentation.",
+    "explanation": ""
+  },
+  {
+    "id": "sec-f3",
+    "kind": "flashcard",
+    "prompt": "Firewall Types",
+    "answer": "Packet Filtering: Examines headers, stateless. Stateful: Tracks connection state. Next-Generation Firewall (NGFW): Application-layer inspection, IDS/IPS integrated, SSL decryption. Proxy: Application-level gateway.",
+    "explanation": ""
+  },
+  {
+    "id": "sec-f4",
+    "kind": "flashcard",
+    "prompt": "Access Control Lists (ACLs)",
+    "answer": "Filter traffic based on source/destination IP, port, protocol. Standard ACLs: Filter by source IP only (placed close to destination). Extended ACLs: Filter by source/dest/port (placed close to source). Applied inbound or outbound on interfaces.",
+    "explanation": ""
+  },
+  {
+    "id": "sec-f5",
+    "kind": "flashcard",
+    "prompt": "VPN (Virtual Private Network)",
+    "answer": "Creates encrypted tunnel over public network. Site-to-site: Connects two networks (IPsec). Remote access: Individual users connect (SSL VPN, IPsec client). Protocols: IPsec (tunnel mode), TLS/SSL, L2TP, PPTP (deprecated).",
+    "explanation": ""
+  },
+  {
+    "id": "sec-f6",
+    "kind": "flashcard",
+    "prompt": "IPsec (Internet Protocol Security)",
+    "answer": "Encrypts/authenticates IP packets. Two modes: Transport mode (only payload) and Tunnel mode (entire packet). Components: AH (Authentication Header), ESP (Encapsulating Security Payload), IKE (Internet Key Exchange).",
+    "explanation": ""
+  },
+  {
+    "id": "sec-f7",
+    "kind": "flashcard",
+    "prompt": "SSL/TLS",
+    "answer": "Secure Socket Layer (deprecated) → Transport Layer Security. Encrypts data in transit. Uses certificates for authentication. Handshake: ClientHello, ServerHello, key exchange, encrypted communication. Port 443.",
+    "explanation": ""
+  },
+  {
+    "id": "sec-f8",
+    "kind": "flashcard",
+    "prompt": "802.1X Network Access Control",
+    "answer": "Port-based network access control. Authenticates devices before granting network access. Components: Supplicant (client), Authenticator (switch/AP), Authentication Server (RADIUS). Uses EAP (Extensible Authentication Protocol).",
+    "explanation": ""
+  },
+  {
+    "id": "sec-f9",
+    "kind": "flashcard",
+    "prompt": "RADIUS (Remote Authentication Dial-In User Service)",
+    "answer": "AAA protocol for network access. Authentication, Authorization, and Accounting. Uses UDP ports 1812 (auth) and 1813 (accounting). Centralized credential storage. Supports EAP for wireless authentication.",
+    "explanation": ""
+  },
+  {
+    "id": "sec-f10",
+    "kind": "flashcard",
+    "prompt": "TACACS+ (Terminal Access Controller Access-Control System Plus)",
+    "answer": "Cisco AAA protocol. Separates authentication, authorization, and accounting. Uses TCP port 49. Encrypts entire packet body (vs RADIUS encrypts only password). Better for command-level authorization.",
+    "explanation": ""
+  },
+  {
+    "id": "sec-f11",
+    "kind": "flashcard",
+    "prompt": "Network Segmentation",
+    "answer": "Divides network into isolated segments (VLANs, subnets, zones). Limits lateral movement of threats. DMZ (Demilitarized Zone): Public-facing services isolated from internal network. Micro-segmentation: Per-workload security.",
+    "explanation": ""
+  },
+  {
+    "id": "sec-f12",
+    "kind": "flashcard",
+    "prompt": "DMZ (Demilitarized Zone)",
+    "answer": "Isolated network segment between internal network and untrusted external network. Contains public-facing services (web servers, mail servers, DNS). Double firewall: External firewall protects DMZ, internal firewall protects DMZ from LAN.",
+    "explanation": ""
+  },
+  {
+    "id": "sec-f13",
+    "kind": "flashcard",
+    "prompt": "NAT as Security",
+    "answer": "Hides internal IP addresses from external networks. Provides a level of obscurity (not true security). PAT hides multiple internal addresses behind one public IP. Does not replace firewall protection.",
+    "explanation": ""
+  },
+  {
+    "id": "sec-f14",
+    "kind": "flashcard",
+    "prompt": "Intrusion Detection/Prevention Systems",
+    "answer": "IDS: Passive monitoring, alerts on suspicious activity (signature-based and anomaly-based). IPS: Active blocking, drops malicious packets. NIDS (Network-based) vs HIDS (Host-based). Can be signature or behavior-based.",
+    "explanation": ""
+  },
+  {
+    "id": "sec-f15",
+    "kind": "flashcard",
+    "prompt": "Network Security Protocols",
+    "answer": "SSH (port 22): Secure remote access. HTTPS (port 443): Secure web browsing. TLS: Secures email (SMTPS, IMAPS) and other protocols. IPsec: VPN and site-to-site encryption. SNMPv3: Secure network management.",
+    "explanation": ""
+  },
+  {
+    "id": "sec-f16",
+    "kind": "flashcard",
+    "prompt": "AAA Framework",
+    "answer": "Authentication: Verifying identity (who are you?). Authorization: Granting permissions (what can you do?). Accounting: Tracking activities (what did you do?). Implemented via RADIUS or TACACS+.",
+    "explanation": ""
+  },
+  {
+    "id": "sec-f17",
+    "kind": "flashcard",
+    "prompt": "Network Security Hardening",
+    "answer": "Disable unused services/ports. Change default passwords. Enable encryption. Implement network segmentation. Configure firewalls/ACLs. Enable logging and monitoring. Apply patches regularly. Implement 802.1X.",
+    "explanation": ""
+  },
+  {
+    "id": "sec-f18",
+    "kind": "flashcard",
+    "prompt": "MAC Filtering",
+    "answer": "Controls network access based on MAC addresses (whitelist/blacklist). Easily bypassed with MAC spoofing. Should not be sole security measure. Used as additional layer alongside 802.1X.",
+    "explanation": ""
+  },
+  {
+    "id": "sec-f19",
+    "kind": "flashcard",
+    "prompt": "Port Security",
+    "answer": "Switch port security limits MAC addresses per port. Violation actions: Shutdown, Restrict, Protect. Prevents unauthorized devices from connecting to network ports. Works with 802.1X for stronger security.",
+    "explanation": ""
+  },
+  {
+    "id": "sec-f20",
+    "kind": "flashcard",
+    "prompt": "DLP (Data Loss Prevention)",
+    "answer": "Prevents unauthorized data exfiltration. Inspects data in transit, at rest, and in use. Can block sensitive data transfers via email, web, or USB. Uses content inspection, context matching, and policy enforcement.",
+    "explanation": ""
+  }
+]

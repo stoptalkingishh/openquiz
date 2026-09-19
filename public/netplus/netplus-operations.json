@@ -1,0 +1,212 @@
+[
+  {
+    "id": "ops-f1",
+    "kind": "flashcard",
+    "prompt": "Network Monitoring",
+    "answer": "SNMP (Simple Network Management Protocol): Polls devices for data. Uses MIB (Management Information Base). Versions: v1/v2c (community strings) and v3 (encrypted). Syslog: Centralized logging of device messages.",
+    "explanation": ""
+  },
+  {
+    "id": "ops-f2",
+    "kind": "flashcard",
+    "prompt": "SNMP Operations",
+    "answer": "GET: Retrieve a value. GETNEXT: Get next value in MIB tree. GETBULK: Retrieve large amounts of data. SET: Modify a value. TRAP: Device sends unsolicited notification to manager.",
+    "explanation": ""
+  },
+  {
+    "id": "ops-f3",
+    "kind": "flashcard",
+    "prompt": "NetFlow",
+    "answer": "Network flow monitoring protocol developed by Cisco. Collects IP traffic information (source/destination IP, ports, protocols, bytes). Used for bandwidth analysis, security monitoring, and capacity planning.",
+    "explanation": ""
+  },
+  {
+    "id": "ops-f4",
+    "kind": "flashcard",
+    "prompt": "Network Management Systems",
+    "answer": "PRTG Network Monitor, Nagios, SolarWinds, Zabbix, LibreNMS, Cisco DNA Center. Provide dashboards, alerts, reports, and automated discovery of network devices.",
+    "explanation": ""
+  },
+  {
+    "id": "ops-f5",
+    "kind": "flashcard",
+    "prompt": "Syslog",
+    "answer": "UDP port 514. Provides event logging from network devices to a central server. Severity levels 0-7 (Emergency to Debug). Facility codes identify the source (e.g., local0-local7). Configurable with logging commands.",
+    "explanation": ""
+  },
+  {
+    "id": "ops-f6",
+    "kind": "flashcard",
+    "prompt": "RMON (Remote Network Monitoring)",
+    "answer": "Enhances SNMP monitoring by providing data in a management console rather than polling network devices. Monitors traffic statistics, history, alarms, and events at Layer 1/2/3.",
+    "explanation": ""
+  },
+  {
+    "id": "ops-f7",
+    "kind": "flashcard",
+    "prompt": "Network Documentation",
+    "answer": "Network diagrams (logical and physical), IP address management (IPAM) documentation, device configurations, change management logs, business continuity plans, cable documentation.",
+    "explanation": ""
+  },
+  {
+    "id": "ops-f8",
+    "kind": "flashcard",
+    "prompt": "Change Management",
+    "answer": "Process for managing network changes: Request, Assessment, Approval, Implementation, Verification, Documentation. Follows ITIL framework. Minimizes disruption and provides rollback plans.",
+    "explanation": ""
+  },
+  {
+    "id": "ops-f9",
+    "kind": "flashcard",
+    "prompt": "Configuration Management",
+    "answer": "Tracks and manages device configurations. Backup configurations regularly. Use version control. Compare configurations to detect unauthorized changes. Tools: RANCID, Oxidized.",
+    "explanation": ""
+  },
+  {
+    "id": "ops-f10",
+    "kind": "flashcard",
+    "prompt": "Network Performance Metrics",
+    "answer": "Bandwidth utilization, latency, jitter, packet loss, throughput, frame rate. Baseline normal performance for comparison. Threshold-based alerting for anomalies.",
+    "explanation": ""
+  },
+  {
+    "id": "ops-f11",
+    "kind": "flashcard",
+    "prompt": "Latency",
+    "answer": "Time it takes for a packet to travel from source to destination. Affected by distance, processing delays, queuing delays, and transmission delays. Measured with ping and traceroute.",
+    "explanation": ""
+  },
+  {
+    "id": "ops-f12",
+    "kind": "flashcard",
+    "prompt": "Jitter",
+    "answer": "Variation in packet arrival time. Causes poor voice/video quality. Measured in milliseconds. Buffering and QoS can mitigate jitter. Real-time applications (VoIP) are sensitive to jitter.",
+    "explanation": ""
+  },
+  {
+    "id": "ops-f13",
+    "kind": "flashcard",
+    "prompt": "Packet Loss",
+    "answer": "Percentage of packets that fail to reach destination. Causes: congestion, faulty hardware, interference. Significant for real-time applications. Measured with ping, traceroute, or network monitors.",
+    "explanation": ""
+  },
+  {
+    "id": "ops-f14",
+    "kind": "flashcard",
+    "prompt": "Throughput vs Bandwidth",
+    "answer": "Bandwidth: Maximum capacity of a link (theoretical). Throughput: Actual amount of data transferred successfully in a given time. Throughput is always ≤ bandwidth due to overhead, latency, and congestion.",
+    "explanation": ""
+  },
+  {
+    "id": "ops-f15",
+    "kind": "flashcard",
+    "prompt": "Network Bandwidth Management",
+    "answer": "Traffic shaping: Controls data flow to prevent congestion. Rate limiting: Caps bandwidth for specific traffic or users. QoS (Quality of Service): Prioritizes critical traffic (VoIP, video) over best-effort.",
+    "explanation": ""
+  },
+  {
+    "id": "ops-f16",
+    "kind": "flashcard",
+    "prompt": "Troubleshooting Tools",
+    "answer": "Ping: Tests connectivity. Traceroute/Tracert: Shows path to destination. NSLookup/Dig: DNS resolution. Ipconfig/Ifconfig: IP configuration. Netstat: Active connections and listening ports.",
+    "explanation": ""
+  },
+  {
+    "id": "ops-f17",
+    "kind": "flashcard",
+    "prompt": "Wireshark",
+    "answer": "Packet analyzer (network protocol analyzer). Captures and inspects packets in real-time. Filters using display filters (e.g., `ip.addr == 192.168.1.1`, `tcp.port == 80`). Used for deep network troubleshooting.",
+    "explanation": ""
+  },
+  {
+    "id": "ops-f18",
+    "kind": "flashcard",
+    "prompt": "Traceroute",
+    "answer": "Traces the path packets take to a destination. Each router decrements TTL; when TTL reaches 0, ICMP Time Exceeded is sent back. Reveals hops, latency per hop, and potential bottlenecks.",
+    "explanation": ""
+  },
+  {
+    "id": "ops-f19",
+    "kind": "flashcard",
+    "prompt": "Nmap",
+    "answer": "Network scanner for discovery and security auditing. Port scanning (-p), OS detection (-O), version detection (-sV), script scanning (--script). Used for network inventory and vulnerability assessment.",
+    "explanation": ""
+  },
+  {
+    "id": "ops-f20",
+    "kind": "flashcard",
+    "prompt": "Network Documentation Best Practices",
+    "answer": "Keep diagrams updated after every change. Label all cables and ports. Document IP assignments in a central database. Maintain configuration backups. Include physical location and contact information.",
+    "explanation": ""
+  },
+  {
+    "id": "ops-f21",
+    "kind": "flashcard",
+    "prompt": "Network Capacity Planning",
+    "answer": "Analyze current and projected bandwidth usage. Account for growth (user count, applications, data volumes). Plan for redundancy and scalability. Use monitoring data to forecast when upgrades are needed.",
+    "explanation": ""
+  },
+  {
+    "id": "ops-f22",
+    "kind": "flashcard",
+    "prompt": "Load Balancing",
+    "answer": "Distributes network traffic across multiple servers. Methods: Round-robin, least connections, IP hash, weighted. Layer 4 (transport) vs Layer 7 (application) load balancing. Improves availability and performance.",
+    "explanation": ""
+  },
+  {
+    "id": "ops-f23",
+    "kind": "flashcard",
+    "prompt": "High Availability",
+    "answer": "Redundancy at all levels: Devices (dual switches/routers), Links (port-channel/LACP), Paths (ECMP). Failover mechanisms: VRRP (Virtual Router Redundancy Protocol), HSRP (Hot Standby Router Protocol), GLBP.",
+    "explanation": ""
+  },
+  {
+    "id": "ops-f24",
+    "kind": "flashcard",
+    "prompt": "VRRP (Virtual Router Redundancy Protocol)",
+    "answer": "Provides automatic default gateway redundancy. Virtual IP shared among multiple routers. Master router handles traffic; backup takes over if master fails. Priority-based election (0-255).",
+    "explanation": ""
+  },
+  {
+    "id": "ops-f25",
+    "kind": "flashcard",
+    "prompt": "HSRP (Hot Standby Router Protocol)",
+    "answer": "Cisco proprietary. Similar to VRRP. Virtual IP and MAC address shared. Active router forwards; standby router takes over on failure. Uses hello and hold timers.",
+    "explanation": ""
+  },
+  {
+    "id": "ops-f26",
+    "kind": "flashcard",
+    "prompt": "LACP (Link Aggregation Control Protocol)",
+    "answer": "IEEE 802.3ad. Bundles multiple physical links into one logical link (port-channel). Increases bandwidth and provides redundancy. Requires same speed/duplex on all bundled ports.",
+    "explanation": ""
+  },
+  {
+    "id": "ops-f27",
+    "kind": "flashcard",
+    "prompt": "Port-Channel (EtherChannel)",
+    "answer": "Aggregates up to 8 parallel links. Load distribution based on source/destination MAC, IP, or port. Provides increased bandwidth and link redundancy. Uses PAGP (Cisco) or LACP (standard).",
+    "explanation": ""
+  },
+  {
+    "id": "ops-f28",
+    "kind": "flashcard",
+    "prompt": "Network Monitoring Protocols",
+    "answer": "SNMP, NetFlow, sFlow, IP SLA, ICMP (ping), Syslog, NTP (synchronized timestamps for logs), LLDP/MED (device discovery and information sharing).",
+    "explanation": ""
+  },
+  {
+    "id": "ops-f29",
+    "kind": "flashcard",
+    "prompt": "NTP (Network Time Protocol)",
+    "answer": "Synchronizes clocks across network devices. UDP port 123. Stratum levels: 0 (atomic clock), 1 (directly connected), 2-15 (lower accuracy). Important for log correlation and security certificate validation.",
+    "explanation": ""
+  },
+  {
+    "id": "ops-f30",
+    "kind": "flashcard",
+    "prompt": "LLDP (Link Layer Discovery Protocol)",
+    "answer": "IEEE 802.1AB. Allows network devices to advertise their identity, capabilities, and neighbors. Used for network discovery, troubleshooting, and documenting connections. Similar to Cisco CDP.",
+    "explanation": ""
+  }
+]
