@@ -1,4 +1,5 @@
 import { Word, WordProgress, Question, SessionMode, QuizQuestion } from './satTypes';
+import { hasCloze, extractClozeCards } from './cloze';
 
 // Helper to shuffle array
 function shuffle<T>(array: T[]): T[] {
@@ -298,7 +299,7 @@ export function buildQuestionSession(
 
     return shuffle(list)
         .filter(q => q && typeof q.prompt === 'string' && q.prompt.trim())
-        .map(q => {
+        .flatMap((q): Question[] => {
         const base = {
             id: q.id,
             word: q.id,
@@ -306,7 +307,7 @@ export function buildQuestionSession(
         };
 
         if (q.kind === 'simulation') {
-            return {
+            return [{
                 ...base,
                 type: 'simulation' as const,
                 payload: {
@@ -314,7 +315,7 @@ export function buildQuestionSession(
                     steps: Array.isArray(q.steps) ? q.steps : [],
                     language: q.language || ''
                 }
-            };
+            }];
         }
 
         if (q.kind === 'multiple_choice') {
@@ -324,7 +325,7 @@ export function buildQuestionSession(
                 correctIndex = q.correctIndex;
                 if (correctIndex < 0 || correctIndex >= options.length) correctIndex = 0;
             }
-            return {
+            return [{
                 ...base,
                 type: 'generic_mc' as const,
                 payload: {
@@ -333,10 +334,10 @@ export function buildQuestionSession(
                     correctIndex,
                     explanation: q.explanation || ''
                 }
-            };
+            }];
         }
         if (q.kind === 'true_false') {
-            return {
+            return [{
                 ...base,
                 type: 'generic_tf' as const,
                 payload: {
@@ -344,10 +345,30 @@ export function buildQuestionSession(
                     correctAnswer: q.correctAnswer === true,
                     explanation: q.explanation || ''
                 }
-            };
+            }];
         }
-        // flashcard
-        return {
+
+        // flashcard — split Anki-style cloze deletions into written-answer cards
+        const clozeCards = hasCloze(q.prompt)
+            ? extractClozeCards(q.prompt)
+            : hasCloze(q.answer || '')
+                ? extractClozeCards(q.answer || '')
+                : []
+
+        if (clozeCards.length) {
+            return clozeCards.map((card, i) => ({
+                ...base,
+                id: `${q.id}-c${i}`,
+                type: 'generic_written' as const,
+                payload: {
+                    prompt: card.prompt,
+                    answer: card.answer,
+                    explanation: q.explanation || ''
+                }
+            }));
+        }
+
+        return [{
             ...base,
             type: 'generic_flashcard' as const,
             payload: {
@@ -355,7 +376,7 @@ export function buildQuestionSession(
                 answer: q.answer || '',
                 explanation: q.explanation || ''
             }
-        };
+        }];
     });
 }
 
