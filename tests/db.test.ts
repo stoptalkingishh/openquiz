@@ -1,0 +1,92 @@
+import { describe, it, expect } from 'vitest'
+import { normalizeImportedQuizItems, validateQuizJSON } from '../app/lib/db'
+
+describe('normalizeImportedQuizItems', () => {
+    it('returns words (and no questions) for a word-shaped array', () => {
+        const { words, questions } = normalizeImportedQuizItems([
+            { word: 'cat', ru: 'кошка', synonyms: ['kitten'] }
+        ])
+        expect(words).toHaveLength(1)
+        expect(words[0].word).toBe('cat')
+        expect(words[0].synonyms).toEqual(['kitten'])
+        expect(questions).toEqual([])
+    })
+
+    it('parses multiple_choice, true_false and flashcard questions', () => {
+        const { words, questions, errors } = normalizeImportedQuizItems([
+            { prompt: 'Pick one', options: ['a', 'b', 'c'], correctIndex: 1 },
+            { prompt: 'Boolean?', answer: true },
+            { prompt: 'String true?', correctAnswer: 'true' },
+            { prompt: 'Spell it', answer: 'Paris' }
+        ])
+        expect(words).toEqual([])
+        expect(errors).toEqual([])
+        expect(questions).toHaveLength(4)
+        expect(questions[0].kind).toBe('multiple_choice')
+        expect(questions[0].correctIndex).toBe(1)
+        expect(questions[1].kind).toBe('true_false')
+        expect(questions[1].correctAnswer).toBe(true)
+        expect(questions[2].kind).toBe('true_false')
+        expect(questions[2].correctAnswer).toBe(true)
+        expect(questions[3].kind).toBe('flashcard')
+        expect(questions[3].answer).toBe('Paris')
+    })
+
+    it('parses simulation steps', () => {
+        const { questions } = normalizeImportedQuizItems([
+            {
+                kind: 'simulation',
+                prompt: 'Set it up',
+                steps: [
+                    { kind: 'choice', title: 'Pick', options: ['a', 'b'], correctIndex: 0 },
+                    { kind: 'checkbox', title: 'Toggle', items: [{ id: 'i1', label: 'x', correct: true }] }
+                ]
+            }
+        ])
+        expect(questions[0].kind).toBe('simulation')
+        expect(questions[0].steps).toHaveLength(2)
+        expect(questions[0].steps[0].kind).toBe('choice')
+        expect(questions[0].steps[0].options).toEqual(['a', 'b'])
+        expect(questions[0].steps[1].kind).toBe('checkbox')
+    })
+
+    it('deduplicates repeated ids', () => {
+        const { questions } = normalizeImportedQuizItems([
+            { id: 'q1', prompt: 'A?', options: ['x', 'y'], correctIndex: 0 },
+            { id: 'q1', prompt: 'B?', options: ['x', 'y'], correctIndex: 0 }
+        ])
+        expect(questions.map(q => q.id)).toEqual(['q1', 'q1-1'])
+    })
+})
+
+describe('validateQuizJSON', () => {
+    it('rejects invalid JSON', () => {
+        const result = validateQuizJSON('not json {')
+        expect(result.ok).toBe(false)
+        expect(result.errors.length).toBeGreaterThan(0)
+    })
+
+    it('rejects items missing a word', () => {
+        const result = validateQuizJSON('[{"word":"","ru":"кошка"}]')
+        expect(result.ok).toBe(false)
+        expect(result.errors.some(e => e.includes('missing "word"'))).toBe(true)
+    })
+
+    it('rejects items missing ru', () => {
+        const result = validateQuizJSON('[{"word":"cat","ru":"кошка"},{"word":"dog"}]')
+        expect(result.ok).toBe(false)
+        expect(result.errors.some(e => e.includes('missing "ru"'))).toBe(true)
+    })
+
+    it('rejects items missing a prompt', () => {
+        const result = validateQuizJSON('[{"foo":"bar"}]')
+        expect(result.ok).toBe(false)
+        expect(result.errors.some(e => e.includes('prompt'))).toBe(true)
+    })
+
+    it('accepts a valid word array', () => {
+        const result = validateQuizJSON('[{"word":"cat","ru":"кошка"}]')
+        expect(result.ok).toBe(true)
+        expect(result.count).toBe(1)
+    })
+})
