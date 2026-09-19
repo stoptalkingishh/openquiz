@@ -782,6 +782,103 @@ function flattenActivity(all: Record<string, QuizStats>) {
     return entries.sort((a, b) => b.date.localeCompare(a.date))
 }
 
+async function getAllQuizStats(): Promise<Record<string, QuizStats>> {
+    const local = readJson<Record<string, QuizStats>>(QUIZ_STATS_KEY, {})
+    if (!isCloudActive()) return local
+    const remote = await readDriveFile<Record<string, QuizStats>>(QUIZ_STATS_FILE)
+    if (!remote) return local
+    const merged: Record<string, QuizStats> = { ...local }
+    for (const [quizId, stats] of Object.entries(remote)) {
+        const existing = merged[quizId]
+        if (!existing) {
+            merged[quizId] = stats
+            continue
+        }
+        const history = [...(existing.history || []), ...(stats.history || [])]
+            .filter((entry, i, arr) => arr.findIndex(o => o.date === entry.date && o.correct === entry.correct && o.total === entry.total) === i)
+            .sort((a, b) => a.date.localeCompare(b.date))
+        merged[quizId] = { ...existing, ...stats, history }
+    }
+    return merged
+}
+
+async function getAllDailyStats(): Promise<Record<string, any>> {
+    const local = readJson<Record<string, any>>(DAILY_STATS_KEY, {})
+    if (!isCloudActive()) return local
+    const remote = await readDriveFile<Record<string, any>>(DAILY_STATS_FILE)
+    return remote ? { ...local, ...remote } : local
+}
+
+export interface StudyAnalytics {
+    studyDays: { date: string; count: number }[]
+    totals: { sessions: number; correct: number; total: number; accuracy: number }
+    weakestWords: { word: string; strength: number; wrongStreak: number }[]
+    activity: { quizName: string; date: string; correct: number; total: number }[]
+}
+
+export async function getStudyAnalytics(userId: string): Promise<StudyAnalytics> {
+    const quizStats = await getAllQuizStats()
+    const dailyStats = await getAllDailyStats()
+
+    const countsByDate = new Map<string, number>()
+    for (const stats of Object.values(quizStats)) {
+        for (const h of stats.history || []) {
+            const date = String(h.date || '').slice(0, 10)
+            if (!date) continue
+            countsByDate.set(date, (countsByDate.get(date) || 0) + (h.total || 0))
+        }
+    }
+    for (const entry of Object.values(dailyStats)) {
+        if (!entry || entry.user_id !== userId) continue
+        const date = String(entry.date || '').slice(0, 10)
+        if (!date) continue
+        const answers = (Number(entry.words_learned) || 0) + (Number(entry.words_drilled) || 0) + (Number(entry.words_examined) || 0)
+        countsByDate.set(date, (countsByDate.get(date) || 0) + answers)
+    }
+
+    let sessions = 0
+    let correct = 0
+    let total = 0
+    for (const stats of Object.values(quizStats)) {
+        for (const h of stats.history || []) {
+            sessions += 1
+            correct += h.correct || 0
+            total += h.total || 0
+        }
+    }
+    const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0
+
+    const progress = await getWordProgress(userId)
+    const weakestWords = Object.entries(progress || {})
+        .map(([key, p]) => ({
+            word: p?.word || key,
+            strength: typeof p?.strength === 'number' ? p.strength : 0,
+            wrongStreak: p?.wrongStreak || 0
+        }))
+        .sort((a, b) => a.strength - b.strength || b.wrongStreak - a.wrongStreak)
+        .slice(0, 8)
+
+    const activity = flattenActivity(quizStats)
+        .slice(0, 10)
+        .map(e => ({ quizName: e.quizName, date: e.date, correct: e.correct, total: e.total }))
+
+    const studyDays: { date: string; count: number }[] = []
+    const today = new Date()
+    for (let i = 89; i >= 0; i--) {
+        const d = new Date(today)
+        d.setDate(today.getDate() - i)
+        const date = d.toISOString().split('T')[0]
+        studyDays.push({ date, count: countsByDate.get(date) || 0 })
+    }
+
+    return {
+        studyDays,
+        totals: { sessions, correct, total, accuracy },
+        weakestWords,
+        activity
+    }
+}
+
 // ---------------------------------------------------------------------------
 // One-time migration of guest (localStorage) data into the user's Drive
 // account. Called after a successful sign-in. Drive always wins on conflict.
