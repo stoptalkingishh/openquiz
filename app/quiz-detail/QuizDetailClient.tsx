@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { ArrowLeft, Play, BookOpen, Globe, Lock, Share2, Copy, Users, Check, Gamepad2, ClipboardList, Folder, FolderPlus, Trophy, Trash2 } from 'lucide-react'
 import { getCustomQuizById, getQuizSetByPath, getFolders, setQuizInFolder, createFolder, getQuizStats, loadOfficialQuiz, deleteCustomQuiz } from '../lib/db'
+import { buildShareData } from '../lib/share'
 import { useQuizStore } from '../lib/quizStore'
 import { useAuth } from '../contexts/AuthContext'
 import Logo from '../components/Logo'
@@ -126,21 +127,14 @@ export default function QuizDetailClient() {
         if (fresh) await handleFolderSelect(fresh.id)
     }
 
-    const encodeShareData = () => {
-        return encodeURIComponent(JSON.stringify({
-            id: quizId,
-            name: quiz.name,
-            description: quiz.description,
-            author_name: quiz.author_name || null,
-            words: quiz.words || [],
-            questions: quiz.questions || []
-        }))
-    }
+    const shareData = quiz?.isCustom ? buildShareData(quiz) : null
+    const shareTooLarge = quiz?.isCustom && shareData === null
 
     const getShareUrl = () => {
         if (quiz.isCustom) {
             // Embed the whole quiz in the URL so the link works on any static host
-            return `${typeof window !== 'undefined' ? window.location.origin : ''}${process.env.NEXT_PUBLIC_BASE_PATH || ''}/quiz/share?data=${encodeShareData()}`
+            if (shareData === null) return ''
+            return `${typeof window !== 'undefined' ? window.location.origin : ''}${process.env.NEXT_PUBLIC_BASE_PATH || ''}/quiz/share?data=${shareData}`
         }
         return `${typeof window !== 'undefined' ? window.location.origin : ''}${process.env.NEXT_PUBLIC_BASE_PATH || ''}/quiz/share?path=${encodeURIComponent(quiz.file_path || '')}`
     }
@@ -649,6 +643,13 @@ function kindLabel(kind: string): string {
                                 </p>
 
                                 {/* Share Link */}
+                                {shareTooLarge ? (
+                                    <div className="bg-warning/10 border-2 border-warning rounded-xl p-4 mb-4">
+                                        <p className="text-sm text-neutral-700 dark:text-neutral-300">
+                                            This quiz is too large to share as a link — export it as JSON instead.
+                                        </p>
+                                    </div>
+                                ) : (
                                 <div className="bg-neutral-100 dark:bg-neutral-800 rounded-xl p-4 mb-4">
                                     <div className="flex items-center gap-2 mb-2">
                                         <Share2 className="w-4 h-4 text-neutral-500" />
@@ -672,6 +673,7 @@ function kindLabel(kind: string): string {
                                         </button>
                                     </div>
                                 </div>
+                                )}
                             </div>
 
                             <button
