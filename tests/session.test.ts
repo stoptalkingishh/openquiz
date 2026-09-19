@@ -198,6 +198,20 @@ describe('buildQuestionSession', () => {
         expect(result.map(q => q.payload.answer).sort()).toEqual(['True', 'right'])
     })
 
+    it('falls back to a bare progress key when the scoped key is absent', () => {
+        const questions: QuizQuestion[] = [
+            { id: 'q1', kind: 'flashcard', prompt: 'P', answer: 'A' }
+        ]
+        const progress: Record<string, WordProgress> = {
+            q1: { word: 'q1', strength: 0.1, seenCount: 3, wrongStreak: 2, lastSeen: 1 }
+        }
+        // Under a scoped prefix the lookup must still find the bare `q1` entry
+        // so a previously-missed question shows up in Mistakes mode.
+        const result = buildQuestionSession('mistakes', questions, progress, undefined, '/sat/1.json')
+        expect(result).toHaveLength(1)
+        expect(result[0]?.word).toBe('q1')
+    })
+
     it('keeps a generic display word separate from its scoped progress key', () => {
         const questions = [{
             id: 'q1', kind: 'flashcard', word: 'Display label', prompt: 'Prompt', answer: 'Answer'

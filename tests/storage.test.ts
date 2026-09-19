@@ -142,4 +142,28 @@ describe('scoped-key progress migration', () => {
         const persisted = JSON.parse(data.get(accountKey('oquiz:progress'))!)
         expect(persisted).toEqual({ alice: { '/sat/1.json::q1': { word: 'Prompt A', lastSeen: 200 } } })
     })
+
+    it('preserves a newer bare record over a stale scoped record', async () => {
+        data.set(accountKey('oquiz:progress'), JSON.stringify({
+            alice: {
+                '/sat/1.json::q1': { word: 'Stale', lastSeen: 100, strength: 0.2 },
+                q1: { word: 'Prompt A', lastSeen: 300, strength: 0.9, repetitions: 5 }
+            }
+        }))
+        const progress = await getWordProgress('alice')
+        expect(progress['/sat/1.json::q1']).toEqual({ word: 'Prompt A', lastSeen: 300, strength: 0.9, repetitions: 5 })
+    })
+
+    it('leaves an ambiguous bare key untouched when two quizzes reference it', async () => {
+        data.set(accountKey('oquiz:progress'), JSON.stringify({
+            alice: {
+                '/sat/1.json::q1': { word: 'A', lastSeen: 200 },
+                '/sat/2.json::q1': { word: 'B', lastSeen: 200 },
+                q1: { word: 'Prompt A', lastSeen: 100 }
+            }
+        }))
+        const progress = await getWordProgress('alice')
+        expect(Object.keys(progress).sort()).toEqual(['/sat/1.json::q1', '/sat/2.json::q1', 'q1'])
+        expect(progress['q1']).toEqual({ word: 'Prompt A', lastSeen: 100 })
+    })
 })

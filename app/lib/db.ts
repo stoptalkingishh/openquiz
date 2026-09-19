@@ -138,23 +138,38 @@ function mergeProgress(local: ProgressMap, remote: ProgressMap): ProgressMap {
 // Newer builds persist progress under scoped keys (`${quizPath}::${questionId}`,
 // e.g. `/sat/1.json::q1`) while older builds used the bare question id (`q1`).
 // A question that only exists under a bare key would otherwise be invisible to
-// scoped reads. Adopt each bare entry into its scoped key on read (the scoped
-// entry wins on field conflicts) and drop the bare key so the migration runs
-// once and the next write cannot recreate it.
+// scoped reads. Adopt each bare entry into its scoped key on read and drop the
+// bare key so the migration runs once and the next write cannot recreate it.
 function migrateScopedKeys(bucket: ProgressMap): ProgressMap {
-    let changed = false
-    const migrated: ProgressMap = { ...bucket }
-    for (const scopedKey of Object.keys(migrated)) {
+    // Map each bare key to the single scoped key that owns it. When two scoped
+    // keys share the same bare id (a question id reused across quizzes), the
+    // mapping is ambiguous — leave the bare entry untouched rather than guess.
+    const owners = new Map<string, string>()
+    const ambiguous = new Set<string>()
+    for (const scopedKey of Object.keys(bucket)) {
         const sep = scopedKey.lastIndexOf('::')
         if (sep < 0) continue
         const bareKey = scopedKey.slice(sep + 2)
-        if (!bareKey || bareKey === scopedKey) continue
+        if (!bareKey) continue
+        if (owners.has(bareKey)) ambiguous.add(bareKey)
+        else owners.set(bareKey, scopedKey)
+    }
+
+    let changed = false
+    const migrated: ProgressMap = { ...bucket }
+    owners.forEach((scopedKey, bareKey) => {
+        if (ambiguous.has(bareKey)) return
         const bareEntry = migrated[bareKey]
-        if (!bareEntry || typeof bareEntry !== 'object' || Array.isArray(bareEntry)) continue
-        migrated[scopedKey] = { ...bareEntry, ...migrated[scopedKey] }
+        const scopedEntry = migrated[scopedKey]
+        if (!bareEntry || typeof bareEntry !== 'object' || Array.isArray(bareEntry)) return
+        // The newer record wins field-by-field so a card mastered under the old
+        // build is not overwritten by a fresh "new" answer written under the
+        // scoped key (and vice-versa); fields unique to the older record survive.
+        const scopedNewer = scopedEntry && (scopedEntry.lastSeen || 0) >= (bareEntry.lastSeen || 0)
+        migrated[scopedKey] = scopedNewer ? { ...bareEntry, ...scopedEntry } : { ...scopedEntry, ...bareEntry }
         delete migrated[bareKey]
         changed = true
-    }
+    })
     return changed ? migrated : bucket
 }
 
