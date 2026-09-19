@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { X, AlertCircle, Menu, Volume2, VolumeX } from 'lucide-react'
 import { buildSession, updateProgress, buildQuestionSession, buildTestSession, buildWriteSession } from '../../lib/session'
@@ -10,7 +10,6 @@ import SessionMenu, { ReviewRecord } from '../../components/SessionMenu'
 import { useAuth } from '../../contexts/AuthContext'
 import { getWordProgress, saveWordProgress, getCustomQuizById, getQuizSetByPath, recordQuizSession, loadOfficialQuiz } from '../../lib/db'
 import { useQuizStore } from '../../lib/quizStore'
-import { assetPath } from '../../lib/paths'
 import { stopSpeech, isSpeaking, setOnTtsEnd } from '../../lib/tts'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 
@@ -31,11 +30,21 @@ export default function SessionModePage() {
     const [menuOpen, setMenuOpen] = useState(false)
     const [history, setHistory] = useState<Record<string, ReviewRecord>>({})
     const [reading, setReading] = useState(false)
+    const [answerRetryKey, setAnswerRetryKey] = useState(0)
+    const [finishError, setFinishError] = useState<string | null>(null)
 
     const startTimeRef = useRef<number>(Date.now())
     const correctCountRef = useRef(0)
     const quizMetaRef = useRef<{ id: string; name: string }>({ id: selectedQuizPath, name: selectedQuizPath })
     const progressRef = useRef<Record<string, any>>({})
+    const questionsRef = useRef<Question[]>([])
+    const indexRef = useRef(0)
+    const historyRef = useRef<Record<string, ReviewRecord>>({})
+    const submittedRef = useRef<Set<string>>(new Set())
+    const savePromisesRef = useRef<Record<string, Promise<void>>>({})
+    const finishedRef = useRef(false)
+    const sessionIdRef = useRef<string | null>(null)
+    const pendingFinishRef = useRef<{ correct: number; total: number } | null>(null)
     const reduceMotion = useReducedMotion()
 
     // Reflect TTS state so a floating "reading" pill can appear even while the
@@ -105,6 +114,9 @@ export default function SessionModePage() {
             progressRef.current = progressData
 
             const buildFromQuestions = (q: Question[]) => {
+                if (quizData.questions?.length) {
+                    q = q.map(question => ({ ...question, progressKey: question.progressKey || `${selectedQuizPath}::${question.id}` }))
+                }
                 if (cancelled) return
                 if (!q.length) {
                     setLoadError('This quiz has no studyable content. Try another quiz.')
@@ -112,13 +124,23 @@ export default function SessionModePage() {
                     return
                 }
                 setQuestions(q)
+                questionsRef.current = q
+                indexRef.current = 0
+                submittedRef.current.clear()
+                historyRef.current = {}
+                setHistory({})
+                setIndex(0)
+                finishedRef.current = false
+                sessionIdRef.current = null
+                pendingFinishRef.current = null
+                setFinishError(null)
                 setLoading(false)
             }
 
             if (quizData.questions && quizData.questions.length) {
                 const q = mode === 'test'
                     ? buildTestSession(undefined, quizData.questions, Math.min(20, quizData.questions.length))
-                    : buildQuestionSession(mode, quizData.questions, progressData, Math.min(50, quizData.questions.length))
+                    : buildQuestionSession(mode, quizData.questions, progressData, Math.min(50, quizData.questions.length), selectedQuizPath)
                 buildFromQuestions(q)
                 return
             }
@@ -145,20 +167,37 @@ export default function SessionModePage() {
         }
     }, [user, authLoading, mode, router, selectedQuizPath, retryKey])
 
-    const finishSession = (correct: number, total: number) => {
+    const finishSession = useCallback(async (correct: number, total: number) => {
+        if (finishedRef.current) return
+        finishedRef.current = true
+        pendingFinishRef.current = { correct, total }
+        setFinishError(null)
+        if (!sessionIdRef.current) {
+            sessionIdRef.current = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+                ? crypto.randomUUID()
+                : `session-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+        }
         const elapsed = Math.round((Date.now() - startTimeRef.current) / 1000)
-        recordQuizSession(quizMetaRef.current.id, quizMetaRef.current.name, { correct, total, seconds: elapsed })
-            .catch(e => console.error('Failed to record session:', e))
-        router.push('/')
-    }
+        try {
+            await recordQuizSession(quizMetaRef.current.id, quizMetaRef.current.name, {
+                correct, total, seconds: elapsed, id: sessionIdRef.current
+            })
+            pendingFinishRef.current = null
+            router.push('/')
+        } catch (error) {
+            finishedRef.current = false
+            setFinishError(error instanceof Error ? error.message : 'Could not save this session. Please retry.')
+            console.error('Failed to record session:', error)
+        }
+    }, [router])
 
-    const handleAnswer = async (correct: boolean, chosen?: string | number | boolean | null, answeredQuestion?: Question) => {
+    const handleAnswer = async (correct: boolean, chosen?: string | number | boolean | null, answeredQuestion?: Question, quality?: number) => {
         if (!user) return
 
         // Bind to the question that was actually answered. If the user
         // navigated during the feedback delay, this is still the original
         // question, not the one currently on screen.
-        const currentQ = answeredQuestion || questions[index]
+        const currentQ = answeredQuestion || questionsRef.current[indexRef.current]
         if (!currentQ) return
 
         // Stop reading aloud if audio was playing.
@@ -166,50 +205,66 @@ export default function SessionModePage() {
 
         // Guard against double-submit of the same question (e.g. double tap
         // on a simulation Continue button).
-        if (history[currentQ.id]) return
+        if (submittedRef.current.has(currentQ.id)) return
+        submittedRef.current.add(currentQ.id)
 
-        const newProgress = updateProgress(progressRef.current[currentQ.word], correct, currentQ.word)
-        progressRef.current = { ...progressRef.current, [currentQ.word]: newProgress }
+        const progressKey = (currentQ as Question & { progressKey?: string }).progressKey || currentQ.word
+        const newProgress = updateProgress(progressRef.current[progressKey], correct, progressKey, quality)
+        newProgress.word = currentQ.progressKey ? String(currentQ.payload.prompt || currentQ.word) : currentQ.word
 
-        if (correct) correctCountRef.current += 1
-
-        // Record the submitted answer so the menu can explain wrong/correct.
-        setHistory(h => ({ ...h, [currentQ.id]: { correct, chosen: chosen ?? null } }))
-
-        // Persist progress locally (cloud sync comes later)
-        await saveWordProgress(user.id, currentQ.word, newProgress)
-
-        if (index + 1 < questions.length && questions[index]?.id === currentQ.id) {
-            setIndex(index + 1)
-        } else if (index + 1 >= questions.length && questions[index]?.id === currentQ.id) {
-            // Answered the last question and it is still the one on screen.
-            finishSession(correctCountRef.current, questions.length)
-        }
+        // Persist before committing the in-memory review. If local storage
+        // rejects, the card remains retryable and the score is unchanged.
+        const savePromise = saveWordProgress(user.id, progressKey, newProgress).then(() => {
+            progressRef.current = { ...progressRef.current, [progressKey]: newProgress }
+            if (correct) correctCountRef.current += 1
+            const record = { correct, chosen: chosen ?? null }
+            historyRef.current = { ...historyRef.current, [currentQ.id]: record }
+            setHistory(historyRef.current)
+        }).catch(error => {
+            submittedRef.current.delete(currentQ.id)
+            setAnswerRetryKey(key => key + 1)
+            console.error('Failed to save answer:', error)
+        })
+        savePromisesRef.current[currentQ.id] = savePromise
+        await savePromise
     }
 
-    const handleRate = async (quality: number) => {
-        if (!user) return
-
-        const currentQ = questions[index]
+    const handleContinue = useCallback(async (answeredQuestion?: Question) => {
+        const currentQ = answeredQuestion || questionsRef.current[indexRef.current]
         if (!currentQ) return
+        const pending = savePromisesRef.current[currentQ.id]
+        if (pending) await pending
+        if (!historyRef.current[currentQ.id]) return
+        const currentIndex = indexRef.current
+        if (questionsRef.current[currentIndex]?.id !== currentQ.id) return
+        if (currentIndex + 1 < questionsRef.current.length) {
+            indexRef.current = currentIndex + 1
+            setIndex(currentIndex + 1)
+        } else {
+            const firstUnanswered = questionsRef.current.findIndex(q => !historyRef.current[q.id])
+            if (firstUnanswered >= 0) {
+                indexRef.current = firstUnanswered
+                setIndex(firstUnanswered)
+            } else {
+                finishSession(correctCountRef.current, questionsRef.current.length)
+            }
+        }
+    }, [finishSession])
 
-        const prev = progressRef.current[currentQ.word]
-        if (!prev) return
-
-        const updated = updateProgress(prev, quality >= 3, currentQ.word, quality)
-        progressRef.current = { ...progressRef.current, [currentQ.word]: updated }
-        await saveWordProgress(user.id, currentQ.word, updated)
-    }
-
-    const goPrev = () => {
+    const goPrev = useCallback(() => {
         stopSpeech()
-        setIndex(i => Math.max(0, i - 1))
-    }
+        const next = Math.max(0, indexRef.current - 1)
+        indexRef.current = next
+        setIndex(next)
+    }, [])
 
-    const goNext = () => {
+    const goNext = useCallback(() => {
         stopSpeech()
-        if (index + 1 < questions.length) setIndex(i => i + 1)
-    }
+        if (indexRef.current + 1 < questionsRef.current.length) {
+            indexRef.current += 1
+            setIndex(indexRef.current)
+        }
+    }, [])
 
     useEffect(() => {
         const onKeyDown = (e: KeyboardEvent) => {
@@ -246,9 +301,10 @@ export default function SessionModePage() {
     const handleExit = async () => {
         if (user && questions[index]) {
             const currentQ = questions[index]
-            const currentProgress = progressRef.current[currentQ.word]
+            const progressKey = (currentQ as Question & { progressKey?: string }).progressKey || currentQ.word
+            const currentProgress = progressRef.current[progressKey]
             if (currentProgress) {
-                await saveWordProgress(user.id, currentQ.word, currentProgress)
+                await saveWordProgress(user.id, progressKey, currentProgress)
             }
         }
         router.push('/')
@@ -273,6 +329,25 @@ export default function SessionModePage() {
                 </button>
                 <button onClick={() => router.push('/quizzes')} className="btn-outline w-full">
                     Back to Quizzes
+                </button>
+            </div>
+        </div>
+    )
+
+    if (finishError) return (
+        <div className="min-h-screen flex items-center justify-center bg-background-light dark:bg-background-dark p-6">
+            <div className="card max-w-md w-full text-center p-8">
+                <AlertCircle className="w-12 h-12 text-warning mx-auto mb-3" />
+                <h2 className="text-xl font-bold mb-2">Session not saved</h2>
+                <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-6">{finishError}</p>
+                <button
+                    onClick={() => {
+                        const pending = pendingFinishRef.current
+                        if (pending) void finishSession(pending.correct, pending.total)
+                    }}
+                    className="btn-primary w-full"
+                >
+                    Retry saving
                 </button>
             </div>
         </div>
@@ -320,10 +395,11 @@ export default function SessionModePage() {
             {/* Content */}
             <div className="flex-1 p-6 flex flex-col items-center justify-center">
                 <QuestionCard
-                    key={current.id}
+                    key={`${current.id}-${answerRetryKey}`}
                     question={current}
                     onAnswer={handleAnswer}
-                    onRate={handleRate}
+                    onContinue={handleContinue}
+                    answered={history[current.id]}
                 />
             </div>
 

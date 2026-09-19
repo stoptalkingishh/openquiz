@@ -5,28 +5,41 @@ import { useRouter } from 'next/navigation'
 import { LogOut, Mail, Calendar, History, Trophy, BarChart3, Download } from 'lucide-react'
 import BottomNav from '../components/BottomNav'
 import { useAuth } from '../contexts/AuthContext'
-import { getStreak, getDailyStats, getRecentActivity, getStudyAnalytics, StudyAnalytics, exportQuizData, wordsToCSV } from '../lib/db'
+import { getStreak, getRecentActivity, getStudyAnalytics, StudyAnalytics, exportQuizData, wordsToCSV } from '../lib/db'
 
 export default function ProfilePage() {
     const { user, loading: authLoading, signOut } = useAuth()
     const router = useRouter()
     const [streak, setStreak] = useState(0)
-    const [stats, setStats] = useState<any>(null)
     const [recent, setRecent] = useState<any[]>([])
     const [analytics, setAnalytics] = useState<StudyAnalytics | null>(null)
 
     useEffect(() => {
         if (!authLoading && !user) {
+            setStreak(0)
+            setRecent([])
+            setAnalytics(null)
             router.push('/auth')
             return
         }
         if (authLoading || !user) return
         const currentUser = user
+        let cancelled = false
 
-        getStreak(currentUser.id).then(setStreak).catch(() => {})
-        getDailyStats(currentUser.id).then(setStats).catch(() => {})
-        getRecentActivity(8).then(setRecent).catch(() => {})
-        getStudyAnalytics(currentUser.id).then(setAnalytics).catch(() => {})
+        setStreak(0)
+        setRecent([])
+        setAnalytics(null)
+        getStreak(currentUser.id).then(value => {
+            if (!cancelled) setStreak(value)
+        }).catch(() => {})
+        getRecentActivity(8).then(value => {
+            if (!cancelled) setRecent(value)
+        }).catch(() => {})
+        getStudyAnalytics(currentUser.id).then(value => {
+            if (!cancelled) setAnalytics(value)
+        }).catch(() => {})
+
+        return () => { cancelled = true }
     }, [user, authLoading, router])
 
     const handleSignOut = async () => {
@@ -72,6 +85,8 @@ export default function ProfilePage() {
     if (authLoading || !user) return null
 
     const maxCount = analytics ? Math.max(1, ...analytics.studyDays.map(d => d.count)) : 1
+    const latestDay = analytics?.studyDays[analytics.studyDays.length - 1]
+    const todayAnswers = latestDay?.count || 0
     const shadeFor = (count: number) => {
         if (!count) return 'bg-neutral-100 dark:bg-neutral-800'
         const ratio = count / maxCount
@@ -117,8 +132,8 @@ export default function ProfilePage() {
                         <div className="text-sm text-gray-500 dark:text-gray-400">Day Streak</div>
                     </div>
                     <div className="card text-center">
-                        <div className="text-3xl font-bold text-secondary mb-1">{stats?.words_learned || 0}</div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">Words Today</div>
+                        <div className="text-3xl font-bold text-secondary mb-1">{todayAnswers}</div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400">Answers Today</div>
                     </div>
                 </div>
 

@@ -1,4 +1,6 @@
-const CLOZE_RE = /\{\{c\d+::(.*?)\}\}/g
+// Cloze answers may span lines. Keep the capture non-greedy so each deletion
+// becomes its own card when a prompt contains several deletions.
+const CLOZE_RE = /\{\{c\d+::([\s\S]*?)\}\}/g
 
 export function hasCloze(text: string): boolean {
     if (!text) return false

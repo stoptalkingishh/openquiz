@@ -1,5 +1,6 @@
 import { normalizeImportedQuizItems } from './db'
 import { Word, QuizQuestion } from './satTypes'
+import { readAccountData, writeAccountData } from './storage'
 
 export interface AiSettings {
     apiKey: string
@@ -18,8 +19,7 @@ const DEFAULT_SETTINGS: AiSettings = {
 function readJson<T>(key: string, fallback: T): T {
     if (typeof window === 'undefined') return fallback
     try {
-        const stored = window.localStorage.getItem(key)
-        return stored ? (JSON.parse(stored) as T) : fallback
+        return readAccountData(key, fallback)
     } catch {
         return fallback
     }
@@ -27,11 +27,7 @@ function readJson<T>(key: string, fallback: T): T {
 
 function writeJson(key: string, value: unknown) {
     if (typeof window === 'undefined') return
-    try {
-        window.localStorage.setItem(key, JSON.stringify(value))
-    } catch (err) {
-        console.error('localStorage write failed:', err)
-    }
+    writeAccountData(key, value)
 }
 
 export function getAiSettings(): AiSettings {
@@ -77,8 +73,13 @@ export async function generateQuizFromNotes(
     }
 
     let res: Response
+    const endpoint = new URL(`${s.baseUrl.replace(/\/+$/, '')}/chat/completions`)
+    if (endpoint.protocol !== 'https:' && !(endpoint.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(endpoint.hostname))) {
+        throw new Error('Use an HTTPS API URL (or localhost for a local model).')
+    }
     try {
-        res = await fetch(`${s.baseUrl.replace(/\/+$/, '')}/chat/completions`, {
+        res = await fetch(endpoint, {
+            signal: AbortSignal.timeout(60000),
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -123,7 +124,8 @@ export async function generateQuizFromNotes(
         throw new Error('The AI response must be a JSON array.')
     }
 
-    const { words, questions } = normalizeImportedQuizItems(parsed)
+    const { words, questions, errors } = normalizeImportedQuizItems(parsed)
+    if (errors.length) throw new Error(`The AI returned invalid quiz items: ${errors.slice(0, 3).join('; ')}`)
     if (!words.length && !questions.length) {
         throw new Error('The AI did not return any usable quiz items.')
     }

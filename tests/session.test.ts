@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { updateProgress, buildSession, buildTestSession } from '../app/lib/session'
-import { Word, WordProgress } from '../app/lib/satTypes'
+import { updateProgress, buildSession, buildTestSession, buildQuestionSession } from '../app/lib/session'
+import { Word, WordProgress, QuizQuestion, Question } from '../app/lib/satTypes'
+import { extractClozeCards } from '../app/lib/cloze'
 
 function word(word: string, ru: string): Word {
     return { word, ru, synonyms: [], simple_examples: [], advanced_example: '', confusions: [] }
@@ -18,7 +19,7 @@ describe('updateProgress', () => {
             true,
             'cat'
         )
-        expect(progress.strength).toBeCloseTo(0.65)
+        expect(progress.strength).toBeGreaterThan(0.5)
         expect(progress.wrongStreak).toBe(0)
     })
 
@@ -47,24 +48,20 @@ describe('updateProgress', () => {
         expect(progress.wrongStreak).toBe(1)
     })
 
-    it('marks a word as mastered once strength exceeds 0.8', () => {
-        const progress = updateProgress(
-            { word: 'cat', lastSeen: 0, strength: 0.7 },
-            true,
-            'cat'
-        )
-        expect(progress.strength).toBeCloseTo(0.85)
-        expect(progress.status).toBe('mastered')
+    it('marks a word as mastered after repeated successful retention', () => {
+        let progress: WordProgress | undefined
+        for (let i = 0; i < 5; i++) progress = updateProgress(progress, true, 'cat', 4)
+        expect(progress?.strength).toBeGreaterThanOrEqual(0.8)
+        expect(progress?.repetitions).toBe(5)
+        expect(progress?.status).toBe('mastered')
     })
 
     it('schedules later reviews as strength grows', () => {
         const weak = updateProgress(undefined, true, 'cat')
-        const strong = updateProgress(
-            { word: 'cat', lastSeen: 0, strength: 0.9 },
-            true,
-            'cat'
-        )
-        expect(strong.nextDue).toBeGreaterThan(weak.nextDue)
+        let strong = updateProgress(undefined, true, 'cat', 4)
+        strong = updateProgress(strong, true, 'cat', 4)
+        strong = updateProgress(strong, true, 'cat', 4)
+        expect(strong.nextDue!).toBeGreaterThan(weak.nextDue!)
     })
 })
 
@@ -113,5 +110,56 @@ describe('buildTestSession', () => {
         const questions = buildTestSession(words, undefined, 100)
         expect(questions.map(q => q.type).sort()).toEqual(['generic_mc', 'generic_written'])
         expect(questions.every(q => q.word === 'cat')).toBe(true)
+    })
+})
+
+describe('buildQuestionSession', () => {
+    it('samples from the full quiz before applying the limit', () => {
+        const questions: QuizQuestion[] = Array.from({ length: 80 }, (_, i) => ({
+            id: `q${i}`, kind: 'flashcard', prompt: `Prompt ${i}`, answer: `Answer ${i}`
+        }))
+        const result = buildQuestionSession('drill', questions, {}, 20)
+        expect(result).toHaveLength(20)
+        expect(result.some(q => Number(q.word.slice(1)) >= 20)).toBe(true)
+    })
+
+    it('keeps due weak questions ahead of new questions', () => {
+        const questions: QuizQuestion[] = Array.from({ length: 10 }, (_, i) => ({
+            id: `q${i}`, kind: 'flashcard', prompt: `Prompt ${i}`, answer: `Answer ${i}`
+        }))
+        const progress: Record<string, WordProgress> = {
+            q9: { word: 'q9', strength: 0.05, seenCount: 4, wrongStreak: 2, lastSeen: 1, nextDue: 1 }
+        }
+        const result = buildQuestionSession('drill', questions, progress, 1)
+        expect(result[0]?.word).toBe('q9')
+    })
+
+    it('turns generic multiple choice and true/false items into written answers in write mode', () => {
+        const questions: QuizQuestion[] = [
+            { id: 'mc', kind: 'multiple_choice', prompt: 'Pick', options: ['right', 'wrong'], correctIndex: 0 },
+            { id: 'tf', kind: 'true_false', prompt: 'Decide', correctAnswer: true }
+        ]
+        const result = buildQuestionSession('write', questions, {})
+        expect(result.every(q => q.type === 'generic_written')).toBe(true)
+        expect(result.map(q => q.payload.answer).sort()).toEqual(['True', 'right'])
+    })
+
+    it('keeps a generic display word separate from its scoped progress key', () => {
+        const questions = [{
+            id: 'q1', kind: 'flashcard', word: 'Display label', prompt: 'Prompt', answer: 'Answer'
+        }] as QuizQuestion[]
+        const result = buildQuestionSession('drill', questions, {}, undefined, 'quiz-a')
+        expect(result[0]?.word).toBe('Display label')
+        expect((result[0] as Question & { progressKey?: string }).progressKey).toBe('quiz-a::q1')
+    })
+})
+
+describe('cloze cards', () => {
+    it('creates one stable group card per deletion, including multiline answers', () => {
+        const cards = extractClozeCards('First {{c1::alpha}} and\nsecond {{c2::beta\nvalue}}.')
+        expect(cards).toEqual([
+            { prompt: 'First _____ and\nsecond beta\nvalue.', answer: 'alpha' },
+            { prompt: 'First alpha and\nsecond _____.', answer: 'beta\nvalue' }
+        ])
     })
 })

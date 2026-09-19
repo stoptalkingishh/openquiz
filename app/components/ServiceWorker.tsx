@@ -8,11 +8,12 @@ export default function ServiceWorker() {
     if (process.env.NODE_ENV !== 'production') return
     if (!('serviceWorker' in navigator)) return
 
-    try {
-      navigator.serviceWorker.register(assetPath('/sw.js'))
-    } catch (error) {
-      console.error('Service worker registration failed:', error)
-    }
+    const version = process.env.NEXT_PUBLIC_BUILD_VERSION || 'development'
+    const workerUrl = `${assetPath('/sw.js')}?v=${encodeURIComponent(version)}`
+
+    navigator.serviceWorker
+      .register(workerUrl, { scope: assetPath('/') })
+      .catch((error) => console.error('Service worker registration failed:', error))
   }, [])
 
   return null
