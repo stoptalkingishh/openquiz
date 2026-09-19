@@ -297,10 +297,18 @@ export function buildQuestionSession(
 ): Question[] {
     let list: QuizQuestion[] = [...questions];
     const progressKey = (id: string) => progressKeyPrefix ? `${progressKeyPrefix}::${id}` : id;
+    // Prefer the scoped key, but fall back to the bare id so progress written
+    // by older builds (before scoped keys) is still honored instead of being
+    // treated as a brand-new card on the first review after the upgrade.
+    const lookupProgress = (id: string): WordProgress | undefined => {
+        const scoped = progressMap[progressKey(id)];
+        if (scoped) return scoped;
+        return progressKeyPrefix ? progressMap[id] : undefined;
+    };
 
     if (mode === 'mistakes') {
         list = list.filter(q => {
-            const p = progressMap[progressKey(q.id)];
+            const p = lookupProgress(q.id);
             return p && (p.wrongStreak || 0) > 0;
         });
         if (list.length === 0) return [];
@@ -313,7 +321,7 @@ export function buildQuestionSession(
     const now = Date.now();
     list = shuffle(list)
         .map((q, position) => {
-            const progress = progressMap[progressKey(q.id)];
+            const progress = lookupProgress(q.id);
             const isNew = !progress || (progress.seenCount || 0) === 0;
             const due = !!progress?.nextDue && progress.nextDue <= now;
             const weakness = 1 - (progress?.strength || 0);

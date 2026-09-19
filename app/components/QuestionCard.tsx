@@ -1000,7 +1000,7 @@ function SimulationCard({ question, onAnswer, onContinue }: QuestionCardProps) {
     const steps: SimulationStep[] = Array.isArray(question.payload?.steps) ? question.payload.steps : []
     const [stepIdx, setStepIdx] = useState(0)
     const [submitted, setSubmitted] = useState(false)
-    const [reported, setReported] = useState(false)
+    const reportedRef = useRef(false)
     const [answers, setAnswers] = useState<SimAnswers>({ choice: {}, checkbox: {}, placement: {} })
     const chip = useChipRequest()
     const reduceMotion = useReducedMotion()
@@ -1075,8 +1075,8 @@ function SimulationCard({ question, onAnswer, onContinue }: QuestionCardProps) {
     const allCorrect = grades.every(Boolean)
 
     const submit = (quality = allCorrect ? 4 : 1) => {
-        if (reported) return
-        setReported(true)
+        if (reportedRef.current) return
+        reportedRef.current = true
         onAnswer(allCorrect, null, question, quality)
     }
 
