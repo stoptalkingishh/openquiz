@@ -5,17 +5,70 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import { ArrowLeft, Play, BookOpen } from 'lucide-react'
 import { useQuizStore } from '../../lib/quizStore'
 import { useAuth } from '../../contexts/AuthContext'
-import { getQuizSetByPath, getCustomQuizzes, createCustomQuiz } from '../../lib/db'
-import { assetPath } from '../../lib/paths'
+import { createCustomQuiz, getQuizSetByPath, loadOfficialQuiz, normalizeImportedQuizItems } from '../../lib/db'
 import Logo from '../../components/Logo'
 
 interface SharedQuiz {
     name: string
     description: string
     words: any[]
-    questions?: any[]
+    questions: any[]
     author_name?: string | null
-    id?: string
+}
+
+const MAX_SHARED_PAYLOAD_CHARS = 100_000
+
+function textValue(value: unknown, fallback = ''): string {
+    return typeof value === 'string' ? value.trim() : fallback
+}
+
+function normalizeOfficialPath(value: string): string {
+    let normalized = value.trim()
+    if (!normalized.startsWith('/')) normalized = `/${normalized}`
+    return normalized.replace(new RegExp('/{2,}', 'g'), '/')
+}
+
+function parseSharedQuiz(dataParam: string): SharedQuiz {
+    if (dataParam.length > MAX_SHARED_PAYLOAD_CHARS) {
+        throw new Error('This shared quiz link is too large to load.')
+    }
+
+    let raw: any
+    try {
+        raw = JSON.parse(dataParam)
+    } catch {
+        throw new Error('The shared quiz link contains invalid data.')
+    }
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+        throw new Error('The shared quiz payload must be an object.')
+    }
+
+    const hasWords = Array.isArray(raw.words)
+    const hasQuestions = Array.isArray(raw.questions)
+    if (!hasWords && !hasQuestions) {
+        throw new Error('The shared quiz does not contain any quiz items.')
+    }
+
+    // Normalize the complete payload together so mixed vocabulary/question
+    // links preserve every item instead of silently dropping one category.
+    const normalized = normalizeImportedQuizItems([
+        ...(hasWords ? raw.words : []),
+        ...(hasQuestions ? raw.questions : [])
+    ])
+    if (normalized.errors.length) {
+        throw new Error(`The shared quiz is invalid: ${normalized.errors.slice(0, 3).join(' ')}`)
+    }
+    if (!normalized.words.length && !normalized.questions.length) {
+        throw new Error('The shared quiz does not contain any valid items.')
+    }
+
+    return {
+        name: textValue(raw.name, 'Shared Vocabulary Quiz'),
+        description: textValue(raw.description),
+        author_name: textValue(raw.author_name) || null,
+        words: normalized.words,
+        questions: normalized.questions
+    }
 }
 
 export default function QuizShareClient() {
@@ -26,84 +79,72 @@ export default function QuizShareClient() {
     const { setSelectedQuizPath } = useQuizStore()
     const { user } = useAuth()
     const [words, setWords] = useState<any[]>([])
+    const [questions, setQuestions] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
     const [quizName, setQuizName] = useState('')
     const [authorName, setAuthorName] = useState<string | null>(null)
     const [description, setDescription] = useState('')
     const [embeddedQuiz, setEmbeddedQuiz] = useState<SharedQuiz | null>(null)
+    const [error, setError] = useState<string | null>(null)
+    const [starting, setStarting] = useState(false)
 
     const loadQuiz = useCallback(async () => {
+        setLoading(true)
+        setError(null)
+        setWords([])
+        setQuestions([])
+        setEmbeddedQuiz(null)
         try {
-            // Case 1: custom quiz embedded in the URL (fully static sharing)
             if (dataParam) {
-                // useSearchParams already returns a decoded query value;
-                // decoding a second time breaks valid content containing '%'.
-                const data = JSON.parse(dataParam) as SharedQuiz
-                setWords(Array.isArray(data.words) ? data.words : [])
-                setQuizName(data.name || 'Shared Vocabulary Quiz')
-                setDescription(data.description || '')
+                const data = parseSharedQuiz(dataParam)
+                setWords(data.words)
+                setQuestions(data.questions)
+                setQuizName(data.name)
+                setDescription(data.description)
                 setAuthorName(data.author_name || null)
                 setEmbeddedQuiz(data)
                 setLoading(false)
                 return
             }
 
-            // Case 2: official JSON set referenced by path
             if (pathParam) {
-                let normalizedPath = pathParam.trim()
-                if (!normalizedPath.startsWith('/')) {
-                    normalizedPath = `/${normalizedPath}`
-                }
-                normalizedPath = normalizedPath.replace(/([^:]\/)\/+/g, '$1')
-
-                let nameToUse = ''
-                try {
-                    const quizSet = await getQuizSetByPath(normalizedPath)
-                    if (quizSet && quizSet.name) {
-                        nameToUse = quizSet.name
-                    }
-                } catch {
-                    // fall through to filename parsing
+                const normalizedPath = normalizeOfficialPath(pathParam)
+                // The manifest is the allowlist for official share links. Do
+                // not fetch arbitrary paths supplied in the URL.
+                const quizSet = await getQuizSetByPath(normalizedPath)
+                if (!quizSet || typeof quizSet.file_path !== 'string') {
+                    throw new Error('That official quiz link is not recognized.')
                 }
 
-                if (!nameToUse) {
-                    const pathParts = normalizedPath.split('/')
-                    const fileName = pathParts[pathParts.length - 1].replace('.json', '')
-                    const setNumber = fileName.match(/\d+/)?.[0] || fileName
-                    nameToUse = `OpenQuiz Set`
+                const loaded = await loadOfficialQuiz(quizSet.file_path)
+                if (!loaded.words.length && !loaded.questions.length) {
+                    throw new Error('The official quiz contains no valid items.')
                 }
-
-                setQuizName(nameToUse)
-
-                const response = await fetch(assetPath(normalizedPath))
-                if (!response.ok) {
-                    throw new Error('Failed to load quiz')
-                }
-                const data = await response.json()
-                setWords(Array.isArray(data) ? data : [])
+                setQuizName(textValue(quizSet.name, 'OpenQuiz Set'))
+                setDescription(textValue(quizSet.description))
+                setAuthorName(textValue(quizSet.author_name) || 'OpenQuiz')
+                setWords(loaded.words)
+                setQuestions(loaded.questions)
+                setEmbeddedQuiz(null)
                 setLoading(false)
+                return
             }
-        } catch (error) {
-            console.error('Error loading quiz:', error)
-            router.push('/quizzes')
+
+            throw new Error('This share link is missing a quiz.')
+        } catch (loadError) {
+            console.error('Error loading quiz:', loadError)
+            setError(loadError instanceof Error ? loadError.message : 'Could not load this quiz.')
+            setLoading(false)
         }
-    }, [dataParam, pathParam, router])
+    }, [dataParam, pathParam])
 
     useEffect(() => {
-        if (!pathParam && !dataParam) {
-            router.push('/quizzes')
-            return
-        }
-
         loadQuiz()
-    }, [pathParam, dataParam, router, loadQuiz])
+    }, [loadQuiz])
 
-    // Update document title and meta tags
     useEffect(() => {
         if (quizName) {
             document.title = `${quizName} | OpenQuiz`
-
-            // Update meta description
             const metaDescription = document.querySelector('meta[name="description"]')
             if (metaDescription) {
                 metaDescription.setAttribute('content', `${quizName} - Practice on OpenQuiz.`)
@@ -114,56 +155,49 @@ export default function QuizShareClient() {
                 document.head.appendChild(meta)
             }
         }
-    }, [quizName, words.length])
+    }, [quizName])
 
     const handleStart = async () => {
+        if (starting) return
         if (!user) {
             router.push('/auth')
             return
         }
 
-        // Embedded custom quiz: persist locally so /session can load it by id
-        if (embeddedQuiz) {
-            const existing = await getCustomQuizzes(user.id)
-            let id = embeddedQuiz.id
-            if (!id || !existing.some(q => q.id === id)) {
-                if (Array.isArray(embeddedQuiz.questions) && embeddedQuiz.questions.length) {
-                    // Question-based quiz
-                    const created = await createCustomQuiz(
-                        user.id,
-                        quizName,
-                        description,
-                        [],
-                        true,
-                        authorName || user.name || 'Guest',
-                        embeddedQuiz.questions
-                    )
-                    id = created.id
-                } else {
-                    const created = await createCustomQuiz(
-                        user.id,
-                        quizName,
-                        description,
-                        words,
-                        true,
-                        authorName || user.name || 'Guest'
-                    )
-                    id = created.id
-                }
+        setStarting(true)
+        setError(null)
+        try {
+            if (embeddedQuiz) {
+                // Always create a new private quiz. The embedded id belongs to
+                // the sender and must never select an existing local quiz.
+                const created = await createCustomQuiz(
+                    user.id,
+                    quizName,
+                    description,
+                    embeddedQuiz.words,
+                    false,
+                    authorName || user.name || 'Guest',
+                    embeddedQuiz.questions.length ? embeddedQuiz.questions : undefined
+                )
+                setSelectedQuizPath(`/custom-quiz/${created.id}`)
+                router.push('/session/learn')
+                return
             }
-            setSelectedQuizPath(`/custom-quiz/${id}`)
-            router.push('/session/learn')
-            return
-        }
 
-        if (pathParam) {
-            let normalizedPath = pathParam.trim()
-            if (!normalizedPath.startsWith('/')) {
-                normalizedPath = `/${normalizedPath}`
+            if (pathParam) {
+                const normalizedPath = normalizeOfficialPath(pathParam)
+                const quizSet = await getQuizSetByPath(normalizedPath)
+                if (!quizSet || typeof quizSet.file_path !== 'string') {
+                    throw new Error('That official quiz link is not recognized.')
+                }
+                setSelectedQuizPath(quizSet.file_path)
+                router.push('/session/learn')
             }
-            normalizedPath = normalizedPath.replace(/([^:]\/)\/+/g, '$1')
-            setSelectedQuizPath(normalizedPath)
-            router.push('/session/learn')
+        } catch (startError) {
+            console.error('Error starting shared quiz:', startError)
+            setError(startError instanceof Error ? startError.message : 'Could not start this quiz.')
+        } finally {
+            setStarting(false)
         }
     }
 
@@ -187,57 +221,64 @@ export default function QuizShareClient() {
                 </button>
 
                 <div className="max-w-2xl mx-auto">
-                    <div className="card mb-6">
-                        <div className="flex items-center gap-4 mb-6">
-                            <div className="w-16 h-16 flex-shrink-0 rounded-xl bg-gradient-to-br from-primary/10 to-secondary/10 p-1.5 shadow-sm border border-primary/20 dark:border-primary/30">
-                                <Logo className="w-full h-full" />
-                            </div>
-                            <div className="flex-1">
-                                <h1 className="text-3xl font-extrabold text-neutral-900 dark:text-neutral-100 mb-2">
-                                    {quizName}
-                                </h1>
-                                <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                                    {authorName ? `Shared by ${authorName}` : 'Official OpenQuiz Set'}
-                                </p>
-                                {description && (
-                                    <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-1">
-                                        {description}
+                    {error && (
+                        <div role="alert" className="card mb-6 border-2 border-red-400 bg-red-50 dark:bg-red-950/30 p-4 text-red-800 dark:text-red-200">
+                            {error}
+                        </div>
+                    )}
+
+                    {(embeddedQuiz || words.length > 0 || questions.length > 0) && (
+                        <div className="card mb-6">
+                            <div className="flex items-center gap-4 mb-6">
+                                <div className="w-16 h-16 flex-shrink-0 rounded-xl bg-gradient-to-br from-primary/10 to-secondary/10 p-1.5 shadow-sm border border-primary/20 dark:border-primary/30">
+                                    <Logo className="w-full h-full" />
+                                </div>
+                                <div className="flex-1">
+                                    <h1 className="text-3xl font-extrabold text-neutral-900 dark:text-neutral-100 mb-2">
+                                        {quizName}
+                                    </h1>
+                                    <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                                        {authorName ? `Shared by ${authorName}` : 'Official OpenQuiz Set'}
                                     </p>
-                                )}
+                                    {description && (
+                                        <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-1">
+                                            {description}
+                                        </p>
+                                    )}
+                                </div>
                             </div>
-                        </div>
 
-                        <div className="flex items-center gap-6 text-sm text-neutral-600 dark:text-neutral-400 mb-6">
-                            <span className="flex items-center gap-2">
-                                <BookOpen className="w-4 h-4" />
-                                {Array.isArray(embeddedQuiz?.questions) && embeddedQuiz.questions.length
-                                    ? `${embeddedQuiz.questions.length} questions`
-                                    : `${words.length} words`}
-                            </span>
-                        </div>
+                            <div className="flex items-center gap-6 text-sm text-neutral-600 dark:text-neutral-400 mb-6">
+                                <span className="flex items-center gap-2">
+                                    <BookOpen className="w-4 h-4" />
+                                    {questions.length ? `${questions.length} questions` : `${words.length} words`}
+                                </span>
+                            </div>
 
-                        {!user ? (
-                            <div className="bg-primary/10 border-2 border-primary rounded-xl p-4 mb-4">
-                                <p className="text-sm text-neutral-700 dark:text-neutral-300 mb-3">
-                                    Sign in to start practicing this quiz
-                                </p>
+                            {!user ? (
+                                <div className="bg-primary/10 border-2 border-primary rounded-xl p-4 mb-4">
+                                    <p className="text-sm text-neutral-700 dark:text-neutral-300 mb-3">
+                                        Sign in to start practicing this quiz
+                                    </p>
+                                    <button
+                                        onClick={() => router.push('/auth')}
+                                        className="btn-primary w-full"
+                                    >
+                                        Sign In to Start
+                                    </button>
+                                </div>
+                            ) : (
                                 <button
-                                    onClick={() => router.push('/auth')}
-                                    className="btn-primary w-full"
+                                    onClick={handleStart}
+                                    disabled={starting}
+                                    className="w-full btn-primary py-4 flex items-center justify-center gap-2 text-lg disabled:opacity-60 disabled:cursor-not-allowed"
                                 >
-                                    Sign In to Start
+                                    <Play className="w-5 h-5" />
+                                    {starting ? 'Starting...' : 'Start Learning'}
                                 </button>
-                            </div>
-                        ) : (
-                            <button
-                                onClick={handleStart}
-                                className="w-full btn-primary py-4 flex items-center justify-center gap-2 text-lg"
-                            >
-                                <Play className="w-5 h-5" />
-                                Start Learning
-                            </button>
-                        )}
-                    </div>
+                            )}
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

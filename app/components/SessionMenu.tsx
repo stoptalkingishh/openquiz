@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
     X, ChevronLeft, ChevronRight, Volume2, Pause, VolumeX,
@@ -70,7 +70,53 @@ export default function SessionMenu({
     onPrev, onNext, onGoogleSearch
 }: SessionMenuProps) {
     const [speaking, setSpeaking] = useState(false)
+    const panelRef = useRef<HTMLDivElement>(null)
+    const onCloseRef = useRef(onClose)
     const ttsOk = ttsAvailable()
+
+    useEffect(() => {
+        onCloseRef.current = onClose
+    }, [onClose])
+
+    useEffect(() => {
+        if (!open) return
+        const previous = document.activeElement as HTMLElement | null
+        const panel = panelRef.current
+        const focusable = () => Array.from(panel?.querySelectorAll<HTMLElement>(
+            'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        ) || [])
+        const focusFirst = () => (focusable()[0] || panel)?.focus()
+        focusFirst()
+        const onKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                event.preventDefault()
+                onCloseRef.current()
+                return
+            }
+            if (event.key !== 'Tab') return
+            const elements = focusable()
+            if (!elements.length) {
+                event.preventDefault()
+                panel?.focus()
+                return
+            }
+            const current = document.activeElement
+            const position = elements.indexOf(current as HTMLElement)
+            const next = event.shiftKey
+                ? (position <= 0 ? elements.length - 1 : position - 1)
+                : (position === elements.length - 1 ? 0 : position + 1)
+            event.preventDefault()
+            elements[next].focus()
+        }
+        document.addEventListener('keydown', onKeyDown)
+        const priorOverflow = document.body.style.overflow
+        document.body.style.overflow = 'hidden'
+        return () => {
+            document.removeEventListener('keydown', onKeyDown)
+            document.body.style.overflow = priorOverflow
+            previous?.focus?.()
+        }
+    }, [open])
 
     // Keep our local state in sync with the module-level TTS state. This also
     // lets us keep speaking even after the menu closes.
@@ -127,6 +173,7 @@ export default function SessionMenu({
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={closeMenu}
+                        aria-hidden="true"
                         className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
                     />
                     <motion.div
@@ -134,11 +181,16 @@ export default function SessionMenu({
                         animate={{ x: 0 }}
                         exit={{ x: '100%' }}
                         transition={{ type: 'tween', duration: 0.25, ease: 'easeOut' }}
+                        ref={panelRef}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="session-tools-heading"
+                        tabIndex={-1}
                         className="fixed inset-y-0 right-0 z-50 w-full max-w-sm bg-white dark:bg-surface-dark border-l border-neutral-200 dark:border-neutral-700 overflow-y-auto"
                     >
                         <div className="p-6 space-y-6">
                             <div className="flex items-center justify-between">
-                                <h2 className="text-lg font-extrabold">Session Tools</h2>
+                                <h2 id="session-tools-heading" className="text-lg font-extrabold">Session Tools</h2>
                                 <button
                                     onClick={closeMenu}
                                     className="p-2 rounded-lg text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 transition-colors"

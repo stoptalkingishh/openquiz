@@ -28,12 +28,19 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
       - name: Build static export
         run: npm run build
         env:
           # Matches the GitHub Pages path for a project site (USER.github.io/REPO).
           # For a site deployed at the root (USER.github.io), set this to ''.
           NEXT_PUBLIC_BASE_PATH: /${{ github.event.repository.name }}
+          NEXT_PUBLIC_BUILD_VERSION: ${{ github.sha }}
           # Google Drive cloud sync + "Sign in with Google". Add these as
           # repository secrets (Settings -> Secrets and variables -> Actions).
           # Until they are added, the site runs fully offline in guest mode.

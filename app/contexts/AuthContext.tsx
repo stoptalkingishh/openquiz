@@ -1,13 +1,12 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useState, useRef, Fragment } from 'react'
 import {
     isDriveConfigured,
     signInToDrive,
     restoreDriveSession,
     signOutFromDrive,
     getStoredDriveUser,
-    rememberDriveUser,
     DriveUser
 } from '../lib/drive'
 import { syncLocalToCloud } from '../lib/db'
@@ -16,8 +15,7 @@ import { syncLocalToCloud } from '../lib/db'
  * Hybrid auth:
  *  - With Google Drive keys configured at build time, "Continue with Google"
  *    signs the user in via Google Identity Services and data is stored in a
- *    per-user "OpenQuiz" folder in their Google Drive. Any guest (localStorage)
- *    data is migrated into the cloud on first sign-in.
+ *    per-user "OpenQuiz" folder in their Google Drive. Guest data stays separate.
  *  - Without keys, a stable local "guest" profile is used so the app works
  *    fully offline.
  *
@@ -59,7 +57,7 @@ function readGuest(): DriveUser {
 
 function writeGuest(user: DriveUser) {
     if (typeof window === 'undefined') return
-    window.localStorage.setItem(GUEST_KEY, JSON.stringify(user))
+    try { window.localStorage.setItem(GUEST_KEY, JSON.stringify(user)) } catch { /* Guest identity works in memory when storage is full. */ }
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -67,9 +65,11 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<AuthUser | null>(null)
     const [loading, setLoading] = useState(true)
+    const transition = useRef(0)
 
     useEffect(() => {
         let mounted = true
+        const generation = transition.current
 
         const boot = async () => {
             if (!isDriveConfigured()) {
@@ -92,9 +92,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 setLoading(false)
                 restoreDriveSession()
                     .then(u => {
+                        if (!mounted || transition.current !== generation) return
                         if (u) {
-                            rememberDriveUser(u)
-                            if (mounted) setUser(u)
+                            setUser(u)
                         }
                         syncLocalToCloud().catch(() => { })
                     })
@@ -121,24 +121,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }, [])
 
     const signInWithGoogle = async () => {
+        const generation = ++transition.current
         const driveUser = await signInToDrive()
+        if (generation !== transition.current) return
         setUser(driveUser)
         syncLocalToCloud().catch(() => { })
     }
 
     const signOut = async () => {
+        const generation = ++transition.current
+        if (isDriveConfigured()) await signOutFromDrive()
+        if (generation !== transition.current) return
         // Fall back to a fresh guest profile so the app keeps working.
         const guest = defaultGuest()
         writeGuest(guest)
         setUser(guest)
-        if (isDriveConfigured()) {
-            await signOutFromDrive()
-        }
     }
 
     return (
         <AuthContext.Provider value={{ user, loading, signInWithGoogle, signOut }}>
-            {children}
+            <Fragment key={user?.id || 'loading'}>{children}</Fragment>
         </AuthContext.Provider>
     )
 }

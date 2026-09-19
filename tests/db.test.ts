@@ -2,6 +2,23 @@ import { describe, it, expect } from 'vitest'
 import { normalizeImportedQuizItems, validateQuizJSON } from '../app/lib/db'
 
 describe('normalizeImportedQuizItems', () => {
+    it('preserves mixed vocabulary and generic questions with stable identifiers', () => {
+        const items = [{ word: 'cat', ru: 'кошка' }, { prompt: 'Pick', options: ['a', 'b'], correctIndex: 1 }]
+        const result = normalizeImportedQuizItems(items)
+        expect(result.errors).toEqual([])
+        expect(result.words).toEqual([])
+        expect(result.questions).toHaveLength(2)
+        expect(result.questions[0].answer).toBe('кошка')
+        expect(normalizeImportedQuizItems(items).questions).toEqual(result.questions)
+    })
+    it('rejects blank choices instead of shifting the correct answer', () => {
+        const result = normalizeImportedQuizItems([{ prompt: 'Pick C', options: ['A', '', 'C', 'D'], correctIndex: 2 }])
+        expect(result.errors.length).toBeGreaterThan(0)
+        expect(result.questions).toEqual([])
+    })
+    it('rejects an absent answer key instead of silently grading option zero', () => {
+        expect(normalizeImportedQuizItems([{ prompt: 'Pick', options: ['A', 'B'] }]).errors.length).toBeGreaterThan(0)
+    })
     it('returns words (and no questions) for a word-shaped array', () => {
         const { words, questions } = normalizeImportedQuizItems([
             { word: 'cat', ru: 'кошка', synonyms: ['kitten'] }
@@ -45,9 +62,9 @@ describe('normalizeImportedQuizItems', () => {
         ])
         expect(questions[0].kind).toBe('simulation')
         expect(questions[0].steps).toHaveLength(2)
-        expect(questions[0].steps[0].kind).toBe('choice')
-        expect(questions[0].steps[0].options).toEqual(['a', 'b'])
-        expect(questions[0].steps[1].kind).toBe('checkbox')
+        expect(questions[0].steps?.[0].kind).toBe('choice')
+        expect(questions[0].steps?.[0].options).toEqual(['a', 'b'])
+        expect(questions[0].steps?.[1].kind).toBe('checkbox')
     })
 
     it('deduplicates repeated ids', () => {
