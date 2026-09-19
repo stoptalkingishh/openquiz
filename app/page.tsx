@@ -16,6 +16,7 @@ export default function Home() {
   const [words, setWords] = useState<Word[]>([])
   const [loading, setLoading] = useState(true)
   const [masteredCount, setMasteredCount] = useState(0)
+  const [hasProgress, setHasProgress] = useState(false)
   const [streak, setStreak] = useState(0)
   const { user, loading: authLoading, signOut } = useAuth()
   const router = useRouter()
@@ -67,6 +68,7 @@ export default function Home() {
     getWordProgress(user.id).then(progress => {
       const mastered = Object.values(progress).filter((p: any) => p.status === 'mastered').length
       setMasteredCount(mastered)
+      setHasProgress(Object.keys(progress).length > 0)
     }).catch(error => {
       console.error('Error loading progress:', error)
     })
@@ -173,16 +175,26 @@ export default function Home() {
         {/* Today's Focus */}
         <div>
           <h3 className="font-bold text-neutral-500 dark:text-neutral-400 uppercase text-sm mb-4">Today&apos;s Focus</h3>
-          <div className="flex flex-wrap gap-2">
-            {words.slice(0, 5).map(w => (
-              <div key={w.word} className="px-4 py-2 bg-white dark:bg-surface-dark border-2 border-gray-200 dark:border-white/10 rounded-xl font-bold text-gray-700 dark:text-gray-300">
-                {w.word}
-              </div>
-            ))}
-            <Link href="/library" className="px-4 py-2 rounded-xl font-bold text-primary flex items-center gap-1 hover:bg-primary/10 transition-colors">
-              View all <ChevronRight className="w-4 h-4" />
-            </Link>
-          </div>
+          {words.length === 0 ? (
+            <div className="card text-center py-6">
+              <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                {hasProgress
+                  ? 'No focus words yet. Study a quiz to build your list.'
+                  : 'Create or import a quiz to start studying — or try a pre-made SAT set.'}
+              </p>
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {words.slice(0, 5).map(w => (
+                <div key={w.word} className="px-4 py-2 bg-white dark:bg-surface-dark border-2 border-gray-200 dark:border-white/10 rounded-xl font-bold text-gray-700 dark:text-gray-300">
+                  {w.word}
+                </div>
+              ))}
+              <Link href="/library" className="px-4 py-2 rounded-xl font-bold text-primary flex items-center gap-1 hover:bg-primary/10 transition-colors">
+                View all <ChevronRight className="w-4 h-4" />
+              </Link>
+            </div>
+          )}
         </div>
       </main>
 
