@@ -671,7 +671,11 @@ function GenericWrittenCard({ question, onAnswer }: QuestionCardProps) {
     const { prompt, answer, explanation } = question.payload
 
     const normalize = (s: string) =>
-        s.toLowerCase().trim().replace(/[.,!?;:'"“”‘’()\[\]\/\\\-_]/g, '').replace(/\s+/g, ' ')
+        String(s ?? '')
+            .trim()
+            .toLowerCase()
+            .replace(/\s+/g, ' ')
+            .replace(/[.,!?;:'"“”‘’()[\]\/\\\-_]+$/g, '')
 
     const handleSubmit = () => {
         if (!value.trim()) return
