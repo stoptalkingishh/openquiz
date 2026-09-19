@@ -39,10 +39,30 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
+### CompTIA Network+ N10-009 — practice tests & flashcards
+- **Source:** Original questions authored by the OpenQuiz team, written to align
+  with the publicly-available CompTIA Network+ (N10-009) exam objectives.
+- **Author:** OpenQuiz contributors
+- **License:** MIT (project license)
+- **What we use:** `public/netplus/*.json` — 3 practice tests (50 questions
+  each), a 100-question final exam, and 5 topic flashcard decks (164 cards).
+  These are original study questions; they are **not** reproduced from any
+  CompTIA exam or from a third-party question bank.
+
 ### SAT Vocabulary sets (`public/sat/*.json`)
 - Original vocabulary content was compiled by the OpenQuiz maintainers / the
   project's original author and is licensed under the project MIT license.
 - The logo mark (and its derivative placeholders) are original OpenQuiz art.
+
+## Trademarks
+
+CompTIA, Network+, Security+, CySA+, PenTest+, Cloud+, Linux+, and SecurityX are
+registered trademarks of the Computing Technology Industry Association
+(CompTIA). All other trademarks and registered trademarks are the property of
+their respective owners. OpenQuiz is **not** affiliated with, endorsed by, or
+sponsored by CompTIA or any other certification body. Exam names are used only
+to identify the public exam objectives that the bundled study content is
+aligned with.
 
 ## Runtime Dependencies
 
@@ -51,7 +71,7 @@ The OpenQuiz app is built on the following open-source projects (see
 
 | Package | License |
 |---|---|
-| Next.js 14 | MIT |
+| Next.js 15 | MIT |
 | React / React DOM | MIT |
 | TypeScript | Apache-2.0 |
 | Tailwind CSS | MIT |

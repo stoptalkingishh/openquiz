@@ -229,4 +229,18 @@ Feel free to fork, submit PRs, and help us add new question types, language supp
 
 ## 📄 License
 
-MIT License
+OpenQuiz is **free for individuals, personal, educational, and non-commercial
+use** under the [MIT License](LICENSE). Use in a **corporate or for-profit
+environment requires a paid commercial license** — open an issue in this
+repository to purchase one.
+
+Third-party study content (quiz sets, practice tests, flashcards) is licensed
+separately by its original authors — see [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)
+for full attributions and license texts.
+
+- [Terms of Use](https://stoptalkingishh.github.io/openquiz/terms/)
+- [Privacy Policy](https://stoptalkingishh.github.io/openquiz/privacy/)
+
+CompTIA, Network+, Security+, CySA+, PenTest+, Cloud+, Linux+, and SecurityX are
+trademarks of the Computing Technology Industry Association (CompTIA). OpenQuiz
+is not affiliated with or endorsed by CompTIA or any other certification body.

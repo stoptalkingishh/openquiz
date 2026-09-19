@@ -22,19 +22,27 @@ SOFTWARE.
 
 ---
 
-COMMERCIAL USE
+COMMERCIAL LICENSING
 
-The MIT License above applies to the OpenQuiz source code ("the Software") and
-explicitly permits the copyright holder(s) to use, license, and SELL access to
-the Software — including offering the app as a hosted/saas product, charging
-for features, or licensing it commercially. Third parties may also use and
-sell the code under MIT, in keeping with the open-source grant.
+OpenQuiz is **free for individuals, personal, educational, and non-commercial
+use**. Students, educators, and hobbyists may use, modify, and share the
+Software at no cost under the MIT License above.
 
-If you want a formal, mutually-exclusive commercial license (e.g. for a closed
-or white-label deployment, or to reserve exclusive rights), contact the
-maintainers. Openness does not restrict the owner's right to commercialize;
-it only guarantees the code can never be taken away from the community, and
-anyone who receives a copy can use it freely.
+Use of OpenQuiz in a **corporate, business, or other for-profit environment**
+requires a paid commercial license. This includes, but is not limited to:
+
+- shipping OpenQuiz as part of a commercial product or service,
+- a company-internal training, assessment, or certification program,
+- a hosted / SaaS deployment, and
+- any other use that directly or indirectly generates revenue.
+
+A commercial license can be purchased by contacting the creator. Open an issue
+in the GitHub repository to request one:
+
+https://github.com/stoptalkingishh/openquiz/issues
+
+Openness does not restrict the maintainers' right to commercialize their work;
+it only guarantees the code remains available to the community.
 
 Third-party content (quiz sets, practice tests, flashcards) included in this
 repository is licensed separately by its original authors and is attributed

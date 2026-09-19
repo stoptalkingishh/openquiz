@@ -20,6 +20,8 @@ const PRECACHE_PATHS = [
   'library/',
   'match/',
   'profile/',
+  'privacy/',
+  'terms/',
   'quiz/share/',
   'quiz-detail/',
   'quizzes/',
