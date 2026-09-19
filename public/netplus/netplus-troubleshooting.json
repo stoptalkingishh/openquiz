@@ -1,0 +1,170 @@
+[
+  {
+    "id": "trb-f1",
+    "kind": "flashcard",
+    "prompt": "Troubleshooting Methodology",
+    "answer": "1. Identify the problem (symptoms, user reports)\n2. Establish theory of probable cause\n3. Test the theory to determine cause\n4. Establish a plan of action\n5. Implement the solution\n6. Verify full system functionality\n7. Document findings, actions, and outcomes",
+    "explanation": ""
+  },
+  {
+    "id": "trb-f2",
+    "kind": "flashcard",
+    "prompt": "Top-Down Approach",
+    "answer": "Start at Layer 7 (Application) and work down to Layer 1 (Physical). Check: Application → Presentation → Session → Transport → Network → Data Link → Physical. Good for application-specific issues.",
+    "explanation": ""
+  },
+  {
+    "id": "trb-f3",
+    "kind": "flashcard",
+    "prompt": "Bottom-Up Approach",
+    "answer": "Start at Layer 1 (Physical) and work up to Layer 7. Check: Physical connections → Cable integrity → Link status → IP configuration → Routing → Service availability. Good for physical/network layer issues.",
+    "explanation": ""
+  },
+  {
+    "id": "trb-f4",
+    "kind": "flashcard",
+    "prompt": "Divide and Conquer",
+    "answer": "Split the network in half and test. If one half works, the problem is in the other half. Continue dividing until the problem is isolated. Efficient for large networks.",
+    "explanation": ""
+  },
+  {
+    "id": "trb-f5",
+    "kind": "flashcard",
+    "prompt": "Compare to Normal",
+    "answer": "Compare current behavior to a known working baseline. What changed? Recent changes (config changes, hardware additions, software updates) are often the cause. Use documentation and change logs.",
+    "explanation": ""
+  },
+  {
+    "id": "trb-f6",
+    "kind": "flashcard",
+    "prompt": "Ping Troubleshooting",
+    "answer": "Destination unreachable: No route or host down. Request timed out: Firewall blocking ICMP or host not responding. Reply from unexpected IP: NAT issue or routing problem. No response: Check ICMP settings, firewall rules.",
+    "explanation": ""
+  },
+  {
+    "id": "trb-f7",
+    "kind": "flashcard",
+    "prompt": "Traceroute Troubleshooting",
+    "answer": "Star at a hop: Router not responding or access list blocking ICMP. Long latency at specific hop: Congestion or link issue. Different path than expected: Asymmetric routing or route changes.",
+    "explanation": ""
+  },
+  {
+    "id": "trb-f8",
+    "kind": "flashcard",
+    "prompt": "DNS Troubleshooting",
+    "answer": "nslookup/dig: Verify DNS resolution. Check DNS server reachability. Verify DNS query reaches server. Check for DNS poisoning/cache poisoning. Verify `/etc/resolv.conf` or network DNS settings.",
+    "explanation": ""
+  },
+  {
+    "id": "trb-f9",
+    "kind": "flashcard",
+    "prompt": "DHCP Troubleshooting",
+    "answer": "Client cannot get IP: Check DHCP server availability, scope exhaustion, relay agent. Duplicate IP: IP conflict or stale lease. Wrong gateway/DNS: Verify DHCP pool configuration.",
+    "explanation": ""
+  },
+  {
+    "id": "trb-f10",
+    "kind": "flashcard",
+    "prompt": "IP Address Troubleshooting",
+    "answer": "Automatic Private IP (169.254.x.x): DHCP failure. APIPA: No DHCP server found. Check cable, switch port, DHCP server availability. Verify IP, subnet mask, and gateway configuration.",
+    "explanation": ""
+  },
+  {
+    "id": "trb-f11",
+    "kind": "flashcard",
+    "prompt": "Physical Layer Troubleshooting",
+    "answer": "Check cables for damage, proper termination. Verify link lights on NIC and switch. Test with different cable. Check for EMI (electromagnetic interference). Verify cable length (under 100m for copper). Use TDR for fault location.",
+    "explanation": ""
+  },
+  {
+    "id": "trb-f12",
+    "kind": "flashcard",
+    "prompt": "Data Link Layer Troubleshooting",
+    "answer": "Check duplex mismatch (one device auto, other forced). Verify VLAN assignments match on trunk ports. Check frame errors, CRC errors, giant/loss frames. Verify MAC address table. Check 802.1Q trunk configuration.",
+    "explanation": ""
+  },
+  {
+    "id": "trb-f13",
+    "kind": "flashcard",
+    "prompt": "Network Layer Troubleshooting",
+    "answer": "Verify IP addressing and subnet mask. Check routing table (`show ip route`). Verify default gateway. Check for ACL blocking traffic. Test with traceroute. Verify NAT/PAT configuration.",
+    "explanation": ""
+  },
+  {
+    "id": "trb-f14",
+    "kind": "flashcard",
+    "prompt": "Transport Layer Troubleshooting",
+    "answer": "Verify TCP/UDP port availability. Check firewall rules for specific ports. Test with `telnet` or `Test-NetConnection`. Check for session limits. Verify application is listening on expected port.",
+    "explanation": ""
+  },
+  {
+    "id": "trb-f15",
+    "kind": "flashcard",
+    "prompt": "Application Layer Troubleshooting",
+    "answer": "Verify service is running and listening. Check HTTP status codes (200, 404, 500, 503). Verify DNS resolution. Test with curl or browser. Check application logs. Verify certificate validity.",
+    "explanation": ""
+  },
+  {
+    "id": "trb-f16",
+    "kind": "flashcard",
+    "prompt": "Wireshark Filtering",
+    "answer": "Display filters: `ip.addr == X.X.X.X`, `tcp.port == 80`, `http`, `dns`, `icmp`, `arp`, `frame.time`, `eth.mac`. Capture filters: `host X`, `port 80`, `src net 192.168.1.0/24`. Used to isolate traffic for troubleshooting.",
+    "explanation": ""
+  },
+  {
+    "id": "trb-f17",
+    "kind": "flashcard",
+    "prompt": "Layer by Layer Troubleshooting",
+    "answer": "Physical: Cable, link lights, NIC. Data Link: Duplex, VLANs, MAC. Network: IP, routing, ACL. Transport: Ports, firewalls, session limits. Application: Service status, HTTP status, certificates.",
+    "explanation": ""
+  },
+  {
+    "id": "trb-f18",
+    "kind": "flashcard",
+    "prompt": "Common Network Issues",
+    "answer": "Duplex mismatch: Half-duplex on one end, full on other. IP conflict: Two devices with same IP. VLAN mismatch: Ports on different VLANs. Default gateway missing or wrong. DNS server unreachable.",
+    "explanation": ""
+  },
+  {
+    "id": "trb-f19",
+    "kind": "flashcard",
+    "prompt": "Troubleshooting Wireless",
+    "answer": "Check SSID visibility and security settings. Verify client can authenticate (802.1X). Check signal strength and interference. Verify channel assignment and power. Check DHCP availability for wireless clients.",
+    "explanation": ""
+  },
+  {
+    "id": "trb-f20",
+    "kind": "flashcard",
+    "prompt": "Switch Troubleshooting",
+    "answer": "Verify VLAN configuration on trunk ports. Check port security violations. Verify spanning tree status. Check MAC address table for MAC flapping. Verify interface status and errors. Check storm control settings.",
+    "explanation": ""
+  },
+  {
+    "id": "trb-f21",
+    "kind": "flashcard",
+    "prompt": "Router Troubleshooting",
+    "answer": "Verify interface status and IP configuration. Check routing table for correct routes. Verify NAT/PAT translations. Check ACLs for blocked traffic. Verify routing protocol adjacency. Check CPU/memory utilization.",
+    "explanation": ""
+  },
+  {
+    "id": "trb-f22",
+    "kind": "flashcard",
+    "prompt": "Performance Troubleshooting",
+    "answer": "Identify bottlenecks: Bandwidth, latency, jitter, packet loss. Use SNMP and NetFlow data. Check for broadcast storms and excessive multicast traffic. Verify QoS is not over-prioritizing non-critical traffic.",
+    "explanation": ""
+  },
+  {
+    "id": "trb-f23",
+    "kind": "flashcard",
+    "prompt": "Cable Testing Tools",
+    "answer": "Cable tester: Continuity and pinout. TDR (Time Domain Reflectometer): Cable length and fault location. Cable certifier: Full certification to standards (Cat5e/6/6a). Fluke DTX series is industry standard.",
+    "explanation": ""
+  },
+  {
+    "id": "trb-f24",
+    "kind": "flashcard",
+    "prompt": "Network Troubleshooting Commands",
+    "answer": "ping: Test connectivity. tracert/traceroute: Path analysis. nslookup/dig: DNS resolution. ipconfig/ifconfig: Network configuration. netstat: Connection and port information. arp: ARP table. route: Routing table.",
+    "explanation": ""
+  }
+]

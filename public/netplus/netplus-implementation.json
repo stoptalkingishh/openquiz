@@ -1,0 +1,212 @@
+[
+  {
+    "id": "impl-f1",
+    "kind": "flashcard",
+    "prompt": "Network Installation Best Practices",
+    "answer": "1. Document requirements\n2. Choose appropriate media\n3. Plan cable runs (stay under 100m for copper)\n4. Label everything\n5. Test all connections\n6. Document the network diagram\n7. Verify functionality",
+    "explanation": ""
+  },
+  {
+    "id": "impl-f2",
+    "kind": "flashcard",
+    "prompt": "Cabling Standards (TIA/EIA-568)",
+    "answer": "T568A: Green/White-Green, Orange/White-Orange, Blue/White-Blue, Brown/White-Brown, Brown (pins 1-8). T568B: Orange/White-Orange, Green/White-Green, Blue/White-Blue, Brown/White-Brown.",
+    "explanation": ""
+  },
+  {
+    "id": "impl-f3",
+    "kind": "flashcard",
+    "prompt": "Straight-Through Cable",
+    "answer": "Used to connect different device types (e.g., PC to switch, switch to router). Same wiring on both ends (T568A-A or T568B-B). Most common cable type in modern networks.",
+    "explanation": ""
+  },
+  {
+    "id": "impl-f4",
+    "kind": "flashcard",
+    "prompt": "Crossover Cable",
+    "answer": "Used to connect same device types (e.g., switch to switch, PC to PC). One end T568A, other T568B. Modern NICs auto-MDI-X so crossover may not be needed.",
+    "explanation": ""
+  },
+  {
+    "id": "impl-f5",
+    "kind": "flashcard",
+    "prompt": "Rollover Cable (Console Cable)",
+    "answer": "Connects computer serial port to console port of router/switch. Pin 1 to pin 8, reversed. Used for out-of-band management and initial device configuration.",
+    "explanation": ""
+  },
+  {
+    "id": "impl-f6",
+    "kind": "flashcard",
+    "prompt": "Structured Cabling Components",
+    "answer": "Entrance Facility, Backbone Cabling, Telecommunications Room, Horizontal Cabling, Work Area. MDF (Main Distribution Frame) and IDF (Intermediate Distribution Frame).",
+    "explanation": ""
+  },
+  {
+    "id": "impl-f7",
+    "kind": "flashcard",
+    "prompt": "Plenum vs PVC Cable",
+    "answer": "Plenum: Fire-retardant jacket for air handling spaces (HVAC), more expensive. PVC: Standard jacket, cheaper but produces toxic fumes when burning. Use plenum in ceiling spaces.",
+    "explanation": ""
+  },
+  {
+    "id": "impl-f8",
+    "kind": "flashcard",
+    "prompt": "Fiber Connector Types",
+    "answer": "LC: Small form factor, most common in data centers. SC: Subscriber connector, square. ST: Straight tip, bayonet twist. FC: Fiber optic connector, screw-type. MTRJ: Mechanical transfer ribbon.",
+    "explanation": ""
+  },
+  {
+    "id": "impl-f9",
+    "kind": "flashcard",
+    "prompt": "Fiber Optic Installation",
+    "answer": "Single-mode (SMF): 9μm core, laser, long distance (up to 70km+). Multi-mode (MMF): 50/62.5μm core, LED, short distance (up to 550m). Never bend fiber below minimum bend radius. Clean connectors with isopropyl alcohol.",
+    "explanation": ""
+  },
+  {
+    "id": "impl-f10",
+    "kind": "flashcard",
+    "prompt": "Switch Configuration",
+    "answer": "Create VLANs, configure trunk ports, set native VLAN, enable PortFast on access ports, configure spanning tree, set management IP, enable SSH, configure port security.",
+    "explanation": ""
+  },
+  {
+    "id": "impl-f11",
+    "kind": "flashcard",
+    "prompt": "Port Security",
+    "answer": "Limits number of MAC addresses on a switch port. Violation modes: Shutdown (default - disables port), Restrict (drops frames), Protect (drops frames silently). Prevents unauthorized device access.",
+    "explanation": ""
+  },
+  {
+    "id": "impl-f12",
+    "kind": "flashcard",
+    "prompt": "Router Configuration",
+    "answer": "Set hostname, configure interfaces with IP addresses and subnet masks, enable routing protocols (static, RIP, OSPF, EIGRP), configure NAT/PAT, set up SSH, configure DHCP relay.",
+    "explanation": ""
+  },
+  {
+    "id": "impl-f13",
+    "kind": "flashcard",
+    "prompt": "OSPF (Open Shortest Path First)",
+    "answer": "Link-state routing protocol. Uses Dijkstra SPF algorithm. Area 0 (backbone) required. Hello interval 10 sec (Ethernet), Dead interval 40 sec. Administrative distance: 110. Supports VLSM and CIDR.",
+    "explanation": ""
+  },
+  {
+    "id": "impl-f14",
+    "kind": "flashcard",
+    "prompt": "EIGRP (Enhanced Interior Gateway Routing)",
+    "answer": "Cisco-proprietary hybrid (distance-vector + link-state). Uses DUAL algorithm. Fast convergence, supports unequal-cost load balancing. Administrative distance: 90. Supports VLSM.",
+    "explanation": ""
+  },
+  {
+    "id": "impl-f15",
+    "kind": "flashcard",
+    "prompt": "RIP (Routing Information Protocol)",
+    "answer": "Distance-vector protocol. Maximum 15 hops (16 = unreachable). RIP v1: classful, RIP v2: classless (supports VLSM/multicast). Administrative distance: 120. Slow convergence, not suitable for large networks.",
+    "explanation": ""
+  },
+  {
+    "id": "impl-f16",
+    "kind": "flashcard",
+    "prompt": "Static Routing",
+    "answer": "Manually configured routes. Best for simple networks or stub networks. Administrative distance: 1 (most trusted). No overhead, no routing protocol traffic. Used for default routes and backup routes.",
+    "explanation": ""
+  },
+  {
+    "id": "impl-f17",
+    "kind": "flashcard",
+    "prompt": "Default Route",
+    "answer": "Gateway of last resort (0.0.0.0/0). Used when no specific route matches the destination. Configured with `ip route 0.0.0.0 0.0.0.0 <next-hop>` or `ip route 0.0.0.0 0.0.0.0 <exit-interface>`.",
+    "explanation": ""
+  },
+  {
+    "id": "impl-f18",
+    "kind": "flashcard",
+    "prompt": "Floating Static Route",
+    "answer": "Static route with a higher administrative distance than a dynamic protocol. Used as a backup route. If the dynamic route fails, the floating static route is installed in the routing table.",
+    "explanation": ""
+  },
+  {
+    "id": "impl-f19",
+    "kind": "flashcard",
+    "prompt": "NAT Configuration",
+    "answer": "Static NAT: One-to-one mapping. Dynamic NAT: Pool of public IPs. PAT (Overload): Many-to-one mapping using port numbers. Configured with access lists and `ip nat inside/outside` commands.",
+    "explanation": ""
+  },
+  {
+    "id": "impl-f20",
+    "kind": "flashcard",
+    "prompt": "VLAN Trunk Configuration",
+    "answer": "Configure switchport mode trunk, set allowed VLANs, set native VLAN (ideally not VLAN 1), enable DTP (Dynamic Trunking Protocol) or manually configure trunk. Use `show interfaces trunk` to verify.",
+    "explanation": ""
+  },
+  {
+    "id": "impl-f21",
+    "kind": "flashcard",
+    "prompt": "Wireless AP Configuration",
+    "answer": "Set SSID, choose security protocol (WPA2-Enterprise), configure VLAN assignment, set channel and transmit power, enable Fast Roaming (802.11r), configure RADIUS authentication.",
+    "explanation": ""
+  },
+  {
+    "id": "impl-f22",
+    "kind": "flashcard",
+    "prompt": "WAN Technologies",
+    "answer": "Leased Line (dedicated point-to-point), MPLS (provider-managed, QoS), DSL (ADSL/VDSL over copper), Cable (DOCSIS), Fiber (PON), Satellite (high latency), Cellular (4G/5G).",
+    "explanation": ""
+  },
+  {
+    "id": "impl-f23",
+    "kind": "flashcard",
+    "prompt": "MPLS (Multiprotocol Label Switching)",
+    "answer": "Uses labels to forward packets through a provider network. PE (Provider Edge) and CE (Customer Edge) routers. Supports VPN, QoS, and traffic engineering. Connection-oriented at Layer 2.5.",
+    "explanation": ""
+  },
+  {
+    "id": "impl-f24",
+    "kind": "flashcard",
+    "prompt": "Point-to-Point Protocol (PPP)",
+    "answer": "Data link protocol for serial connections. Provides authentication (PAP/CHAP), encryption (MPPE), and compression. LCP (Link Control Protocol) and NCP (Network Control Protocol) layers.",
+    "explanation": ""
+  },
+  {
+    "id": "impl-f25",
+    "kind": "flashcard",
+    "prompt": "PAP vs CHAP",
+    "answer": "PAP (Password Authentication Protocol): 2-way handshake, sends credentials in cleartext, no protection against replay. CHAP (Challenge Handshake Authentication Protocol): 3-way handshake, uses MD5 hash, periodically re-authenticates.",
+    "explanation": ""
+  },
+  {
+    "id": "impl-f26",
+    "kind": "flashcard",
+    "prompt": "Cable Testing",
+    "answer": "Cable certifier: Tests all pairs for length, attenuation, crosstalk, impedance. Time-domain reflectometer (TDR): Locates cable faults (breaks, shorts). Wire map tester: Verifies pinout continuity. Fluke meters are industry standard.",
+    "explanation": ""
+  },
+  {
+    "id": "impl-f27",
+    "kind": "flashcard",
+    "prompt": "Power Considerations",
+    "answer": "PDU (Power Distribution Unit): Distributes power to equipment. UPS (Uninterruptible Power Supply): Battery backup for short outages. Generator: Long-term backup. PD (Power Distribution) units in data centers manage circuit loads.",
+    "explanation": ""
+  },
+  {
+    "id": "impl-f28",
+    "kind": "flashcard",
+    "prompt": "Environmental Factors",
+    "answer": "Temperature: 64-75°F (18-24°C) recommended for data centers. Humidity: 40-60% relative humidity. Fire suppression: FM-200, clean agent systems (not water). Airflow: Hot aisle/cold aisle configuration.",
+    "explanation": ""
+  },
+  {
+    "id": "impl-f29",
+    "kind": "flashcard",
+    "prompt": "IDF and MDF",
+    "answer": "MDF (Main Distribution Frame): Central point for backbone connections, network equipment. IDF (Intermediate Distribution Frame): Distribution point on each floor, connects horizontal cabling to MDF.",
+    "explanation": ""
+  },
+  {
+    "id": "impl-f30",
+    "kind": "flashcard",
+    "prompt": "Network Installation Documentation",
+    "answer": "Wiring diagrams, network topology maps, device inventory, IP address allocation tables, documentation of cable runs and IDF/MDF locations, change management logs.",
+    "explanation": ""
+  }
+]

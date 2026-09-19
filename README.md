@@ -95,6 +95,7 @@ The Home screen shows a daily answer goal, answers today, and lifetime mastered 
 
 - **SAT Vocabulary** — Set 1, Set 2, and Archaic & Literary words.
 - **CompTIA Security+ (SY0-701)** — 3 practice tests, a 100-question final exam, and topic flashcards (fundamentals, physical & deception, threats & attacks, crypto & PKI, incident response & compliance).
+- **CompTIA Network+ (N10-009)** — 3 practice tests, a 100-question final exam, and topic flashcards (networking concepts, network implementation, network operations, network security, network troubleshooting).
 - Question-shaped sets run through every mode, including Test (multiple choice / true / false) and Match.
 
 ---

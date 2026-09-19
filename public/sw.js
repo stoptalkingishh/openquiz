@@ -43,6 +43,15 @@ const PRECACHE_PATHS = [
   'securityplus/test1.json',
   'securityplus/test2.json',
   'securityplus/test3.json',
+  'netplus/netplus-final.json',
+  'netplus/netplus-fundamentals.json',
+  'netplus/netplus-implementation.json',
+  'netplus/netplus-operations.json',
+  'netplus/netplus-security.json',
+  'netplus/netplus-test1.json',
+  'netplus/netplus-test2.json',
+  'netplus/netplus-test3.json',
+  'netplus/netplus-troubleshooting.json',
 ]
 
 const PRECACHE_URLS = PRECACHE_PATHS.map((path) => new URL(path, SCOPE_URL).toString())

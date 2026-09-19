@@ -139,5 +139,113 @@
     "created_at": "2024-01-01T00:00:00.000Z",
     "author_name": "OpenQuiz (MIT source)",
     "item_type": "flashcards"
+  },
+  {
+    "id": "netplus-test1",
+    "name": "Network+ Practice Test 1",
+    "description": "50-question CompTIA Network+ N10-009 practice test covering all 5 exam domains.",
+    "file_path": "/netplus/netplus-test1.json",
+    "category": "netplus",
+    "category_label": "CompTIA Network+ N10-009",
+    "is_public": true,
+    "created_at": "2026-09-19T00:00:00.000Z",
+    "author_name": "OpenQuiz (N10-009 Exam Objectives)",
+    "item_type": "questions"
+  },
+  {
+    "id": "netplus-test2",
+    "name": "Network+ Practice Test 2",
+    "description": "50-question CompTIA Network+ N10-009 practice test covering all 5 exam domains.",
+    "file_path": "/netplus/netplus-test2.json",
+    "category": "netplus",
+    "category_label": "CompTIA Network+ N10-009",
+    "is_public": true,
+    "created_at": "2026-09-19T00:00:00.000Z",
+    "author_name": "OpenQuiz (N10-009 Exam Objectives)",
+    "item_type": "questions"
+  },
+  {
+    "id": "netplus-test3",
+    "name": "Network+ Practice Test 3",
+    "description": "50-question CompTIA Network+ N10-009 practice test covering all 5 exam domains.",
+    "file_path": "/netplus/netplus-test3.json",
+    "category": "netplus",
+    "category_label": "CompTIA Network+ N10-009",
+    "is_public": true,
+    "created_at": "2026-09-19T00:00:00.000Z",
+    "author_name": "OpenQuiz (N10-009 Exam Objectives)",
+    "item_type": "questions"
+  },
+  {
+    "id": "netplus-final",
+    "name": "Network+ Final Exam",
+    "description": "100-question comprehensive CompTIA Network+ N10-009 final exam covering all 5 domains.",
+    "file_path": "/netplus/netplus-final.json",
+    "category": "netplus",
+    "category_label": "CompTIA Network+ N10-009",
+    "is_public": true,
+    "created_at": "2026-09-19T00:00:00.000Z",
+    "author_name": "OpenQuiz (N10-009 Exam Objectives)",
+    "item_type": "questions"
+  },
+  {
+    "id": "netplus-fundamentals",
+    "name": "Network+ Flashcards: Networking Concepts",
+    "description": "OSI model, TCP/IP, IP addressing, wireless, and cloud concepts flashcards for N10-009 Domain 1 (23%).",
+    "file_path": "/netplus/netplus-fundamentals.json",
+    "category": "netplus",
+    "category_label": "CompTIA Network+ N10-009",
+    "is_public": true,
+    "created_at": "2026-09-19T00:00:00.000Z",
+    "author_name": "OpenQuiz (N10-009 Exam Objectives)",
+    "item_type": "flashcards"
+  },
+  {
+    "id": "netplus-implementation",
+    "name": "Network+ Flashcards: Network Implementation",
+    "description": "Cabling, switching, routing, wireless, and WAN flashcards for N10-009 Domain 2 (20%).",
+    "file_path": "/netplus/netplus-implementation.json",
+    "category": "netplus",
+    "category_label": "CompTIA Network+ N10-009",
+    "is_public": true,
+    "created_at": "2026-09-19T00:00:00.000Z",
+    "author_name": "OpenQuiz (N10-009 Exam Objectives)",
+    "item_type": "flashcards"
+  },
+  {
+    "id": "netplus-operations",
+    "name": "Network+ Flashcards: Network Operations",
+    "description": "Monitoring, troubleshooting tools, performance metrics, and high availability flashcards for N10-009 Domain 3 (19%).",
+    "file_path": "/netplus/netplus-operations.json",
+    "category": "netplus",
+    "category_label": "CompTIA Network+ N10-009",
+    "is_public": true,
+    "created_at": "2026-09-19T00:00:00.000Z",
+    "author_name": "OpenQuiz (N10-009 Exam Objectives)",
+    "item_type": "flashcards"
+  },
+  {
+    "id": "netplus-security",
+    "name": "Network+ Flashcards: Network Security",
+    "description": "Firewalls, VPN, AAA, 802.1X, and network hardening flashcards for N10-009 Domain 4 (14%).",
+    "file_path": "/netplus/netplus-security.json",
+    "category": "netplus",
+    "category_label": "CompTIA Network+ N10-009",
+    "is_public": true,
+    "created_at": "2026-09-19T00:00:00.000Z",
+    "author_name": "OpenQuiz (N10-009 Exam Objectives)",
+    "item_type": "flashcards"
+  },
+  {
+    "id": "netplus-troubleshooting",
+    "name": "Network+ Flashcards: Network Troubleshooting",
+    "description": "Methodology, layer-by-layer troubleshooting, tools, and physical/data link/network troubleshooting flashcards for N10-009 Domain 5 (24%).",
+    "file_path": "/netplus/netplus-troubleshooting.json",
+    "category": "netplus",
+    "category_label": "CompTIA Network+ N10-009",
+    "is_public": true,
+    "created_at": "2026-09-19T00:00:00.000Z",
+    "author_name": "OpenQuiz (N10-009 Exam Objectives)",
+    "item_type": "flashcards"
   }
 ]

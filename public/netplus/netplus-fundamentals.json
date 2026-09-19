@@ -1,0 +1,422 @@
+[
+  {
+    "id": "fund-f1",
+    "kind": "flashcard",
+    "prompt": "OSI Model - Layer 1",
+    "answer": "Physical Layer: Defines electrical, mechanical, and procedural specifications for activating, maintaining, and deactivating the physical link between network devices.",
+    "explanation": ""
+  },
+  {
+    "id": "fund-f2",
+    "kind": "flashcard",
+    "prompt": "OSI Model - Layer 2",
+    "answer": "Data Link Layer: Provides node-to-node data transfer and handles error detection from the physical layer. Defines MAC addresses and framing.",
+    "explanation": ""
+  },
+  {
+    "id": "fund-f3",
+    "kind": "flashcard",
+    "prompt": "OSI Model - Layer 3",
+    "answer": "Network Layer: Handles routing, logical addressing (IP), and path determination. Responsible for packet forwarding including routing through intermediate routers.",
+    "explanation": ""
+  },
+  {
+    "id": "fund-f4",
+    "kind": "flashcard",
+    "prompt": "OSI Model - Layer 4",
+    "answer": "Transport Layer: Provides end-to-end communication, flow control, error correction, and segmentation. Protocols: TCP (connection-oriented) and UDP (connectionless).",
+    "explanation": ""
+  },
+  {
+    "id": "fund-f5",
+    "kind": "flashcard",
+    "prompt": "OSI Model - Layer 5",
+    "answer": "Session Layer: Establishes, manages, and terminates sessions between applications. Controls dialog (full-duplex, half-duplex, simplex).",
+    "explanation": ""
+  },
+  {
+    "id": "fund-f6",
+    "kind": "flashcard",
+    "prompt": "OSI Model - Layer 6",
+    "answer": "Presentation Layer: Translates data between the application layer and the network format. Handles encryption, compression, and data format conversion (JPEG, ASCII, MPEG).",
+    "explanation": ""
+  },
+  {
+    "id": "fund-f7",
+    "kind": "flashcard",
+    "prompt": "OSI Model - Layer 7",
+    "answer": "Application Layer: Provides network services directly to end-user applications. Protocols: HTTP, FTP, SMTP, DNS, SNMP, SSH, Telnet.",
+    "explanation": ""
+  },
+  {
+    "id": "fund-f8",
+    "kind": "flashcard",
+    "prompt": "TCP vs UDP",
+    "answer": "TCP is connection-oriented, reliable, uses 3-way handshake (SYN, SYN-ACK, ACK), provides flow control and error correction. UDP is connectionless, faster, no guaranteed delivery, used for streaming and DNS.",
+    "explanation": ""
+  },
+  {
+    "id": "fund-f9",
+    "kind": "flashcard",
+    "prompt": "TCP 3-Way Handshake",
+    "answer": "1. Client sends SYN\n2. Server responds SYN-ACK\n3. Client sends ACK\nConnection established after ACK is received.",
+    "explanation": ""
+  },
+  {
+    "id": "fund-f10",
+    "kind": "flashcard",
+    "prompt": "Well-Known Ports",
+    "answer": "21/FTP, 22/SSH, 23/Telnet, 25/SMTP, 53/DNS, 67/68/DHCP, 80/HTTP, 110/POP3, 143/IMAP, 443/HTTPS, 3389/RDP, 3306/MySQL, 5432/PostgreSQL, 636/LDAPS",
+    "explanation": ""
+  },
+  {
+    "id": "fund-f11",
+    "kind": "flashcard",
+    "prompt": "TCP Ports",
+    "answer": "20/FTP-data, 21/FTP-control, 22/SSH, 23/Telnet, 25/SMTP, 53/DNS, 80/HTTP, 110/POP3, 143/IMAP, 443/HTTPS, 3389/RDP",
+    "explanation": ""
+  },
+  {
+    "id": "fund-f12",
+    "kind": "flashcard",
+    "prompt": "UDP Ports",
+    "answer": "53/DNS, 67/DHCP Server, 68/DHCP Client, 69/TFTP, 123/NTP, 161/SNMP, 162/SNMP Trap, 500/ISAKMP/IKE, 514/Syslog, 1900/SSDP",
+    "explanation": ""
+  },
+  {
+    "id": "fund-f13",
+    "kind": "flashcard",
+    "prompt": "CIDR Notation",
+    "answer": "/8 = 255.0.0.0 (16.7M hosts), /16 = 255.255.0.0 (65K hosts), /24 = 255.255.255.0 (254 hosts), /30 = 2 usable hosts, /32 = 1 host (loopback)",
+    "explanation": ""
+  },
+  {
+    "id": "fund-f14",
+    "kind": "flashcard",
+    "prompt": "Private IP Ranges",
+    "answer": "Class A: 10.0.0.0-10.255.255.255\nClass B: 172.16.0.0-172.31.255.255\nClass C: 192.168.0.0-192.168.255.255\nLoopback: 127.0.0.0/8\nLink-local: 169.254.0.0/16",
+    "explanation": ""
+  },
+  {
+    "id": "fund-f15",
+    "kind": "flashcard",
+    "prompt": "IPv4 Address Classes",
+    "answer": "Class A: First octet 1-126 (10.0.0.0/8 private)\nClass B: First octet 128-191 (172.16.0.0/12 private)\nClass C: First octet 192-223 (192.168.0.0/16 private)\nClass D: 224-239 (Multicast)\nClass E: 240-255 (Reserved/Research)",
+    "explanation": ""
+  },
+  {
+    "id": "fund-f16",
+    "kind": "flashcard",
+    "prompt": "MAC Address",
+    "answer": "48-bit (6 bytes) hardware address, written as 12 hex digits (e.g., 00:1A:2B:3C:4D:5E). First 24 bits are the OUI (manufacturer), last 24 bits are the device-specific identifier.",
+    "explanation": ""
+  },
+  {
+    "id": "fund-f17",
+    "kind": "flashcard",
+    "prompt": "Broadcast Address",
+    "answer": "255.255.255.255 (limited broadcast) or network-directed broadcast (e.g., 192.168.1.255 for a /24 network). Used by DHCP discover and ARP requests.",
+    "explanation": ""
+  },
+  {
+    "id": "fund-f18",
+    "kind": "flashcard",
+    "prompt": "ARP Protocol",
+    "answer": "Address Resolution Protocol maps IP addresses to MAC addresses. ARP Request is broadcast, ARP Reply is unicast. Gratuitous ARP announces an IP-to-MAC mapping.",
+    "explanation": ""
+  },
+  {
+    "id": "fund-f19",
+    "kind": "flashcard",
+    "prompt": "NAT (Network Address Translation)",
+    "answer": "Translates private IP addresses to public IP addresses. PAT (Port Address Translation) / NAPT uses port numbers to allow multiple private IPs to share one public IP. Saves IPv4 addresses.",
+    "explanation": ""
+  },
+  {
+    "id": "fund-f20",
+    "kind": "flashcard",
+    "prompt": "Subnetting",
+    "answer": "VLSM (Variable Length Subnet Mask) allows subnets of different sizes within the same network. CIDR allows route aggregation. Formula: usable hosts = 2^h - 2 where h = host bits.",
+    "explanation": ""
+  },
+  {
+    "id": "fund-f21",
+    "kind": "flashcard",
+    "prompt": "OSI Model - Physical Media",
+    "answer": "Twisted Pair (UTP/STP): Cat5e/Cat6/Cat6a/Cat7/Cat8. Coaxial: RG-58, RG-59, RG-6. Fiber: Single-mode (SMF) and Multi-mode (MMF). Wireless: Radio, Microwave, Infrared, Bluetooth.",
+    "explanation": ""
+  },
+  {
+    "id": "fund-f22",
+    "kind": "flashcard",
+    "prompt": "Topologies",
+    "answer": "Star: All devices connect to a central hub/switch. Bus: All devices on a single cable. Ring: Data travels in one direction. Mesh: Every device connects to every other device (full/partial). Hybrid: Combination of topologies.",
+    "explanation": ""
+  },
+  {
+    "id": "fund-f23",
+    "kind": "flashcard",
+    "prompt": "Full Mesh",
+    "answer": "n(n-1)/2 connections for n devices. Highly redundant, expensive, difficult to implement. Best for WAN backbone connections and critical infrastructure.",
+    "explanation": ""
+  },
+  {
+    "id": "fund-f24",
+    "kind": "flashcard",
+    "prompt": "PDU by OSI Layer",
+    "answer": "Layer 1: Bits, Layer 2: Frames, Layer 3: Packets, Layer 4: Segments (TCP) / Datagrams (UDP), Layer 5-7: Data",
+    "explanation": ""
+  },
+  {
+    "id": "fund-f25",
+    "kind": "flashcard",
+    "prompt": "Encapsulation",
+    "answer": "Process of wrapping data with protocol headers at each OSI layer. Application Data → Segment (L4) → Packet (L3) → Frame (L2) → Bits (L1) for transmission.",
+    "explanation": ""
+  },
+  {
+    "id": "fund-f26",
+    "kind": "flashcard",
+    "prompt": "Ethernet Standards",
+    "answer": "10BASE-T (10 Mbps, Cat3), 100BASE-TX (Fast Ethernet, 100 Mbps, Cat5), 1000BASE-T (Gigabit, 1 Gbps, Cat5e), 10GBASE-T (10 Gbps, Cat6a), 25G/40G/100G (Fiber/Cat8)",
+    "explanation": ""
+  },
+  {
+    "id": "fund-f27",
+    "kind": "flashcard",
+    "prompt": "CSMA/CD",
+    "answer": "Carrier Sense Multiple Access with Collision Detection. Used in traditional Ethernet (half-duplex). Devices listen before transmitting, detect collisions, wait random backoff time, then retry.",
+    "explanation": ""
+  },
+  {
+    "id": "fund-f28",
+    "kind": "flashcard",
+    "prompt": "Half-Duplex vs Full-Duplex",
+    "answer": "Half-duplex: Data flows one direction at a time (uses CSMA/CD). Full-duplex: Simultaneous bidirectional communication (no collisions, uses switch dedicated ports).",
+    "explanation": ""
+  },
+  {
+    "id": "fund-f29",
+    "kind": "flashcard",
+    "prompt": "Cloud Models",
+    "answer": "IaaS (Infrastructure as a Service): Virtual machines, storage, networking (AWS EC2, Azure VMs). PaaS (Platform as a Service): Development platforms (Heroku, Google App Engine). SaaS (Software as a Service): Ready-to-use applications (Office 365, Gmail).",
+    "explanation": ""
+  },
+  {
+    "id": "fund-f30",
+    "kind": "flashcard",
+    "prompt": "Cloud Deployment",
+    "answer": "Public: Shared infrastructure, multi-tenant. Private: Dedicated to one organization. Hybrid: Combines public and private. Community: Shared by several organizations.",
+    "explanation": ""
+  },
+  {
+    "id": "fund-f31",
+    "kind": "flashcard",
+    "prompt": "Virtualization Types",
+    "answer": "Type 1 (Bare-metal): Hypervisor runs directly on hardware (VMware ESXi, Xen, Hyper-V). Type 2 (Hosted): Hypervisor runs on host OS (VMware Workstation, VirtualBox).",
+    "explanation": ""
+  },
+  {
+    "id": "fund-f32",
+    "kind": "flashcard",
+    "prompt": "Containers vs VMs",
+    "answer": "Containers share the host OS kernel (lighter, faster, portable). VMs have full guest OS with virtualized hardware (heavier, isolated). Docker and Kubernetes for container orchestration.",
+    "explanation": ""
+  },
+  {
+    "id": "fund-f33",
+    "kind": "flashcard",
+    "prompt": "Software Defined Networking (SDN)",
+    "answer": "Separates control plane from data plane. Centralized controller manages network traffic. SD-WAN extends SDN across WAN. Provides programmability, flexibility, and centralized management.",
+    "explanation": ""
+  },
+  {
+    "id": "fund-f34",
+    "kind": "flashcard",
+    "prompt": "VxLAN",
+    "answer": "Virtual Extensible LAN. Encapsulates Layer 2 frames within UDP packets (typically port 4789). Supports up to 16 million virtual networks (vs 4096 in VLANs). Used for large-scale cloud deployments.",
+    "explanation": ""
+  },
+  {
+    "id": "fund-f35",
+    "kind": "flashcard",
+    "prompt": "DNS",
+    "answer": "Domain Name System translates domain names to IP addresses. Records: A (IPv4), AAAA (IPv6), CNAME (alias), MX (mail), NS (nameserver), PTR (reverse), TXT (text/SPF), SOA (authority).",
+    "explanation": ""
+  },
+  {
+    "id": "fund-f36",
+    "kind": "flashcard",
+    "prompt": "DHCP",
+    "answer": "Dynamic Host Configuration Protocol. DORA process: Discover, Offer, Request, Acknowledge. Assigns IP, subnet mask, gateway, DNS. Lease time determines how long IP is valid.",
+    "explanation": ""
+  },
+  {
+    "id": "fund-f37",
+    "kind": "flashcard",
+    "prompt": "IPv6",
+    "answer": "128-bit address (8 groups of 4 hex digits). Types: Unicast, Multicast, Anycast, Link-local (fe80::/10). Stateless autoconfiguration (SLAAC) uses Router Advertisements.",
+    "explanation": ""
+  },
+  {
+    "id": "fund-f38",
+    "kind": "flashcard",
+    "prompt": "Anycast",
+    "answer": "Multiple servers share one IP address. Traffic routes to the nearest server. Used for CDN, DNS root servers, load distribution.",
+    "explanation": ""
+  },
+  {
+    "id": "fund-f39",
+    "kind": "flashcard",
+    "prompt": "Multicast",
+    "answer": "One-to-many communication. Packets sent to a multicast group address (224.0.0.0/4). Used for video streaming, IPTV, routing protocols (OSPF, EIGRP).",
+    "explanation": ""
+  },
+  {
+    "id": "fund-f40",
+    "kind": "flashcard",
+    "prompt": "Broadcast",
+    "answer": "One-to-all communication on a local network. Limited to the local subnet (routers don't forward broadcasts). Used by ARP, DHCP Discover, NBNS.",
+    "explanation": ""
+  },
+  {
+    "id": "fund-f41",
+    "kind": "flashcard",
+    "prompt": "Network Interface Card (NIC)",
+    "answer": "Connects a device to a network. Has a MAC address. Supports specific speeds (1 Gbps, 10 Gbps). Can be physical (Ethernet) or wireless (Wi-Fi NIC). VNIC is a software NIC in a VM.",
+    "explanation": ""
+  },
+  {
+    "id": "fund-f42",
+    "kind": "flashcard",
+    "prompt": "PoE (Power over Ethernet)",
+    "answer": "Delivers electrical power over Ethernet cables. Standards: 802.3af (Type 1, 15.4W), 802.3at (Type 2, 30W), 802.3bt (Type 3/4, 60W/90W). Used for IP cameras, VoIP phones, APs.",
+    "explanation": ""
+  },
+  {
+    "id": "fund-f43",
+    "kind": "flashcard",
+    "prompt": "WLAN vs WLAN Controller",
+    "answer": "WLAN: Wireless Local Area Network using Wi-Fi (802.11 standards). WLC: Centralized controller managing multiple access points. Uses CAPWAP protocol for AP management.",
+    "explanation": ""
+  },
+  {
+    "id": "fund-f44",
+    "kind": "flashcard",
+    "prompt": "Wi-Fi Standards",
+    "answer": "802.11b/g/n/ac/ax/be. 802.11n (Wi-Fi 4): 600 Mbps, 2.4/5 GHz. 802.11ac (Wi-Fi 5): 6.9 Gbps, 5 GHz. 802.11ax (Wi-Fi 6): 9.6 Gbps, 2.4/5 GHz. 802.11be (Wi-Fi 7): 46 Gbps.",
+    "explanation": ""
+  },
+  {
+    "id": "fund-f45",
+    "kind": "flashcard",
+    "prompt": "SSID and BSSID",
+    "answer": "SSID: Service Set Identifier - the network name broadcast by an AP. BSSID: Basic Service Set Identifier - the MAC address of the AP. Hidden SSID does not broadcast its name.",
+    "explanation": ""
+  },
+  {
+    "id": "fund-f46",
+    "kind": "flashcard",
+    "prompt": "WPA/WPA2/WPA3",
+    "answer": "WPA: TKIP encryption (deprecated). WPA2: AES-CCMP encryption. WPA3: SAE (Simultaneous Authentication of Equals) - protects against offline dictionary attacks. WPA3-Enterprise adds 192-bit security suite.",
+    "explanation": ""
+  },
+  {
+    "id": "fund-f47",
+    "kind": "flashcard",
+    "prompt": "Wireless Encryption",
+    "answer": "WEP (Wired Equivalent Privacy): 64/128-bit, RC4, insecure/deprecated. WPA: TKIP. WPA2: CCMP/AES. WPA3: SAE. Enterprise mode uses RADIUS server (802.1X) for authentication.",
+    "explanation": ""
+  },
+  {
+    "id": "fund-f48",
+    "kind": "flashcard",
+    "prompt": "Wireless Attack Types",
+    "answer": "Rogue AP: Fake access point to capture credentials. Evil Twin: AP impersonating a legitimate network. Deauthentication Attack: Forcing clients to disconnect (used in evil twin). Jamming: Disrupting wireless signals.",
+    "explanation": ""
+  },
+  {
+    "id": "fund-f49",
+    "kind": "flashcard",
+    "prompt": "Wireless Modes",
+    "answer": "Infrastructure: Clients connect through an AP. Ad-hoc: Peer-to-peer without AP. Mesh: Devices relay for each other. Hotspot: Public wireless access. WDS: Wireless Distribution System for bridging APs.",
+    "explanation": ""
+  },
+  {
+    "id": "fund-f50",
+    "kind": "flashcard",
+    "prompt": "Network Address Types",
+    "answer": "Unicast: One-to-one. Multicast: One-to-many. Broadcast: One-to-all. Anycast: One-to-nearest. Geocast: Based on geographic location.",
+    "explanation": ""
+  },
+  {
+    "id": "fund-f51",
+    "kind": "flashcard",
+    "prompt": "MTU (Maximum Transmission Unit)",
+    "answer": "Maximum packet size that can be transmitted without fragmentation. Standard Ethernet MTU is 1500 bytes. Jumbo frames use 9000 bytes. Too large causes fragmentation; too small wastes bandwidth.",
+    "explanation": ""
+  },
+  {
+    "id": "fund-f52",
+    "kind": "flashcard",
+    "prompt": "ToS / DSCP / QoS",
+    "answer": "Type of Service (ToS) in IPv4 header, now Differentiated Services Code Point (DSCP). QoS prioritizes traffic classes. EF (Expedited Forwarding) for voice, AF for assured forwarding, BE for best effort.",
+    "explanation": ""
+  },
+  {
+    "id": "fund-f53",
+    "kind": "flashcard",
+    "prompt": "802.1Q VLAN Tagging",
+    "answer": "IEEE 802.1Q standard adds a 4-byte VLAN tag to Ethernet frames. Tag contains 12-bit VLAN ID (supports 4094 VLANs). Native VLAN (usually VLAN 1) carries untagged traffic.",
+    "explanation": ""
+  },
+  {
+    "id": "fund-f54",
+    "kind": "flashcard",
+    "prompt": "VLAN Types",
+    "answer": "Data VLAN: User traffic. Voice VLAN: VoIP traffic. Management VLAN: Switch management. Native VLAN: Untagged traffic on trunk. Default VLAN: VLAN 1 (should be changed).",
+    "explanation": ""
+  },
+  {
+    "id": "fund-f55",
+    "kind": "flashcard",
+    "prompt": "Trunk vs Access Port",
+    "answer": "Access port: Belongs to one VLAN, carries untagged traffic (connects to end devices). Trunk port: Carries traffic for multiple VLANs using 802.1Q tagging (connects switches to switches/routers).",
+    "explanation": ""
+  },
+  {
+    "id": "fund-f56",
+    "kind": "flashcard",
+    "prompt": "Inter-VLAN Routing",
+    "answer": "Router-on-a-stick: Router with a single physical interface using sub-interfaces with 802.1Q. Layer 3 switch: Switch with routing capability. SVI (Switched Virtual Interface) provides Layer 3 gateway for VLANs.",
+    "explanation": ""
+  },
+  {
+    "id": "fund-f57",
+    "kind": "flashcard",
+    "prompt": "Spanning Tree Protocol (STP)",
+    "answer": "Prevents Layer 2 loops by creating a tree topology. Elects Root Bridge (lowest Bridge ID). Blocking port prevents loops. Port states: Blocking, Listening, Learning, Forwarding, Disabled.",
+    "explanation": ""
+  },
+  {
+    "id": "fund-f58",
+    "kind": "flashcard",
+    "prompt": "STP Versions",
+    "answer": "STP (802.1D): Original, slow convergence (30-50 sec). RSTP (802.1w): Rapid STP, faster convergence. MSTP (802.1s): Multiple Spanning Tree Protocol, maps VLANs to instances.",
+    "explanation": ""
+  },
+  {
+    "id": "fund-f59",
+    "kind": "flashcard",
+    "prompt": "VTP (VLAN Trunking Protocol)",
+    "answer": "Propagates VLAN information across trunk links. Modes: Server (create/modify), Client (learn), Transparent (local only). VTP pruning reduces unnecessary broadcast traffic.",
+    "explanation": ""
+  },
+  {
+    "id": "fund-f60",
+    "kind": "flashcard",
+    "prompt": "UDLD (UniDirectional Link Detection)",
+    "answer": "Detects unidirectional links where a device can transmit but not receive. Places port in error-disabled state. Prevents switching loops caused by broken fiber/cable.",
+    "explanation": ""
+  }
+]
