@@ -303,7 +303,15 @@ export function normalizeImportedQuizItems(
     if (!Array.isArray(items)) return { words: [], questions: [], errors: ['JSON must be an array'] }
     if (!items.length) return { words: [], questions: [], errors: ['No items to import'] }
 
-    const isWord = (it: any) => it && typeof it === 'object' && ('word' in it || 'ru' in it)
+    // A vocabulary entry carries a `word` (or `ru`) and no explicit generic
+    // question fields. Generic questions may optionally carry a display `word`
+    // (see QuizQuestion.word), so explicit generic fields (kind/prompt/options/
+    // answer/...) take precedence over the vocabulary shape.
+    const isGeneric = (it: any) => it && typeof it === 'object' && (
+        it.kind !== undefined || it.prompt !== undefined || it.question !== undefined || it.q !== undefined ||
+        it.options !== undefined || it.answer !== undefined || it.correctAnswer !== undefined || it.correctIndex !== undefined
+    )
+    const isWord = (it: any) => it && typeof it === 'object' && !isGeneric(it) && ('word' in it || 'ru' in it)
     const looksLikeWords = items.every(isWord)
 
     // Study consumers choose words OR questions. Represent mixed input as

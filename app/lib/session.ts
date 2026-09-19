@@ -330,7 +330,10 @@ export function buildQuestionSession(
         list = list.slice(0, limit);
     }
 
-    return shuffle(list)
+    // The list is already priority-ordered (due/weak/missed first, random
+    // within each tier from the initial shuffle). Re-shuffling here would
+    // discard that ranking and let due cards fall behind new ones.
+    return list
         .filter(q => q && typeof q.prompt === 'string' && q.prompt.trim())
         .flatMap((q): Question[] => {
         const base = {
