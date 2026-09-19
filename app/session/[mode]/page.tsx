@@ -8,6 +8,7 @@ export function generateStaticParams() {
         { mode: 'exam' },
         { mode: 'mistakes' },
         { mode: 'test' },
+        { mode: 'write' },
     ]
 }
 

@@ -103,6 +103,7 @@ node.tar.gz
 !package.json
 !package-lock.json
 !tsconfig.json
+!.eslintrc.json
 !public/sat/*.json
 !public/securityplus/*.json
 tsconfig.tsbuildinfo

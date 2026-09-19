@@ -9,13 +9,14 @@ import BottomNav from './components/BottomNav'
 import Logo from './components/Logo'
 import { Word } from './lib/satTypes'
 import { useAuth } from './contexts/AuthContext'
-import { getWordProgress, getStreak, getCustomQuizzes, loadOfficialQuiz } from './lib/db'
+import { getWordProgress, getStreak, getCustomQuizzes, getStudyAnalytics, loadOfficialQuiz } from './lib/db'
 import { useQuizStore } from './lib/quizStore'
 
 export default function Home() {
   const [words, setWords] = useState<Word[]>([])
   const [loading, setLoading] = useState(true)
   const [masteredCount, setMasteredCount] = useState(0)
+  const [todayAnswers, setTodayAnswers] = useState(0)
   const [hasProgress, setHasProgress] = useState(false)
   const [streak, setStreak] = useState(0)
   const { user, loading: authLoading, signOut } = useAuth()
@@ -29,12 +30,25 @@ export default function Home() {
   }, [user, authLoading, router])
 
   useEffect(() => {
-    if (!user) return
+    let cancelled = false
+
+    setLoading(true)
+    setWords([])
+    setMasteredCount(0)
+    setTodayAnswers(0)
+    setHasProgress(false)
+    setStreak(0)
+
+    if (!user) {
+      setLoading(false)
+      return () => { cancelled = true }
+    }
 
     const loadPreviewWords = async () => {
       // Preview the selected pre-made/official quiz (works for everyone).
       if (selectedQuizPath && !selectedQuizPath.startsWith('/custom-quiz/')) {
         const loaded = await loadOfficialQuiz(selectedQuizPath)
+        if (cancelled) return
         setWords(loaded.words.filter(w => w?.word))
         setLoading(false)
         return
@@ -54,29 +68,48 @@ export default function Home() {
             }
           }
         }
+        if (cancelled) return
         setWords(collected)
         setLoading(false)
         return
       }
 
-      setLoading(false)
+      if (!cancelled) setLoading(false)
     }
 
-    loadPreviewWords()
+    loadPreviewWords().catch(error => {
+      if (!cancelled) {
+        console.error('Error loading preview words:', error)
+        setLoading(false)
+      }
+    })
 
     // Load progress
     getWordProgress(user.id).then(progress => {
+      if (cancelled) return
       const mastered = Object.values(progress).filter((p: any) => p.status === 'mastered').length
       setMasteredCount(mastered)
       setHasProgress(Object.keys(progress).length > 0)
     }).catch(error => {
-      console.error('Error loading progress:', error)
+      if (!cancelled) console.error('Error loading progress:', error)
     })
 
     // Load streak
-    getStreak(user.id).then(setStreak).catch(error => {
-      console.error('Error loading streak:', error)
+    getStreak(user.id).then(value => {
+      if (!cancelled) setStreak(value)
+    }).catch(error => {
+      if (!cancelled) console.error('Error loading streak:', error)
     })
+
+    getStudyAnalytics(user.id).then(studyAnalytics => {
+      if (cancelled) return
+      const latestDay = studyAnalytics.studyDays[studyAnalytics.studyDays.length - 1]
+      setTodayAnswers(latestDay?.count || 0)
+    }).catch(error => {
+      if (!cancelled) console.error('Error loading study analytics:', error)
+    })
+
+    return () => { cancelled = true }
   }, [user, selectedQuizPath])
 
   const handleSignOut = async () => {
@@ -104,19 +137,20 @@ export default function Home() {
           <div className="relative z-10">
             <div className="flex justify-between items-end mb-4">
               <div>
-                <p className="text-white/80 font-bold text-sm uppercase mb-1">Daily Goal</p>
-                <h2 className="text-3xl sm:text-4xl font-extrabold">{Math.min(masteredCount, 40)} / 40</h2>
+                <p className="text-white/80 font-bold text-sm uppercase mb-1">Daily Answer Goal</p>
+                <h2 className="text-3xl sm:text-4xl font-extrabold">{Math.min(todayAnswers, 40)} / 40</h2>
+                <p className="text-white/70 text-xs mt-1">{masteredCount} mastered lifetime</p>
               </div>
               <div className="text-right">
-                <p className="text-white/80 font-bold text-sm uppercase mb-1">Sprint</p>
-                <p className="font-bold">4 days left</p>
+                <p className="text-white/80 font-bold text-sm uppercase mb-1">Today</p>
+                <p className="font-bold">{todayAnswers} answers</p>
               </div>
             </div>
 
             <div className="h-3 bg-black/20 rounded-full overflow-hidden">
               <div
                 className="h-full bg-white rounded-full transition-all duration-500"
-                style={{ width: `${Math.min(100, (masteredCount / 40) * 100)}%` }}
+                style={{ width: `${Math.min(100, (todayAnswers / 40) * 100)}%` }}
               />
             </div>
           </div>

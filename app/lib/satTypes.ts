@@ -44,6 +44,7 @@ export type QuestionType =
 
 export interface Question {
   id: string;
+  progressKey?: string;
   word: string;
   type: QuestionType;
   image?: string; // media shown with the question (Quizlet-style)
@@ -212,6 +213,7 @@ export interface Folder {
 
 /** One finished study session (any mode). */
 export interface QuizSessionRecord {
+  id?: string;
   date: string;
   correct: number;
   total: number;

@@ -1,6 +1,7 @@
 import { WordProgress, QuizQuestion, SimulationStep, Word, Folder, QuizStats, CustomQuiz } from './satTypes'
 import { assetPath } from './paths'
-import { isDriveConfigured, readDriveFile, writeDriveFile, getDriveUser, hasLiveToken } from './drive'
+import { isDriveConfigured, readDriveFile as readRemoteFile, writeDriveFile as writeRemoteFile, getDriveUser } from './drive'
+import { readAccountData, writeAccountData, currentAccountId, assertAccount, setSyncMessage } from './storage'
 
 /**
  * Hybrid data layer for the static (GitHub Pages) build.
@@ -19,6 +20,7 @@ const CUSTOM_QUIZZES_KEY = 'oquiz:custom_quizzes'
 const DAILY_STATS_KEY = 'oquiz:daily_stats'
 const FOLDERS_KEY = 'oquiz:folders'
 const QUIZ_STATS_KEY = 'oquiz:quiz_stats'
+const DELETED_IDS_KEY = 'oquiz:deleted_ids'
 
 const PROGRESS_FILE = 'progress.json'
 const CUSTOM_QUIZZES_FILE = 'custom_quizzes.json'
@@ -28,12 +30,10 @@ const QUIZ_STATS_FILE = 'quiz_stats.json'
 
 const MANIFEST_PATH = '/sat/quiz-sets.json'
 
-// A user is "cloud active" when Drive is configured, they're signed in, AND a
-// usable token is actually available. A stored profile alone is not enough: if
-// the silent token restore failed, cloud reads/writes would silently no-op, so
-// we fall back to localStorage and surface the truth.
+// Drive owns token refresh. Keep attempting sync for signed-in accounts even
+// after token expiry, so failures are visible instead of silently becoming local-only.
 function isCloudActive(): boolean {
-    return isDriveConfigured() && typeof window !== 'undefined' && Boolean(getDriveUser()) && hasLiveToken()
+    return isDriveConfigured() && typeof window !== 'undefined' && Boolean(getDriveUser())
 }
 
 // ---------------------------------------------------------------------------
@@ -41,35 +41,69 @@ function isCloudActive(): boolean {
 // ---------------------------------------------------------------------------
 
 function readJson<T>(key: string, fallback: T): T {
-    if (typeof window === 'undefined') return fallback
-    try {
-        const stored = window.localStorage.getItem(key)
-        return stored ? (JSON.parse(stored) as T) : fallback
-    } catch {
-        return fallback
-    }
+    return readAccountData(key, fallback)
 }
 
 function writeJson(key: string, value: unknown) {
-    if (typeof window === 'undefined') return
+    writeAccountData(key, value)
+}
+
+async function readDriveFile<T>(name: string): Promise<T | null> {
+    const owner = currentAccountId()
     try {
-        window.localStorage.setItem(key, JSON.stringify(value))
-    } catch (err) {
-        // QuotaExceededError (e.g. oversized images) must not throw out of the
-        // data layer — callers assume writes are best-effort, like readJson.
-        console.error('localStorage write failed:', err)
+        const value = await readRemoteFile<T>(name)
+        assertAccount(owner)
+        return value
+    } catch (error) {
+        setSyncMessage('Cloud sync failed. Your local data is available; reconnect and retry.', owner)
+        throw error
     }
+}
+
+async function writeDriveFile(name: string, value: unknown): Promise<void> {
+    const owner = currentAccountId()
+    if (!await writeRemoteFile(name, value)) {
+        setSyncMessage('Saved in this browser. Cloud sync failed; reconnect and retry.', owner)
+        throw new Error('Saved locally, but cloud sync failed. Retry sync from Profile.')
+    }
+    assertAccount(owner)
+}
+
+// A failed read must never be mistaken for a missing remote file by writers.
+// Only display reads may fall back to the account's local snapshot.
+async function readForDisplay<T>(name: string): Promise<T | null> {
+    const owner = currentAccountId()
+    try { return await readDriveFile<T>(name) }
+    catch { assertAccount(owner); return null }
+}
+
+export function localDate(date = new Date()): string {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
 
 // Serialize read-modify-write cycles per storage key so overlapping saves
 // (rapid answers, streak updates) can't clobber each other's updates.
 const localWriteQueues = new Map<string, Promise<unknown>>()
 
-function queueLocalWrite(key: string, fn: () => void | Promise<void>): Promise<void> {
-    const prev = localWriteQueues.get(key) || Promise.resolve()
-    const next = prev.then(fn).catch(() => {})
-    localWriteQueues.set(key, next)
+function queueLocalWrite<T>(key: string, fn: () => T | Promise<T>): Promise<T> {
+    const owner = currentAccountId()
+    // Serialize the entire read/merge/write operation, including migration.
+    const queueKey = owner
+    const prev = localWriteQueues.get(queueKey) || Promise.resolve()
+    const next = prev.catch(() => {}).then(() => { assertAccount(owner); return fn() })
+    localWriteQueues.set(queueKey, next)
     return next
+}
+
+function withoutDeleted<T extends { id: string }>(kind: 'quizzes' | 'folders', items: T[]): T[] {
+    const deleted = readJson<Record<string, string[]>>(DELETED_IDS_KEY, {})[kind] || []
+    return items.filter(item => !deleted.includes(item.id))
+}
+
+function markDeleted(kind: 'quizzes' | 'folders', id: string) {
+    const deleted = readJson<Record<string, string[]>>(DELETED_IDS_KEY, {})
+    deleted[kind] = Array.from(new Set([...(deleted[kind] || []), id]))
+    writeJson(DELETED_IDS_KEY, deleted)
 }
 
 // Parse a boolean-ish value from imported JSON (`true`/`false`, `t`/`f`,
@@ -90,6 +124,32 @@ function parseTrueFalse(value: unknown): boolean {
 
 type ProgressMap = Record<string, WordProgress>
 type ProgressStore = Record<string, ProgressMap>
+
+function mergeProgress(local: ProgressMap, remote: ProgressMap): ProgressMap {
+    const merged = { ...remote }
+    for (const [key, value] of Object.entries(local)) {
+        if (!merged[key] || (value.lastSeen || 0) >= (merged[key].lastSeen || 0)) merged[key] = value
+    }
+    return merged
+}
+
+function mergeQuizStats(local: Record<string, QuizStats>, remote: Record<string, QuizStats>) {
+    const merged = { ...remote }
+    for (const [key, value] of Object.entries(local)) {
+        const other = remote[key]
+        if (!other) { merged[key] = value; continue }
+        const history = [...(other.history || []), ...(value.history || [])]
+            .filter((entry, i, entries) => entries.findIndex(e => e.id && entry.id ? e.id === entry.id : e.date === entry.date && e.correct === entry.correct && e.total === entry.total) === i)
+            .sort((a, b) => a.date.localeCompare(b.date))
+        merged[key] = {
+            ...(value.lastStudied >= other.lastStudied ? value : other), history,
+            plays: Math.max(value.plays, other.plays, history.length),
+            bestCorrect: Math.max(value.bestCorrect, other.bestCorrect),
+            bestAccuracy: Math.max(value.bestAccuracy, other.bestAccuracy),
+        }
+    }
+    return merged
+}
 
 function readProgressStore(): ProgressStore {
     const raw = readJson<any>(PROGRESS_KEY, {})
@@ -113,18 +173,20 @@ function readProgressStore(): ProgressStore {
 }
 
 export async function getWordProgress(userId: string): Promise<Record<string, WordProgress>> {
+    if (userId !== currentAccountId()) return {}
     const store = readProgressStore()
-    const local = store[userId] ?? store.guest ?? {}
+    const local = store[userId] ?? {}
 
     if (isCloudActive()) {
-        const remote = await readDriveFile<Record<string, WordProgress>>(PROGRESS_FILE)
-        if (remote) return remote
+        const remote = await readForDisplay<Record<string, WordProgress>>(PROGRESS_FILE)
+        if (remote) return mergeProgress(local, remote)
     }
 
     return local
 }
 
 export async function saveWordProgress(userId: string, word: string, progress: WordProgress) {
+    assertAccount(userId)
     return queueLocalWrite(PROGRESS_KEY, async () => {
         const store = readProgressStore()
         const bucket = store[userId] ?? {}
@@ -133,9 +195,11 @@ export async function saveWordProgress(userId: string, word: string, progress: W
         writeJson(PROGRESS_KEY, store)
 
         if (isCloudActive()) {
-            const remote = (await readDriveFile<Record<string, WordProgress>>(PROGRESS_FILE)) || {}
-            remote[word] = progress
-            await writeDriveFile(PROGRESS_FILE, remote)
+            try {
+                const remote = (await readDriveFile<Record<string, WordProgress>>(PROGRESS_FILE)) || {}
+                remote[word] = progress
+                await writeDriveFile(PROGRESS_FILE, remote)
+            } catch { /* Local save succeeded; SyncNotice provides cloud retry. */ }
         }
     })
 }
@@ -193,12 +257,13 @@ export function parseOfficialQuiz(items: unknown): { words: Word[]; questions: Q
 // ---------------------------------------------------------------------------
 
 export async function getCustomQuizzes(userId: string) {
+    if (userId !== currentAccountId()) return []
     const local = readJson<any[]>(CUSTOM_QUIZZES_KEY, [])
         .filter(q => q.user_id === userId)
 
     if (isCloudActive()) {
-        const remote = await readDriveFile<any[]>(CUSTOM_QUIZZES_FILE)
-        if (remote) return remote
+        const remote = await readForDisplay<any[]>(CUSTOM_QUIZZES_FILE)
+        if (remote) return withoutDeleted('quizzes', [...local, ...remote.filter(q => !local.some(l => l.id === q.id))])
     }
 
     return local
@@ -212,11 +277,12 @@ export async function getPublicQuizzes(excludeUserId?: string) {
 }
 
 export async function getCustomQuizById(quizId: string) {
+    if (!withoutDeleted('quizzes', [{ id: quizId }]).length) return null
     const local = readJson<any[]>(CUSTOM_QUIZZES_KEY, [])
         .find(q => q.id === quizId) || null
 
     if (isCloudActive()) {
-        const remote = await readDriveFile<any[]>(CUSTOM_QUIZZES_FILE)
+        const remote = await readForDisplay<any[]>(CUSTOM_QUIZZES_FILE)
         const remoteQuiz = (remote || []).find(q => q.id === quizId)
         if (remoteQuiz) return repairQuizShape(remoteQuiz)
     }
@@ -237,9 +303,25 @@ export function normalizeImportedQuizItems(
     if (!Array.isArray(items)) return { words: [], questions: [], errors: ['JSON must be an array'] }
     if (!items.length) return { words: [], questions: [], errors: ['No items to import'] }
 
-    const looksLikeWords = items.some((it: any) =>
-        it && typeof it === 'object' && typeof it.word === 'string' && typeof it.ru === 'string'
-    )
+    const isWord = (it: any) => it && typeof it === 'object' && ('word' in it || 'ru' in it)
+    const looksLikeWords = items.every(isWord)
+
+    // Study consumers choose words OR questions. Represent mixed input as
+    // questions, preserving vocabulary definitions instead of silently dropping them.
+    if (!looksLikeWords && items.some(isWord)) {
+        const converted = items.map((it, index) => {
+            if (!isWord(it)) return it
+            const result = normalizeImportedQuizItems([it])
+            if (result.errors.length) return it
+            const word = result.words[0]
+            return { id: it.id || `vocab-${index}-${word.word}`, kind: 'flashcard', prompt: word.word,
+                answer: word.ru, image: word.image,
+                explanation: [...word.simple_examples, word.advanced_example].filter(Boolean).join('\n') }
+        })
+        // Invalid vocabulary entries remain errors below, never a partial success.
+        if (converted.some(isWord)) return { words: [], questions: [], errors: ['A vocabulary item is missing a word or definition.'] }
+        return normalizeImportedQuizItems(converted)
+    }
 
     if (looksLikeWords) {
         const errors: string[] = []
@@ -271,11 +353,12 @@ export function normalizeImportedQuizItems(
         return { words, questions: [], errors }
     }
 
-    const makeId = (it: any, i: number) =>
-        it?.id ? String(it.id) :
-            typeof crypto !== 'undefined' && 'randomUUID' in crypto
-                ? crypto.randomUUID()
-                : `q-${i}-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
+    const makeId = (it: any, i: number) => {
+        if (it?.id) return String(it.id)
+        let hash = 2166136261
+        for (const c of JSON.stringify(it)) hash = Math.imul(hash ^ c.charCodeAt(0), 16777619)
+        return `q-${i}-${(hash >>> 0).toString(36)}`
+    }
 
     // Imported quizzes may reuse ids; ensure question ids stay unique so
     // progress/history keys never collide.
@@ -357,11 +440,16 @@ export function normalizeImportedQuizItems(
         }
 
         const options = Array.isArray(it.options)
-            ? it.options.map(stripPrefix).filter(Boolean)
+            ? it.options.map(stripPrefix)
             : []
 
+        if (Array.isArray(it.options) && (options.length < 2 || options.some((option: string) => !option))) {
+            errors.push(`Item ${i + 1}: multiple-choice options must contain at least two non-empty answers`)
+            return
+        }
+
         if (options.length >= 2) {
-            let correctIndex = 0
+            let correctIndex = -1
             if (Number.isInteger(it.correctIndex) && it.correctIndex >= 0 && it.correctIndex < options.length) {
                 correctIndex = it.correctIndex
             } else if (it.answer != null) {
@@ -371,8 +459,12 @@ export function normalizeImportedQuizItems(
                     correctIndex = letterIdx
                 } else {
                     const match = options.findIndex((o: string) => o.toLowerCase() === ans.toLowerCase() || stripPrefix(ans).toLowerCase() === o.toLowerCase())
-                    correctIndex = match >= 0 ? match : 0
+                    correctIndex = match
                 }
+            }
+            if (correctIndex < 0) {
+                errors.push(`Item ${i + 1}: missing or invalid correct answer`)
+                return
             }
             const q: QuizQuestion = {
                 id: uniqueId(makeId(it, i)),
@@ -469,44 +561,54 @@ export async function createCustomQuiz(
     questions?: QuizQuestion[],
     tags: string[] = []
 ) {
-    const id = typeof crypto !== 'undefined' && 'randomUUID' in crypto
-        ? crypto.randomUUID()
-        : `quiz-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
+    return queueLocalWrite('createCustomQuiz', async () => {
+        assertAccount(userId)
+        const id = typeof crypto !== 'undefined' && 'randomUUID' in crypto
+            ? crypto.randomUUID()
+            : `quiz-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
 
-    const quiz = {
-        id,
-        user_id: userId,
-        name,
-        description,
-        tags: Array.isArray(tags) ? tags : [],
-        words: Array.isArray(words) ? words : [],
-        questions: Array.isArray(questions) && questions.length ? questions : undefined,
-        is_public: isPublic,
-        author_name: authorName || null,
-        created_at: new Date().toISOString()
-    }
+        const quiz = {
+            id,
+            user_id: userId,
+            name,
+            description,
+            tags: Array.isArray(tags) ? tags : [],
+            words: Array.isArray(words) ? words : [],
+            questions: Array.isArray(questions) && questions.length ? questions : undefined,
+            is_public: isPublic,
+            author_name: authorName || null,
+            created_at: new Date().toISOString()
+        }
 
-    const all = readJson<any[]>(CUSTOM_QUIZZES_KEY, [])
-    all.unshift(quiz)
-    writeJson(CUSTOM_QUIZZES_KEY, all)
+        const all = readJson<any[]>(CUSTOM_QUIZZES_KEY, [])
+        all.unshift(quiz)
+        writeJson(CUSTOM_QUIZZES_KEY, all)
 
-    if (isCloudActive()) {
-        const remote = (await readDriveFile<any[]>(CUSTOM_QUIZZES_FILE)) || []
-        remote.unshift(quiz)
-        await writeDriveFile(CUSTOM_QUIZZES_FILE, remote)
-    }
+        if (isCloudActive()) {
+            try {
+                const remote = (await readDriveFile<any[]>(CUSTOM_QUIZZES_FILE)) || []
+                remote.unshift(quiz)
+                await writeDriveFile(CUSTOM_QUIZZES_FILE, remote)
+            } catch { /* Local save succeeded; SyncNotice provides cloud retry. */ }
+        }
 
-    return quiz
+        return quiz
+    })
 }
 
 export async function deleteCustomQuiz(quizId: string) {
-    const all = readJson<any[]>(CUSTOM_QUIZZES_KEY, [])
-    writeJson(CUSTOM_QUIZZES_KEY, all.filter(q => q.id !== quizId))
+    return queueLocalWrite('deleteCustomQuiz', async () => {
+        markDeleted('quizzes', quizId)
+        const all = readJson<any[]>(CUSTOM_QUIZZES_KEY, [])
+        writeJson(CUSTOM_QUIZZES_KEY, all.filter(q => q.id !== quizId))
 
-    if (isCloudActive()) {
-        const remote = (await readDriveFile<any[]>(CUSTOM_QUIZZES_FILE)) || []
-        await writeDriveFile(CUSTOM_QUIZZES_FILE, remote.filter(q => q.id !== quizId))
-    }
+        if (isCloudActive()) {
+            try {
+                const remote = (await readDriveFile<any[]>(CUSTOM_QUIZZES_FILE)) || []
+                await writeDriveFile(CUSTOM_QUIZZES_FILE, remote.filter(q => q.id !== quizId))
+            } catch { /* Local save succeeded; SyncNotice provides cloud retry. */ }
+        }
+    })
 }
 
 // ---------------------------------------------------------------------------
@@ -521,7 +623,8 @@ export async function updateDailyStats(userId: string, stats: {
     accuracy?: number
 }) {
     return queueLocalWrite(DAILY_STATS_KEY, async () => {
-        const today = new Date().toISOString().split('T')[0]
+        assertAccount(userId)
+        const today = localDate()
         const next = {
             user_id: userId,
             date: today,
@@ -538,81 +641,35 @@ export async function updateDailyStats(userId: string, stats: {
         writeJson(DAILY_STATS_KEY, all)
 
         if (isCloudActive()) {
-            const remote = (await readDriveFile<Record<string, any>>(DAILY_STATS_FILE)) || {}
-            remote[`${userId}:${today}`] = next
-            await writeDriveFile(DAILY_STATS_FILE, remote)
+            try {
+                const remote = (await readDriveFile<Record<string, any>>(DAILY_STATS_FILE)) || {}
+                remote[`${userId}:${today}`] = next
+                await writeDriveFile(DAILY_STATS_FILE, remote)
+            } catch { /* Local save succeeded; SyncNotice provides cloud retry. */ }
         }
     })
 }
 
 export async function getDailyStats(userId: string, date?: string) {
-    const targetDate = date || new Date().toISOString().split('T')[0]
-
-    if (isCloudActive()) {
-        const remote = await readDriveFile<Record<string, any>>(DAILY_STATS_FILE)
-        if (remote?.[`${userId}:${targetDate}`]) return remote[`${userId}:${targetDate}`]
-    }
-
-    const all = readJson<Record<string, any>>(DAILY_STATS_KEY, {})
+    if (userId !== currentAccountId()) return null
+    const targetDate = date || localDate()
+    const all = await getAllDailyStats()
     return all[`${userId}:${targetDate}`] || null
 }
 
 export async function getStreak(userId: string): Promise<number> {
-    let dates: string[] = []
-
-    if (isCloudActive()) {
-        const remote = await readDriveFile<Record<string, any>>(DAILY_STATS_FILE)
-        if (remote) {
-            dates = Object.values(remote)
-                .filter(d => d?.user_id === userId && d.date)
-                .map(d => d.date)
-                .sort()
-                .reverse()
-        }
-    }
-
-    if (dates.length === 0) {
-        const all = readJson<Record<string, any>>(DAILY_STATS_KEY, {})
-        dates = Object.values(all)
-            .filter(d => d?.user_id === userId && d.date)
-            .map(d => d.date)
-            .sort()
-            .reverse()
-    }
-
-    if (dates.length === 0) {
-        // Fall back to activity dates derived from word progress.
-        const progress = await getWordProgress(userId)
-        if (!progress || Object.keys(progress).length === 0) return 0
-        const activeDates = new Set<string>()
-        for (const p of Object.values(progress)) {
-            if (!p.lastSeen) continue
-            activeDates.add(new Date(p.lastSeen).toISOString().split('T')[0])
-        }
-        dates = Array.from(activeDates).sort().reverse()
-    }
-
-    if (dates.length === 0) return 0
-
+    const analytics = await getStudyAnalytics(userId)
+    const active = new Set(analytics.studyDays.filter(d => d.count > 0).map(d => d.date))
+    const progress = await getWordProgress(userId)
+    for (const p of Object.values(progress)) if (p.lastSeen) active.add(localDate(new Date(p.lastSeen)))
+    const day = new Date()
+    // Yesterday's streak remains alive until today's study opportunity ends.
+    if (!active.has(localDate(day))) day.setDate(day.getDate() - 1)
     let streak = 0
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-
-    for (let i = 0; i < dates.length; i++) {
-        const statDate = new Date(dates[i])
-        statDate.setHours(0, 0, 0, 0)
-
-        const expectedDate = new Date(today)
-        expectedDate.setDate(today.getDate() - i)
-        expectedDate.setHours(0, 0, 0, 0)
-
-        if (statDate.getTime() === expectedDate.getTime()) {
-            streak++
-        } else {
-            break
-        }
+    while (active.has(localDate(day))) {
+        streak++
+        day.setDate(day.getDate() - 1)
     }
-
     return streak
 }
 
@@ -624,14 +681,16 @@ export async function getFolders(): Promise<Folder[]> {
     const local = readJson<Folder[]>(FOLDERS_KEY, [])
 
     if (isCloudActive()) {
-        const remote = await readDriveFile<Folder[]>(FOLDERS_FILE)
-        if (remote) return remote
+        const remote = await readForDisplay<Folder[]>(FOLDERS_FILE)
+        if (remote) return withoutDeleted('folders', [...local, ...remote.filter(f => !local.some(l => l.id === f.id))])
     }
 
     return local
 }
 
 export async function createFolder(userId: string, name: string): Promise<Folder> {
+    return queueLocalWrite('createFolder', async () => {
+        assertAccount(userId)
     const folder: Folder = {
         id: typeof crypto !== 'undefined' && 'randomUUID' in crypto
             ? crypto.randomUUID()
@@ -642,59 +701,76 @@ export async function createFolder(userId: string, name: string): Promise<Folder
         created_at: new Date().toISOString()
     }
 
-    const all = await getFolders()
+    const all = readJson<Folder[]>(FOLDERS_KEY, [])
     all.push(folder)
     writeJson(FOLDERS_KEY, all)
 
     if (isCloudActive()) {
-        await writeDriveFile(FOLDERS_FILE, all)
+        try {
+            const remote = await readDriveFile<Folder[]>(FOLDERS_FILE) || []
+            await writeDriveFile(FOLDERS_FILE, [...all, ...remote.filter(f => !all.some(l => l.id === f.id))])
+        } catch { /* Local save succeeded; SyncNotice provides cloud retry. */ }
     }
 
-    return folder
+        return folder
+    })
 }
 
 export async function renameFolder(folderId: string, name: string) {
-    const all = readJson<Folder[]>(FOLDERS_KEY, []).map(f =>
-        f.id === folderId ? { ...f, name: name.trim() } : f
-    )
-    writeJson(FOLDERS_KEY, all)
-
-    if (isCloudActive()) {
-        const remote = (await readDriveFile<Folder[]>(FOLDERS_FILE)) || []
-        await writeDriveFile(FOLDERS_FILE, remote.map(f =>
+    return queueLocalWrite('renameFolder', async () => {
+        const all = readJson<Folder[]>(FOLDERS_KEY, []).map(f =>
             f.id === folderId ? { ...f, name: name.trim() } : f
-        ))
-    }
+        )
+        writeJson(FOLDERS_KEY, all)
+
+        if (isCloudActive()) {
+            try {
+                const remote = (await readDriveFile<Folder[]>(FOLDERS_FILE)) || []
+                await writeDriveFile(FOLDERS_FILE, remote.map(f =>
+                    f.id === folderId ? { ...f, name: name.trim() } : f
+                ))
+            } catch { /* Local save succeeded; SyncNotice provides cloud retry. */ }
+        }
+    })
 }
 
 export async function deleteFolder(folderId: string) {
-    const all = readJson<Folder[]>(FOLDERS_KEY, []).filter(f => f.id !== folderId)
-    writeJson(FOLDERS_KEY, all)
+    return queueLocalWrite('deleteFolder', async () => {
+        markDeleted('folders', folderId)
+        const all = readJson<Folder[]>(FOLDERS_KEY, []).filter(f => f.id !== folderId)
+        writeJson(FOLDERS_KEY, all)
 
-    if (isCloudActive()) {
-        const remote = (await readDriveFile<Folder[]>(FOLDERS_FILE)) || []
-        await writeDriveFile(FOLDERS_FILE, remote.filter(f => f.id !== folderId))
-    }
+        if (isCloudActive()) {
+            try {
+                const remote = (await readDriveFile<Folder[]>(FOLDERS_FILE)) || []
+                await writeDriveFile(FOLDERS_FILE, remote.filter(f => f.id !== folderId))
+            } catch { /* Local save succeeded; SyncNotice provides cloud retry. */ }
+        }
+    })
 }
 
 export async function setQuizInFolder(folderId: string | null, quizId: string) {
-    const all = readJson<Folder[]>(FOLDERS_KEY, []).map(f => {
-        const has = f.quiz_ids.includes(quizId)
-        if (f.id === folderId && !has) return { ...f, quiz_ids: [...f.quiz_ids, quizId] }
-        if (f.id !== folderId && has) return { ...f, quiz_ids: f.quiz_ids.filter(id => id !== quizId) }
-        return f
-    })
-    writeJson(FOLDERS_KEY, all)
-
-    if (isCloudActive()) {
-        const remote = (await readDriveFile<Folder[]>(FOLDERS_FILE)) || []
-        await writeDriveFile(FOLDERS_FILE, remote.map(f => {
+    return queueLocalWrite('setQuizInFolder', async () => {
+        const all = readJson<Folder[]>(FOLDERS_KEY, []).map(f => {
             const has = f.quiz_ids.includes(quizId)
             if (f.id === folderId && !has) return { ...f, quiz_ids: [...f.quiz_ids, quizId] }
             if (f.id !== folderId && has) return { ...f, quiz_ids: f.quiz_ids.filter(id => id !== quizId) }
             return f
-        }))
-    }
+        })
+        writeJson(FOLDERS_KEY, all)
+
+        if (isCloudActive()) {
+            try {
+                const remote = (await readDriveFile<Folder[]>(FOLDERS_FILE)) || []
+                await writeDriveFile(FOLDERS_FILE, remote.map(f => {
+                    const has = f.quiz_ids.includes(quizId)
+                    if (f.id === folderId && !has) return { ...f, quiz_ids: [...f.quiz_ids, quizId] }
+                    if (f.id !== folderId && has) return { ...f, quiz_ids: f.quiz_ids.filter(id => id !== quizId) }
+                    return f
+                }))
+            } catch { /* Local save succeeded; SyncNotice provides cloud retry. */ }
+        }
+    })
 }
 
 // ---------------------------------------------------------------------------
@@ -705,8 +781,8 @@ export async function getQuizStats(quizId: string): Promise<QuizStats | null> {
     const local = readJson<Record<string, QuizStats>>(QUIZ_STATS_KEY, {})
 
     if (isCloudActive()) {
-        const remote = await readDriveFile<Record<string, QuizStats>>(QUIZ_STATS_FILE)
-        if (remote?.[quizId]) return remote[quizId]
+        const remote = await readForDisplay<Record<string, QuizStats>>(QUIZ_STATS_FILE)
+        if (remote?.[quizId]) return mergeQuizStats(local, remote)[quizId]
     }
 
     return local[quizId] || null
@@ -715,7 +791,7 @@ export async function getQuizStats(quizId: string): Promise<QuizStats | null> {
 export async function recordQuizSession(
     quizId: string,
     quizName: string,
-    result: { correct: number; total: number; seconds?: number }
+    result: { correct: number; total: number; seconds?: number; id?: string }
 ): Promise<void> {
     if (quizId === 'guest' || !result.total) return
 
@@ -724,40 +800,39 @@ export async function recordQuizSession(
         const all = readJson<Record<string, QuizStats>>(QUIZ_STATS_KEY, {})
         const accuracy = Math.round((result.correct / result.total) * 100)
 
-        // A new device may have an empty local cache while Drive already has
-        // history. Read both sides before building the replacement record.
-        const remote = isCloudActive()
-            ? ((await readDriveFile<Record<string, QuizStats>>(QUIZ_STATS_FILE)) || {})
-            : {}
+        // Commit locally before attempting cloud reads so outages cannot lose a result.
         const localExisting = all[quizId]
-        const remoteExisting = remote[quizId]
-        const priorHistory = [...(localExisting?.history || []), ...(remoteExisting?.history || [])]
-            .filter((entry, index, entries) => entries.findIndex(other => other.date === entry.date && other.correct === entry.correct && other.total === entry.total) === index)
-            .sort((a, b) => a.date.localeCompare(b.date))
+        if (result.id && localExisting?.history.some(h => h.id === result.id)) return
+        const priorHistory = localExisting?.history || []
 
         const stats: QuizStats = {
-            plays: Math.max(localExisting?.plays || 0, remoteExisting?.plays || 0) + 1,
-            bestCorrect: Math.max(localExisting?.bestCorrect || 0, remoteExisting?.bestCorrect || 0, result.correct),
-            bestAccuracy: Math.max(localExisting?.bestAccuracy || 0, remoteExisting?.bestAccuracy || 0, accuracy),
+            plays: (localExisting?.plays || 0) + 1,
+            bestCorrect: Math.max(localExisting?.bestCorrect || 0, result.correct),
+            bestAccuracy: Math.max(localExisting?.bestAccuracy || 0, accuracy),
             lastStudied: now,
             quizName,
             history: [
                 ...priorHistory,
                 {
+                    id: result.id || crypto.randomUUID(),
                     date: now,
                     correct: result.correct,
                     total: result.total,
                     seconds: result.seconds
                 }
-            ].slice(-30)
+            ]
         }
 
         all[quizId] = stats
         writeJson(QUIZ_STATS_KEY, all)
 
         if (isCloudActive()) {
-            remote[quizId] = stats
-            await writeDriveFile(QUIZ_STATS_FILE, remote)
+            try {
+                const cloud = (await readDriveFile<Record<string, QuizStats>>(QUIZ_STATS_FILE)) || {}
+                const merged = mergeQuizStats(all, cloud)
+                await writeDriveFile(QUIZ_STATS_FILE, merged)
+                writeJson(QUIZ_STATS_KEY, merged)
+            } catch { /* Already saved locally; the sync notice offers a retry. */ }
         }
     })
 }
@@ -765,7 +840,7 @@ export async function recordQuizSession(
 export async function getRecentActivity(limit = 10): Promise<{ quizId: string; quizName: string; correct: number; total: number; seconds?: number; date: string }[]> {
     const all = readJson<Record<string, QuizStats>>(QUIZ_STATS_KEY, {})
     if (!Object.keys(all).length && isCloudActive()) {
-        const remote = await readDriveFile<Record<string, QuizStats>>(QUIZ_STATS_FILE)
+        const remote = await readForDisplay<Record<string, QuizStats>>(QUIZ_STATS_FILE)
         if (remote) {
             const merged = { ...all, ...remote }
             return flattenActivity(merged).slice(0, limit)
@@ -787,28 +862,20 @@ function flattenActivity(all: Record<string, QuizStats>) {
 async function getAllQuizStats(): Promise<Record<string, QuizStats>> {
     const local = readJson<Record<string, QuizStats>>(QUIZ_STATS_KEY, {})
     if (!isCloudActive()) return local
-    const remote = await readDriveFile<Record<string, QuizStats>>(QUIZ_STATS_FILE)
+    const remote = await readForDisplay<Record<string, QuizStats>>(QUIZ_STATS_FILE)
     if (!remote) return local
-    const merged: Record<string, QuizStats> = { ...local }
-    for (const [quizId, stats] of Object.entries(remote)) {
-        const existing = merged[quizId]
-        if (!existing) {
-            merged[quizId] = stats
-            continue
-        }
-        const history = [...(existing.history || []), ...(stats.history || [])]
-            .filter((entry, i, arr) => arr.findIndex(o => o.date === entry.date && o.correct === entry.correct && o.total === entry.total) === i)
-            .sort((a, b) => a.date.localeCompare(b.date))
-        merged[quizId] = { ...existing, ...stats, history }
-    }
-    return merged
+    return mergeQuizStats(local, remote)
 }
 
 async function getAllDailyStats(): Promise<Record<string, any>> {
     const local = readJson<Record<string, any>>(DAILY_STATS_KEY, {})
     if (!isCloudActive()) return local
-    const remote = await readDriveFile<Record<string, any>>(DAILY_STATS_FILE)
-    return remote ? { ...local, ...remote } : local
+    const remote = await readForDisplay<Record<string, any>>(DAILY_STATS_FILE)
+    const merged = { ...remote }
+    for (const [key, value] of Object.entries(local)) {
+        if (!merged[key] || (value.updated_at || '') >= (merged[key].updated_at || '')) merged[key] = value
+    }
+    return merged
 }
 
 export interface StudyAnalytics {
@@ -825,7 +892,7 @@ export async function getStudyAnalytics(userId: string): Promise<StudyAnalytics>
     const countsByDate = new Map<string, number>()
     for (const stats of Object.values(quizStats)) {
         for (const h of stats.history || []) {
-            const date = String(h.date || '').slice(0, 10)
+            const date = h.date ? localDate(new Date(h.date)) : ''
             if (!date) continue
             countsByDate.set(date, (countsByDate.get(date) || 0) + (h.total || 0))
         }
@@ -835,7 +902,7 @@ export async function getStudyAnalytics(userId: string): Promise<StudyAnalytics>
         const date = String(entry.date || '').slice(0, 10)
         if (!date) continue
         const answers = (Number(entry.words_learned) || 0) + (Number(entry.words_drilled) || 0) + (Number(entry.words_examined) || 0)
-        countsByDate.set(date, (countsByDate.get(date) || 0) + answers)
+        countsByDate.set(date, Math.max(countsByDate.get(date) || 0, answers))
     }
 
     let sessions = 0
@@ -869,7 +936,7 @@ export async function getStudyAnalytics(userId: string): Promise<StudyAnalytics>
     for (let i = 89; i >= 0; i--) {
         const d = new Date(today)
         d.setDate(today.getDate() - i)
-        const date = d.toISOString().split('T')[0]
+        const date = localDate(d)
         studyDays.push({ date, count: countsByDate.get(date) || 0 })
     }
 
@@ -882,70 +949,52 @@ export async function getStudyAnalytics(userId: string): Promise<StudyAnalytics>
 }
 
 // ---------------------------------------------------------------------------
-// One-time migration of guest (localStorage) data into the user's Drive
-// account. Called after a successful sign-in. Drive always wins on conflict.
+// Sync only the current account's data. Guest and unowned legacy data stay
+// separate. Reads must succeed before any remote file can be replaced.
 // ---------------------------------------------------------------------------
 
 export async function syncLocalToCloud(): Promise<boolean> {
-    if (!isCloudActive()) return false
-    if (typeof window === 'undefined') return false
-
-    const currentUserId = getDriveUser()?.id
-    const localQuizzes = readJson<any[]>(CUSTOM_QUIZZES_KEY, [])
-        .filter(q => q.user_id === 'guest' || q.user_id === currentUserId)
-    const progressStore = readProgressStore()
-    const localProgress = {
-        ...(progressStore.guest || {}),
-        ...(progressStore[currentUserId || ''] || {})
-    }
-    const localStats = readJson<Record<string, any>>(DAILY_STATS_KEY, {})
-
+    if (!isCloudActive() || typeof window === 'undefined') return false
+    const owner = currentAccountId()
+    let synced = false
     try {
-        // Quizzes: merge non-duplicates, Drive wins by id.
-        const remoteQuizzes = (await readDriveFile<any[]>(CUSTOM_QUIZZES_FILE)) || []
-        const remoteIds = new Set(remoteQuizzes.map(q => q.id))
-        const mergedQuizzes = [...remoteQuizzes, ...localQuizzes.filter(q => !remoteIds.has(q.id))]
-        if (remoteQuizzes.length || localQuizzes.length) {
+        await queueLocalWrite('sync', async () => {
+            const localQuizzes = readJson<any[]>(CUSTOM_QUIZZES_KEY, [])
+            const localProgress = readProgressStore()[owner] || {}
+            const localStats = readJson<Record<string, any>>(DAILY_STATS_KEY, {})
+            const localFolders = readJson<Folder[]>(FOLDERS_KEY, [])
+            const localQuizStats = readJson<Record<string, QuizStats>>(QUIZ_STATS_KEY, {})
+            const remoteQuizzes = await readDriveFile<any[]>(CUSTOM_QUIZZES_FILE) || []
+            const remoteProgress = await readDriveFile<ProgressMap>(PROGRESS_FILE) || {}
+            const remoteStats = await readDriveFile<Record<string, any>>(DAILY_STATS_FILE) || {}
+            const remoteFolders = await readDriveFile<Folder[]>(FOLDERS_FILE) || []
+            const remoteQuizStats = await readDriveFile<Record<string, QuizStats>>(QUIZ_STATS_FILE) || {}
+            const mergedQuizzes = withoutDeleted('quizzes', [...localQuizzes, ...remoteQuizzes.filter(q => !localQuizzes.some(l => l.id === q.id))])
+            const mergedProgress = mergeProgress(localProgress, remoteProgress)
+            const mergedStats = { ...remoteStats }
+            for (const [key, value] of Object.entries(localStats)) {
+                if (!mergedStats[key] || (value.updated_at || '') >= (mergedStats[key].updated_at || '')) mergedStats[key] = value
+            }
+            const mergedFolders = withoutDeleted('folders', [...localFolders, ...remoteFolders.filter(f => !localFolders.some(l => l.id === f.id))])
+            const mergedQuizStats = mergeQuizStats(localQuizStats, remoteQuizStats)
             await writeDriveFile(CUSTOM_QUIZZES_FILE, mergedQuizzes)
-        }
-
-        // Progress: Drive wins per word.
-        const remoteProgress = (await readDriveFile<Record<string, WordProgress>>(PROGRESS_FILE)) || {}
-        const mergedProgress = { ...localProgress, ...remoteProgress }
-        if (Object.keys(localProgress).length || Object.keys(remoteProgress).length) {
             await writeDriveFile(PROGRESS_FILE, mergedProgress)
-        }
-
-        // Stats: Drive wins per user/date key.
-        const remoteStats = (await readDriveFile<Record<string, any>>(DAILY_STATS_FILE)) || {}
-        const mergedStats = { ...localStats, ...remoteStats }
-        if (Object.keys(localStats).length || Object.keys(remoteStats).length) {
             await writeDriveFile(DAILY_STATS_FILE, mergedStats)
-        }
-
-        // Folders: Drive wins by id.
-        const localFolders = readJson<Folder[]>(FOLDERS_KEY, [])
-            .filter(f => f.user_id === 'guest' || f.user_id === currentUserId)
-        const remoteFolders = (await readDriveFile<Folder[]>(FOLDERS_FILE)) || []
-        const remoteFolderIds = new Set(remoteFolders.map(f => f.id))
-        const mergedFolders = [...remoteFolders, ...localFolders.filter(f => !remoteFolderIds.has(f.id))]
-        if (remoteFolders.length || localFolders.length) {
             await writeDriveFile(FOLDERS_FILE, mergedFolders)
-        }
-
-        // Quiz stats: Drive wins per quiz id.
-        const localQuizStats = readJson<Record<string, QuizStats>>(QUIZ_STATS_KEY, {})
-        const remoteQuizStats = (await readDriveFile<Record<string, QuizStats>>(QUIZ_STATS_FILE)) || {}
-        const mergedQuizStats = { ...localQuizStats, ...remoteQuizStats }
-        if (Object.keys(localQuizStats).length || Object.keys(remoteQuizStats).length) {
             await writeDriveFile(QUIZ_STATS_FILE, mergedQuizStats)
-        }
-
-        return true
-    } catch (error) {
-        console.error('Local->Drive sync failed (local data preserved):', error)
-        return false
+            assertAccount(owner)
+            writeJson(CUSTOM_QUIZZES_KEY, mergedQuizzes)
+            writeJson(PROGRESS_KEY, { [owner]: mergedProgress })
+            writeJson(DAILY_STATS_KEY, mergedStats)
+            writeJson(FOLDERS_KEY, mergedFolders)
+            writeJson(QUIZ_STATS_KEY, mergedQuizStats)
+            setSyncMessage('', owner)
+            synced = true
+        })
+    } catch {
+        setSyncMessage('Cloud sync failed. Your local data is preserved; reconnect and retry.', owner)
     }
+    return synced
 }
 
 // ---------------------------------------------------------------------------

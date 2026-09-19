@@ -3,11 +3,13 @@ import './globals.css'
 import { AuthProvider } from './contexts/AuthContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import ServiceWorker from './components/ServiceWorker'
+import SyncNotice from './components/SyncNotice'
+import { assetPath } from './lib/paths'
 
 export const metadata: Metadata = {
   title: 'OpenQuiz - Learn | Master',
   description: 'Make and master quizzes with free pre-made sets, flashcards, simulations and match games.',
-  manifest: '/manifest.webmanifest',
+  manifest: assetPath('/manifest.webmanifest'),
 }
 
 export default function RootLayout({
@@ -20,6 +22,7 @@ export default function RootLayout({
       <body>
         <ThemeProvider>
           <AuthProvider>
+            <SyncNotice />
             {children}
           </AuthProvider>
         </ThemeProvider>
