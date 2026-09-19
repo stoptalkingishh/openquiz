@@ -1,14 +1,16 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Question, SimulationStep } from '../lib/satTypes'
 import { Eye, Check, X, BookOpen, ChevronRight, ChevronLeft, RotateCcw, ClipboardList } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 interface QuestionCardProps {
     question: Question
-    onAnswer: (correct: boolean, chosen?: string | number | boolean | null, question?: Question) => void
+    onAnswer: (correct: boolean, chosen?: string | number | boolean | null, question?: Question, quality?: number) => void
+    onContinue?: (question?: Question) => void
     onRate?: (quality: number) => void
+    answered?: { correct: boolean; chosen: string | number | boolean | null }
 }
 
 const RATINGS: { label: string; quality: number; className: string }[] = [
@@ -49,37 +51,84 @@ function MediaImage({ image }: { image?: string }) {
     )
 }
 
-export default function QuestionCard({ question, onAnswer, onRate }: QuestionCardProps) {
+export default function QuestionCard({ question, onAnswer, onContinue, onRate, answered }: QuestionCardProps) {
+    // A parent history update after submitting must not replace the feedback
+    // card mid-review. On a genuine revisit the component mounts with the
+    // record already present, so show a short read-only review instead.
+    const initiallyAnswered = useRef(Boolean(answered))
+    if (initiallyAnswered.current && answered) {
+        return <AnsweredReview question={question} record={answered} onContinue={onContinue} />
+    }
     if (question.type === 'recall') {
-        return <RecallCard question={question} onAnswer={onAnswer} onRate={onRate} />
+        return <RecallCard question={question} onAnswer={onAnswer} onContinue={onContinue} onRate={onRate} />
     }
     if (question.type === 'simple_usage' || question.type === 'sat_cloze') {
-        return <MultipleChoiceCard question={question} onAnswer={onAnswer} onRate={onRate} />
+        return <MultipleChoiceCard question={question} onAnswer={onAnswer} onContinue={onContinue} onRate={onRate} />
     }
     if (question.type === 'generic_mc') {
-        return <GenericMultipleChoiceCard question={question} onAnswer={onAnswer} />
+        return <GenericMultipleChoiceCard question={question} onAnswer={onAnswer} onContinue={onContinue} />
     }
     if (question.type === 'generic_tf') {
-        return <GenericTrueFalseCard question={question} onAnswer={onAnswer} />
+        return <GenericTrueFalseCard question={question} onAnswer={onAnswer} onContinue={onContinue} />
     }
     if (question.type === 'generic_flashcard') {
-        return <GenericFlashcardCard question={question} onAnswer={onAnswer} />
+        return <GenericFlashcardCard question={question} onAnswer={onAnswer} onContinue={onContinue} />
     }
     if (question.type === 'generic_written') {
-        return <GenericWrittenCard question={question} onAnswer={onAnswer} />
+        return <GenericWrittenCard question={question} onAnswer={onAnswer} onContinue={onContinue} />
     }
     if (question.type === 'simulation') {
-        return <SimulationCard question={question} onAnswer={onAnswer} />
+        return <SimulationCard question={question} onAnswer={onAnswer} onContinue={onContinue} />
     }
     return <div>Unknown question type</div>
 }
 
-function RecallCard({ question, onAnswer, onRate }: QuestionCardProps) {
+function AnsweredReview({ question, record, onContinue }: {
+    question: Question
+    record: { correct: boolean; chosen: string | number | boolean | null }
+    onContinue?: (question?: Question) => void
+}) {
+    const payload = question.payload || {}
+    const options = Array.isArray(payload.options) ? payload.options : []
+    const answer = question.type === 'generic_tf'
+        ? (payload.correctAnswer ? 'True' : 'False')
+        : question.type === 'recall'
+            ? payload.ru || ''
+            : question.type === 'generic_mc' || question.type === 'simple_usage' || question.type === 'sat_cloze'
+                ? options[payload.correctIndex ?? 0] || ''
+                : payload.answer || ''
+    return (
+        <div className="flex flex-col items-center justify-center h-full max-w-2xl mx-auto w-full px-4">
+            <div className="card w-full p-8 text-center space-y-4">
+                <div className={`text-xl font-bold ${record.correct ? 'text-secondary dark:text-secondary-light' : 'text-error dark:text-error-light'}`}>
+                    {record.correct ? 'Answer recorded' : 'Review recorded'}
+                </div>
+                <p className="text-neutral-600 dark:text-neutral-300">This question is already complete.</p>
+                <div className="p-4 rounded-xl bg-primary/5 dark:bg-primary/10 text-left">
+                    <p className="text-xs uppercase font-bold text-neutral-500 dark:text-neutral-400">Correct answer</p>
+                    <p className="font-semibold text-neutral-900 dark:text-neutral-100">{answer || '—'}</p>
+                </div>
+                <button onClick={() => onContinue?.(question)} className="w-full btn-primary h-14 text-lg font-bold">
+                    Continue
+                </button>
+            </div>
+        </div>
+    )
+}
+
+function RecallCard({ question, onAnswer, onContinue }: QuestionCardProps) {
     const [revealed, setRevealed] = useState(false)
+    const [submitted, setSubmitted] = useState(false)
     const { word, ru, synonyms, example } = question.payload
     const syns = Array.isArray(synonyms) ? synonyms : []
     const ruText = ru || ''
     const exampleText = example || ''
+
+    const submit = (quality: number) => {
+        if (submitted) return
+        setSubmitted(true)
+        onAnswer(quality >= 3, quality >= 3 ? ruText : null, question, quality)
+    }
 
     return (
         <div className="flex flex-col items-center justify-center h-full max-w-2xl mx-auto w-full px-4">
@@ -144,32 +193,34 @@ function RecallCard({ question, onAnswer, onRate }: QuestionCardProps) {
                     animate={{ opacity: 1, y: 0 }}
                     className="w-full"
                 >
-                    <div className="grid grid-cols-2 gap-4 w-full">
+                    {!submitted && <div className="grid grid-cols-2 gap-4 w-full">
                         <button
-                            onClick={() => onAnswer(false)}
+                            onClick={() => submit(1)}
                             className="btn-outline h-14 text-base font-bold"
                         >
                             <X className="w-5 h-5" />
                             Didn&apos;t Know
                         </button>
                         <button
-                            onClick={() => onAnswer(true)}
+                            onClick={() => submit(4)}
                             className="btn-primary h-14 text-base font-bold"
                         >
                             <Check className="w-5 h-5" />
                             Got It!
                         </button>
-                    </div>
-                    <SelfRatingButtons onRate={onRate} />
+                    </div>}
+                    {!submitted && <SelfRatingButtons onRate={submit} />}
+                    {submitted && <button onClick={() => onContinue?.(question)} className="w-full btn-primary h-14 text-base font-bold">Continue</button>}
                 </motion.div>
             )}
         </div>
     )
 }
 
-function MultipleChoiceCard({ question, onAnswer, onRate }: QuestionCardProps) {
+function MultipleChoiceCard({ question, onAnswer, onContinue }: QuestionCardProps) {
     const [selected, setSelected] = useState<number | null>(null)
     const [submitted, setSubmitted] = useState(false)
+    const [reported, setReported] = useState(false)
 
     const { sentence, options, correctIndex } = question.payload
     const opts = Array.isArray(options) ? options : []
@@ -183,13 +234,14 @@ function MultipleChoiceCard({ question, onAnswer, onRate }: QuestionCardProps) {
     const handleSubmit = () => {
         if (selected === null) return
         setSubmitted(true)
-
-        setTimeout(() => {
-            onAnswer(selected === correctIndex, opts[selected] || null, question)
-        }, 3000) // Give time to read the explanation
     }
 
     const isCorrect = selected === correctIndex
+    const submit = (quality = isCorrect ? 4 : 1) => {
+        if (selected === null || reported) return
+        setReported(true)
+        onAnswer(isCorrect, opts[selected] || null, question, quality)
+    }
 
     return (
         <div className="flex flex-col h-full max-w-3xl mx-auto w-full px-4">
@@ -323,7 +375,10 @@ function MultipleChoiceCard({ question, onAnswer, onRate }: QuestionCardProps) {
                                     </div>
                                 </div>
                             </div>
-                            <SelfRatingButtons onRate={onRate} />
+                            <SelfRatingButtons onRate={submit} />
+                            <button onClick={() => { submit(); onContinue?.(question) }} className="w-full btn-primary h-14 text-base font-bold mt-3">
+                                Continue
+                            </button>
                         </div>
                     </motion.div>
                 )}
@@ -336,9 +391,10 @@ function MultipleChoiceCard({ question, onAnswer, onRate }: QuestionCardProps) {
 // Generic (manual) question cards
 // ---------------------------------------------------------------------------
 
-function GenericMultipleChoiceCard({ question, onAnswer }: QuestionCardProps) {
+function GenericMultipleChoiceCard({ question, onAnswer, onContinue }: QuestionCardProps) {
     const [selected, setSelected] = useState<number | null>(null)
     const [submitted, setSubmitted] = useState(false)
+    const [reported, setReported] = useState(false)
 
     const { prompt, options, correctIndex, explanation } = question.payload
     const opts = Array.isArray(options) ? options : []
@@ -348,12 +404,14 @@ function GenericMultipleChoiceCard({ question, onAnswer }: QuestionCardProps) {
     const handleSubmit = () => {
         if (selected === null) return
         setSubmitted(true)
-        setTimeout(() => {
-            onAnswer(selected === correctIndex, opts[selected] || null, question)
-        }, 3500)
     }
 
     const isCorrect = selected === correctIndex
+    const submit = (quality = isCorrect ? 4 : 1) => {
+        if (selected === null || reported) return
+        setReported(true)
+        onAnswer(isCorrect, opts[selected] || null, question, quality)
+    }
 
     return (
         <div className="flex flex-col h-full max-w-3xl mx-auto w-full px-4">
@@ -462,6 +520,10 @@ function GenericMultipleChoiceCard({ question, onAnswer }: QuestionCardProps) {
                                     )}
                                 </div>
                             </div>
+                            <SelfRatingButtons onRate={submit} />
+                            <button onClick={() => { submit(); onContinue?.(question) }} className="w-full btn-primary h-14 text-base font-bold mt-3">
+                                Continue
+                            </button>
                         </div>
                     </motion.div>
                 )}
@@ -470,21 +532,24 @@ function GenericMultipleChoiceCard({ question, onAnswer }: QuestionCardProps) {
     )
 }
 
-function GenericTrueFalseCard({ question, onAnswer }: QuestionCardProps) {
+function GenericTrueFalseCard({ question, onAnswer, onContinue }: QuestionCardProps) {
     const [selected, setSelected] = useState<boolean | null>(null)
     const [submitted, setSubmitted] = useState(false)
+    const [reported, setReported] = useState(false)
 
     const { prompt, correctAnswer, explanation } = question.payload
 
     const handleSubmit = (value: boolean) => {
         setSelected(value)
         setSubmitted(true)
-        setTimeout(() => {
-            onAnswer(value === correctAnswer, value ? 'True' : 'False', question)
-        }, 3500)
     }
 
     const isCorrect = selected === correctAnswer
+    const submit = (quality = isCorrect ? 4 : 1) => {
+        if (selected === null || reported) return
+        setReported(true)
+        onAnswer(isCorrect, selected ? 'True' : 'False', question, quality)
+    }
 
     return (
         <div className="flex flex-col h-full max-w-3xl mx-auto w-full px-4">
@@ -584,6 +649,10 @@ function GenericTrueFalseCard({ question, onAnswer }: QuestionCardProps) {
                                     )}
                                 </div>
                             </div>
+                            <SelfRatingButtons onRate={submit} />
+                            <button onClick={() => { submit(); onContinue?.(question) }} className="w-full btn-primary h-14 text-base font-bold mt-3">
+                                Continue
+                            </button>
                         </div>
                     </motion.div>
                 )}
@@ -592,9 +661,16 @@ function GenericTrueFalseCard({ question, onAnswer }: QuestionCardProps) {
     )
 }
 
-function GenericFlashcardCard({ question, onAnswer }: QuestionCardProps) {
+function GenericFlashcardCard({ question, onAnswer, onContinue }: QuestionCardProps) {
     const [revealed, setRevealed] = useState(false)
+    const [submitted, setSubmitted] = useState(false)
     const { prompt, answer, explanation } = question.payload
+
+    const submit = (quality: number) => {
+        if (submitted) return
+        setSubmitted(true)
+        onAnswer(quality >= 3, quality >= 3 ? answer : null, question, quality)
+    }
 
     return (
         <div className="flex flex-col items-center justify-center h-full max-w-2xl mx-auto w-full px-4">
@@ -638,21 +714,21 @@ function GenericFlashcardCard({ question, onAnswer }: QuestionCardProps) {
                 )}
             </div>
 
-            {revealed && (
+            {revealed && !submitted && (
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     className="grid grid-cols-2 gap-4 w-full"
                 >
                     <button
-                        onClick={() => onAnswer(false)}
+                        onClick={() => submit(1)}
                         className="btn-outline h-14 text-base font-bold"
                     >
                         <X className="w-5 h-5" />
                         Didn&apos;t Know
                     </button>
                     <button
-                        onClick={() => onAnswer(true)}
+                        onClick={() => submit(4)}
                         className="btn-primary h-14 text-base font-bold"
                     >
                         <Check className="w-5 h-5" />
@@ -660,13 +736,16 @@ function GenericFlashcardCard({ question, onAnswer }: QuestionCardProps) {
                     </button>
                 </motion.div>
             )}
+            {revealed && !submitted && <SelfRatingButtons onRate={submit} />}
+            {submitted && <button onClick={() => onContinue?.(question)} className="w-full btn-primary h-14 text-base font-bold">Continue</button>}
         </div>
     )
 }
 
-function GenericWrittenCard({ question, onAnswer }: QuestionCardProps) {
+function GenericWrittenCard({ question, onAnswer, onContinue }: QuestionCardProps) {
     const [value, setValue] = useState('')
     const [submitted, setSubmitted] = useState(false)
+    const [reported, setReported] = useState(false)
 
     const { prompt, answer, explanation } = question.payload
 
@@ -680,10 +759,13 @@ function GenericWrittenCard({ question, onAnswer }: QuestionCardProps) {
     const handleSubmit = () => {
         if (!value.trim()) return
         setSubmitted(true)
-        const correct = normalize(value) === normalize(answer || '')
-        setTimeout(() => {
-            onAnswer(correct, value, question)
-        }, 3500)
+    }
+
+    const correct = normalize(value) === normalize(answer || '')
+    const submit = (quality = correct ? 4 : 1) => {
+        if (!value.trim() || reported) return
+        setReported(true)
+        onAnswer(correct, value, question, quality)
     }
 
     return (
@@ -777,6 +859,10 @@ function GenericWrittenCard({ question, onAnswer }: QuestionCardProps) {
                                     )}
                                 </div>
                             </div>
+                            <SelfRatingButtons onRate={submit} />
+                            <button onClick={() => { submit(); onContinue?.(question) }} className="w-full btn-primary h-14 text-base font-bold mt-3">
+                                Continue
+                            </button>
                         </div>
                     </motion.div>
                 )}
@@ -878,7 +964,7 @@ function PlacementEditor({ step, answers, onSetSlot, chip }: {
     )
 }
 
-function SimulationCard({ question, onAnswer }: QuestionCardProps) {
+function SimulationCard({ question, onAnswer, onContinue }: QuestionCardProps) {
     const steps: SimulationStep[] = Array.isArray(question.payload?.steps) ? question.payload.steps : []
     const [stepIdx, setStepIdx] = useState(0)
     const [submitted, setSubmitted] = useState(false)
@@ -1063,7 +1149,7 @@ function SimulationCard({ question, onAnswer }: QuestionCardProps) {
                             </div>
 
                             <button
-                                onClick={() => onAnswer(allCorrect, null, question)}
+                                onClick={() => { onAnswer(allCorrect, null, question, allCorrect ? 4 : 1); onContinue?.(question) }}
                                 className="w-full btn-primary mt-4 py-3"
                             >
                                 Continue

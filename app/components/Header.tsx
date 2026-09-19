@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Zap, Flame, Sun, Moon } from 'lucide-react'
+import { Flame, Sun, Moon } from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext'
 import Logo from './Logo'
 
@@ -59,11 +59,6 @@ export default function Header({ streak = 0 }: HeaderProps) {
                     <div className="flex items-center gap-1 bg-orange-100 dark:bg-orange-900/30 px-2.5 sm:px-3 py-1.5 rounded-xl" title="Day streak">
                         <Flame className="w-4 h-4 text-orange-500 fill-orange-500" />
                         <span className="font-bold text-sm text-orange-600 dark:text-orange-400">{streak}</span>
-                    </div>
-
-                    <div className="hidden sm:flex items-center gap-1 bg-blue-100 dark:bg-blue-900/30 px-3 py-1.5 rounded-xl" title="XP">
-                        <Zap className="w-4 h-4 text-blue-500 fill-blue-500" />
-                        <span className="font-bold text-sm text-blue-600 dark:text-blue-400">450</span>
                     </div>
 
                     <button

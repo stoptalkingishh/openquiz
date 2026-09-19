@@ -968,7 +968,7 @@ Remember:
                         if (q.kind === 'multiple_choice') {
                             return {
                                 ...q,
-                                options: (q.options || []).map(o => o.trim()).filter(Boolean)
+                                options: (q.options || []).map(o => o.trim())
                             }
                         }
                         return q
@@ -978,9 +978,9 @@ Remember:
                     throw new Error('Add at least one question with a prompt')
                 }
 
-                const mcInvalid = cleanQuestions.find(q => q.kind === 'multiple_choice' && (q.options || []).length < 2)
+                const mcInvalid = cleanQuestions.find(q => q.kind === 'multiple_choice' && ((q.options || []).length < 2 || (q.options || []).some(o => !o)))
                 if (mcInvalid) {
-                    throw new Error('Every multiple-choice question needs at least 2 options')
+                    throw new Error('Every multiple-choice question needs at least 2 non-empty options. Fill or remove blank options before saving.')
                 }
 
                 await createCustomQuiz(user.id, name, description, [], isPublic, authorName || undefined, cleanQuestions, tags)
@@ -1003,9 +1003,9 @@ Remember:
             return
         }
 
-        saveAiSettings(aiSettings)
         setAiGenerating(true)
         try {
+            saveAiSettings(aiSettings)
             const { words, questions } = await generateQuizFromNotes(aiNotes.trim(), aiSettings)
             if (questions.length) {
                 await createCustomQuiz(user.id, name, description, [], isPublic, authorName || undefined, questions)

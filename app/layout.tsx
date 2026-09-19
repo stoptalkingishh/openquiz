@@ -3,6 +3,7 @@ import './globals.css'
 import { AuthProvider } from './contexts/AuthContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import ServiceWorker from './components/ServiceWorker'
+import SyncNotice from './components/SyncNotice'
 import { assetPath } from './lib/paths'
 
 export const metadata: Metadata = {
@@ -21,6 +22,7 @@ export default function RootLayout({
       <body>
         <ThemeProvider>
           <AuthProvider>
+            <SyncNotice />
             {children}
           </AuthProvider>
         </ThemeProvider>

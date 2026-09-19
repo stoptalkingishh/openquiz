@@ -48,7 +48,7 @@ export function updateProgress(prev: WordProgress | undefined, correct: boolean,
 
     // SM-2-lite: quality (0–5) either comes from an explicit self-rating or is
     // derived from the boolean result (correct → "Good", wrong → "Again").
-    const q = quality != null ? quality : (correct ? 4 : 1);
+    const q = Math.max(0, Math.min(5, quality != null ? quality : (correct ? 4 : 1)));
     const ease = Math.max(1.3, (base.ease ?? 2.5) + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02)));
 
     let repetitions = base.repetitions || 0;
@@ -64,10 +64,21 @@ export function updateProgress(prev: WordProgress | undefined, correct: boolean,
 
     const nextDue = now + interval * 24 * 60 * 60 * 1000;
 
-    const strength = Math.min(1, Math.max(0, (ease - 1.3) / 1.7));
+    // Ease describes how quickly this card's interval grows. It does not by
+    // itself describe retention: a first "Good" review leaves ease at its
+    // default value forever. Derive strength from successful repetitions and
+    // the interval being retained, while letting a failed review decay it.
+    const previousStrength = Math.max(0, Math.min(1, base.strength || 0));
+    const repetitionScore = Math.min(1, repetitions / 5);
+    const retentionScore = interval > 0 ? Math.min(1, Math.log2(interval + 1) / 5) : 0;
+    const qualityScore = q / 5;
+    const successfulStrength = 0.45 * repetitionScore + 0.35 * retentionScore + 0.2 * qualityScore;
+    const strength = q < 3
+        ? Math.max(0, previousStrength - 0.25)
+        : Math.min(1, Math.max(successfulStrength, previousStrength + 0.1));
 
     let status: 'new' | 'learning' | 'mastered' = 'learning';
-    if (strength > 0.8) status = 'mastered';
+    if (strength >= 0.8 && repetitions >= 4) status = 'mastered';
 
     return {
         ...base,
@@ -281,17 +292,39 @@ export function buildQuestionSession(
     mode: SessionMode,
     questions: QuizQuestion[],
     progressMap: Record<string, WordProgress>,
-    limit?: number
+    limit?: number,
+    progressKeyPrefix = ''
 ): Question[] {
     let list: QuizQuestion[] = [...questions];
+    const progressKey = (id: string) => progressKeyPrefix ? `${progressKeyPrefix}::${id}` : id;
 
     if (mode === 'mistakes') {
         list = list.filter(q => {
-            const p = progressMap[q.id];
+            const p = progressMap[progressKey(q.id)];
             return p && (p.wrongStreak || 0) > 0;
         });
         if (list.length === 0) return [];
     }
+
+    // Shuffle the complete candidate set before applying the limit. The old
+    // slice-before-shuffle behavior permanently excluded questions after the
+    // first page of a large quiz. Weak/due questions get a deterministic head
+    // start, with random order inside each priority tier.
+    const now = Date.now();
+    list = shuffle(list)
+        .map((q, position) => {
+            const progress = progressMap[progressKey(q.id)];
+            const isNew = !progress || (progress.seenCount || 0) === 0;
+            const due = !!progress?.nextDue && progress.nextDue <= now;
+            const weakness = 1 - (progress?.strength || 0);
+            const mistakes = progress?.wrongStreak || 0;
+            // Reviews that are due or repeatedly missed should outrank a
+            // merely unseen item; unseen items still fill the remainder.
+            const priority = (due ? 2000 : 0) + mistakes * 300 + weakness * 500 + (isNew ? 250 : 0);
+            return { q, priority, position };
+        })
+        .sort((a, b) => b.priority - a.priority || a.position - b.position)
+        .map(entry => entry.q);
 
     if (limit !== undefined) {
         list = list.slice(0, limit);
@@ -302,8 +335,11 @@ export function buildQuestionSession(
         .flatMap((q): Question[] => {
         const base = {
             id: q.id,
-            word: q.id,
-            image: q.image || ''
+            // Keep the authored display word when present. The scoped key is
+            // carried separately and is only used for progress persistence.
+            word: (q as QuizQuestion & { word?: string }).word || q.id,
+            image: q.image || '',
+            progressKey: progressKey(q.id)
         };
 
         if (q.kind === 'simulation') {
@@ -318,6 +354,21 @@ export function buildQuestionSession(
             }];
         }
 
+        if (mode === 'write' && q.kind === 'multiple_choice') {
+            const options = (q.options || []).filter(o => typeof o === 'string');
+            const correctIndex = typeof q.correctIndex === 'number' && q.correctIndex >= 0 && q.correctIndex < options.length
+                ? q.correctIndex
+                : 0;
+            return [{
+                ...base,
+                type: 'generic_written' as const,
+                payload: {
+                    prompt: q.prompt,
+                    answer: options[correctIndex] || '',
+                    explanation: q.explanation || ''
+                }
+            }];
+        }
         if (q.kind === 'multiple_choice') {
             const options = (q.options || []).filter(o => typeof o === 'string');
             let correctIndex = 0;
@@ -332,6 +383,17 @@ export function buildQuestionSession(
                     prompt: q.prompt,
                     options,
                     correctIndex,
+                    explanation: q.explanation || ''
+                }
+            }];
+        }
+        if (mode === 'write' && q.kind === 'true_false') {
+            return [{
+                ...base,
+                type: 'generic_written' as const,
+                payload: {
+                    prompt: q.prompt,
+                    answer: q.correctAnswer ? 'True' : 'False',
                     explanation: q.explanation || ''
                 }
             }];
