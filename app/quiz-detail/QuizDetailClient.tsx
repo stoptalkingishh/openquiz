@@ -111,7 +111,10 @@ export default function QuizDetailClient() {
         router.push('/quizzes')
     }
 
-    const quizStorageId = quiz.isCustom ? (quizId || '') : (quiz.file_path || '')
+    // `quiz` starts as null on the first render, so every dereference here
+    // must be optional-chained — the `if (!quiz)` guard below only exists
+    // after the early-return checks, and `quizStorageId` is computed above it.
+    const quizStorageId = quiz?.isCustom ? (quizId || '') : (quiz?.file_path || '')
 
     const handleFolderSelect = async (folderId: string | null) => {
         await setQuizInFolder(folderId, quizStorageId)
