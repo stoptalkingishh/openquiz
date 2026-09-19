@@ -10,6 +10,9 @@ export const metadata: Metadata = {
   title: 'OpenQuiz - Learn | Master',
   description: 'Make and master quizzes with free pre-made sets, flashcards, simulations and match games.',
   manifest: assetPath('/manifest.webmanifest'),
+  icons: {
+    icon: assetPath('/favicon.svg'),
+  },
 }
 
 export default function RootLayout({

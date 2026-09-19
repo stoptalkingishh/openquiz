@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import {
     X, ChevronLeft, ChevronRight, Volume2, Pause, VolumeX,
     Check, Search, BookOpen,
@@ -70,6 +70,7 @@ export default function SessionMenu({
     onPrev, onNext, onGoogleSearch
 }: SessionMenuProps) {
     const [speaking, setSpeaking] = useState(false)
+    const reduceMotion = useReducedMotion()
     const panelRef = useRef<HTMLDivElement>(null)
     const onCloseRef = useRef(onClose)
     const ttsOk = ttsAvailable()
@@ -177,10 +178,12 @@ export default function SessionMenu({
                         className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
                     />
                     <motion.div
-                        initial={{ x: '100%' }}
-                        animate={{ x: 0 }}
-                        exit={{ x: '100%' }}
-                        transition={{ type: 'tween', duration: 0.25, ease: 'easeOut' }}
+                        initial={reduceMotion ? { opacity: 0 } : { x: '100%' }}
+                        animate={reduceMotion ? { opacity: 1 } : { x: 0 }}
+                        exit={reduceMotion ? { opacity: 0 } : { x: '100%' }}
+                        transition={reduceMotion
+                            ? { duration: 0.15 }
+                            : { type: 'tween', duration: 0.25, ease: 'easeOut' }}
                         ref={panelRef}
                         role="dialog"
                         aria-modal="true"
@@ -237,7 +240,7 @@ export default function SessionMenu({
                                     {speaking && (
                                         <button
                                             onClick={stopReading}
-                                            className="w-full py-3 rounded-xl bg-error/10 text-error dark:text-error-light font-semibold flex items-center justify-center gap-2"
+                                            className="w-full py-3 rounded-xl bg-error/10 text-error dark:text-red-300 font-semibold flex items-center justify-center gap-2"
                                         >
                                             <VolumeX className="w-5 h-5" /> Stop reading
                                         </button>
@@ -280,7 +283,7 @@ export default function SessionMenu({
                                     {history ? (
                                         <div className={`flex items-center gap-2 text-sm font-semibold ${history.correct
                                                 ? 'text-secondary dark:text-secondary-light'
-                                                : 'text-error dark:text-error-light'
+                                                : 'text-error dark:text-red-300'
                                             }`}>
                                             {history.correct ? <Check className="w-4 h-4" /> : <X className="w-4 h-4" />}
                                             {history.correct ? 'Correct' : 'Incorrect'}
@@ -293,7 +296,7 @@ export default function SessionMenu({
 
                                     {prompt && (
                                         <div>
-                                            <p className="text-[10px] uppercase text-neutral-400 font-bold mb-1">You chose</p>
+                                            <p className="text-[10px] uppercase text-neutral-600 dark:text-neutral-400 font-bold mb-1">You chose</p>
                                             <p className="text-sm text-neutral-700 dark:text-neutral-300 break-words">
                                                 {history?.chosen && history.chosen !== '' ? history.chosen : '—'}
                                             </p>
@@ -301,7 +304,7 @@ export default function SessionMenu({
                                     )}
 
                                     <div>
-                                        <p className="text-[10px] uppercase text-neutral-400 font-bold mb-1">Correct answer</p>
+                                        <p className="text-[10px] uppercase text-neutral-600 dark:text-neutral-400 font-bold mb-1">Correct answer</p>
                                         <p className="text-sm font-semibold text-secondary dark:text-secondary-light break-words">
                                             {correct || '—'}
                                         </p>
@@ -309,7 +312,7 @@ export default function SessionMenu({
 
                                     {explanation && (
                                         <div className="bg-white/50 dark:bg-neutral-800/50 rounded-xl p-3">
-                                            <p className="text-[10px] uppercase text-neutral-400 font-bold mb-1">Why</p>
+                                            <p className="text-[10px] uppercase text-neutral-600 dark:text-neutral-400 font-bold mb-1">Why</p>
                                             <p className="text-sm text-neutral-800 dark:text-neutral-200">{explanation}</p>
                                         </div>
                                     )}

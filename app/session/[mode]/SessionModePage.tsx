@@ -45,6 +45,8 @@ export default function SessionModePage() {
     const finishedRef = useRef(false)
     const sessionIdRef = useRef<string | null>(null)
     const pendingFinishRef = useRef<{ correct: number; total: number } | null>(null)
+    const exitTriggerRef = useRef<HTMLButtonElement>(null)
+    const exitDialogRef = useRef<HTMLDivElement>(null)
     const reduceMotion = useReducedMotion()
 
     // Reflect TTS state so a floating "reading" pill can appear even while the
@@ -270,12 +272,21 @@ export default function SessionModePage() {
         const onKeyDown = (e: KeyboardEvent) => {
             const tag = (e.target as HTMLElement | null)?.tagName?.toLowerCase()
             if (tag === 'input' || tag === 'textarea' || tag === 'select' || tag === 'button') return
-            if (e.key === 'ArrowLeft') goPrev()
-            else if (e.key === 'ArrowRight') goNext()
+            // Don't hijack arrows while the exit dialog or tools drawer is open.
+            if (showExitConfirm || menuOpen) return
+            if (e.key === 'ArrowLeft') {
+                goPrev()
+            } else if (e.key === 'ArrowRight') {
+                // Only advance when the current question has been answered;
+                // otherwise stay put so we don't skip past unanswered items.
+                const currentQ = questionsRef.current[indexRef.current]
+                if (currentQ && !historyRef.current[currentQ.id]) return
+                goNext()
+            }
         }
         window.addEventListener('keydown', onKeyDown)
         return () => window.removeEventListener('keydown', onKeyDown)
-    }, [goPrev, goNext])
+    }, [goPrev, goNext, showExitConfirm, menuOpen])
 
     const googleSearch = () => {
         const q = questions[index]
@@ -318,6 +329,49 @@ export default function SessionModePage() {
         }
     }
 
+    // Same dialog pattern as SessionMenu: move focus into the dialog on open,
+    // trap Tab inside it, close on Escape, and restore focus to the trigger
+    // button on close.
+    useEffect(() => {
+        if (!showExitConfirm) return
+        const dialog = exitDialogRef.current
+        const trigger = exitTriggerRef.current
+        const focusable = () => Array.from(dialog?.querySelectorAll<HTMLElement>(
+            'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        ) || [])
+        const focusFirst = () => (focusable()[0] || dialog)?.focus()
+        focusFirst()
+        const onKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                event.preventDefault()
+                setShowExitConfirm(false)
+                return
+            }
+            if (event.key !== 'Tab') return
+            const elements = focusable()
+            if (!elements.length) {
+                event.preventDefault()
+                dialog?.focus()
+                return
+            }
+            const current = document.activeElement
+            const position = elements.indexOf(current as HTMLElement)
+            const next = event.shiftKey
+                ? (position <= 0 ? elements.length - 1 : position - 1)
+                : (position === elements.length - 1 ? 0 : position + 1)
+            event.preventDefault()
+            elements[next].focus()
+        }
+        document.addEventListener('keydown', onKeyDown)
+        const priorOverflow = document.body.style.overflow
+        document.body.style.overflow = 'hidden'
+        return () => {
+            document.removeEventListener('keydown', onKeyDown)
+            document.body.style.overflow = priorOverflow
+            trigger?.focus()
+        }
+    }, [showExitConfirm])
+
     if (loadError) return (
         <div className="min-h-screen flex items-center justify-center bg-background-light dark:bg-background-dark p-6">
             <div className="card max-w-md w-full text-center p-8">
@@ -354,8 +408,9 @@ export default function SessionModePage() {
     )
 
     if (loading || !questions.length) return (
-        <div className="min-h-screen flex items-center justify-center bg-background-light dark:bg-background-dark">
+        <div role="status" className="min-h-screen flex items-center justify-center bg-background-light dark:bg-background-dark">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            <span className="sr-only">Loading quiz…</span>
         </div>
     )
 
@@ -368,12 +423,21 @@ export default function SessionModePage() {
             <div className="px-6 py-6 flex items-center gap-4">
                 <button
                     onClick={handleExitClick}
-                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+                    ref={exitTriggerRef}
+                    className="p-2.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
                     title="Exit session"
+                    aria-label="Exit session"
                 >
                     <X className="w-6 h-6" />
                 </button>
-                <div className="flex-1 h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                <div
+                    role="progressbar"
+                    aria-label="Session progress"
+                    aria-valuemin={0}
+                    aria-valuemax={questions.length}
+                    aria-valuenow={index}
+                    className="flex-1 h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden"
+                >
                     <div
                         className="h-full bg-gradient-to-r from-primary to-secondary transition-all duration-300 rounded-full"
                         style={{ width: `${progressPercent}%` }}
@@ -387,6 +451,7 @@ export default function SessionModePage() {
                     className="p-2 rounded-xl bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
                     title="Session tools"
                     aria-label="Open session tools"
+                    aria-expanded={menuOpen}
                 >
                     <Menu className="w-6 h-6" />
                 </button>
@@ -457,6 +522,11 @@ export default function SessionModePage() {
                             initial={reduceMotion ? false : { scale: 0.9, opacity: 0 }}
                             animate={reduceMotion ? { opacity: 1 } : { scale: 1, opacity: 1 }}
                             exit={reduceMotion ? { opacity: 0 } : { scale: 0.9, opacity: 0 }}
+                            ref={exitDialogRef}
+                            role="dialog"
+                            aria-modal="true"
+                            aria-labelledby="exit-confirm-heading"
+                            tabIndex={-1}
                             className="bg-white dark:bg-surface-dark rounded-3xl p-6 shadow-2xl relative z-10 max-w-sm w-full"
                             onClick={(e) => e.stopPropagation()}
                         >
@@ -465,7 +535,7 @@ export default function SessionModePage() {
                                     <AlertCircle className="w-6 h-6 text-orange-500" />
                                 </div>
                                 <div>
-                                    <h3 className="font-bold text-lg text-neutral-900 dark:text-neutral-100">
+                                    <h3 id="exit-confirm-heading" className="font-bold text-lg text-neutral-900 dark:text-neutral-100">
                                         Exit Session?
                                     </h3>
                                     <p className="text-sm text-neutral-600 dark:text-neutral-400">

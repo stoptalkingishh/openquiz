@@ -1,15 +1,14 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Question, SimulationStep } from '../lib/satTypes'
 import { Eye, Check, X, BookOpen, ChevronRight, ChevronLeft, RotateCcw, ClipboardList } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 
 interface QuestionCardProps {
     question: Question
     onAnswer: (correct: boolean, chosen?: string | number | boolean | null, question?: Question, quality?: number) => void
     onContinue?: (question?: Question) => void
-    onRate?: (quality: number) => void
     answered?: { correct: boolean; chosen: string | number | boolean | null }
 }
 
@@ -28,7 +27,7 @@ function SelfRatingButtons({ onRate }: { onRate?: (quality: number) => void }) {
                 <button
                     key={r.label}
                     onClick={() => onRate(r.quality)}
-                    className={`py-2 rounded-xl text-sm font-bold border-2 transition-all active:scale-95 ${r.className}`}
+                    className={`py-2 min-h-[44px] rounded-xl text-sm font-bold border-2 transition-all active:scale-95 flex items-center justify-center ${r.className}`}
                 >
                     {r.label}
                 </button>
@@ -51,7 +50,7 @@ function MediaImage({ image }: { image?: string }) {
     )
 }
 
-export default function QuestionCard({ question, onAnswer, onContinue, onRate, answered }: QuestionCardProps) {
+export default function QuestionCard({ question, onAnswer, onContinue, answered }: QuestionCardProps) {
     // A parent history update after submitting must not replace the feedback
     // card mid-review. On a genuine revisit the component mounts with the
     // record already present, so show a short read-only review instead.
@@ -60,10 +59,10 @@ export default function QuestionCard({ question, onAnswer, onContinue, onRate, a
         return <AnsweredReview question={question} record={answered} onContinue={onContinue} />
     }
     if (question.type === 'recall') {
-        return <RecallCard question={question} onAnswer={onAnswer} onContinue={onContinue} onRate={onRate} />
+        return <RecallCard question={question} onAnswer={onAnswer} onContinue={onContinue} />
     }
     if (question.type === 'simple_usage' || question.type === 'sat_cloze') {
-        return <MultipleChoiceCard question={question} onAnswer={onAnswer} onContinue={onContinue} onRate={onRate} />
+        return <MultipleChoiceCard question={question} onAnswer={onAnswer} onContinue={onContinue} />
     }
     if (question.type === 'generic_mc') {
         return <GenericMultipleChoiceCard question={question} onAnswer={onAnswer} onContinue={onContinue} />
@@ -119,6 +118,13 @@ function AnsweredReview({ question, record, onContinue }: {
 function RecallCard({ question, onAnswer, onContinue }: QuestionCardProps) {
     const [revealed, setRevealed] = useState(false)
     const [submitted, setSubmitted] = useState(false)
+    const reduceMotion = useReducedMotion()
+    const revealPanelRef = useRef<HTMLDivElement>(null)
+
+    useEffect(() => {
+        if (revealed) revealPanelRef.current?.focus()
+    }, [revealed])
+
     const { word, ru, synonyms, example } = question.payload
     const syns = Array.isArray(synonyms) ? synonyms : []
     const ruText = ru || ''
@@ -147,15 +153,18 @@ function RecallCard({ question, onAnswer, onContinue }: QuestionCardProps) {
                 {!revealed ? (
                     <button
                         onClick={() => setRevealed(true)}
-                        className="flex items-center gap-2 text-neutral-500 dark:text-neutral-400 hover:text-primary dark:hover:text-primary-light transition-colors font-semibold mt-4 group"
+                        aria-expanded={revealed}
+                        className="flex items-center gap-2 px-4 min-h-[44px] text-neutral-500 dark:text-neutral-400 hover:text-primary dark:hover:text-primary-light transition-colors font-semibold mt-4 group"
                     >
                         <Eye className="w-5 h-5 group-hover:scale-110 transition-transform" />
                         Tap to reveal meaning
                     </button>
                 ) : (
                     <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
+                        ref={revealPanelRef}
+                        tabIndex={-1}
+                        initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 10 }}
+                        animate={reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
                         className="space-y-6 mt-4 w-full"
                     >
                         <div className="p-6 bg-primary/5 dark:bg-primary/10 rounded-2xl border-2 border-primary/20 dark:border-primary/30">
@@ -189,8 +198,8 @@ function RecallCard({ question, onAnswer, onContinue }: QuestionCardProps) {
 
             {revealed && (
                 <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
+                    initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 20 }}
+                    animate={reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
                     className="w-full"
                 >
                     {!submitted && <div className="grid grid-cols-2 gap-4 w-full">
@@ -221,6 +230,7 @@ function MultipleChoiceCard({ question, onAnswer, onContinue }: QuestionCardProp
     const [selected, setSelected] = useState<number | null>(null)
     const [submitted, setSubmitted] = useState(false)
     const [reported, setReported] = useState(false)
+    const reduceMotion = useReducedMotion()
 
     const { sentence, options, correctIndex } = question.payload
     const opts = Array.isArray(options) ? options : []
@@ -320,9 +330,11 @@ function MultipleChoiceCard({ question, onAnswer, onContinue }: QuestionCardProp
             <AnimatePresence>
                 {submitted && (
                     <motion.div
-                        initial={{ y: 100, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        exit={{ y: 100, opacity: 0 }}
+                        role="status"
+                        aria-live="polite"
+                        initial={reduceMotion ? { opacity: 0 } : { y: 100, opacity: 0 }}
+                        animate={reduceMotion ? { opacity: 1 } : { y: 0, opacity: 1 }}
+                        exit={reduceMotion ? { opacity: 0 } : { y: 100, opacity: 0 }}
                         className={`fixed bottom-0 left-0 right-0 p-6 z-50 border-t-4 ${isCorrect
                                 ? 'bg-secondary/10 dark:bg-secondary/20 border-secondary dark:border-secondary-light backdrop-blur-xl'
                                 : 'bg-error/10 dark:bg-error/20 border-error dark:border-error-light backdrop-blur-xl'
@@ -395,6 +407,7 @@ function GenericMultipleChoiceCard({ question, onAnswer, onContinue }: QuestionC
     const [selected, setSelected] = useState<number | null>(null)
     const [submitted, setSubmitted] = useState(false)
     const [reported, setReported] = useState(false)
+    const reduceMotion = useReducedMotion()
 
     const { prompt, options, correctIndex, explanation } = question.payload
     const opts = Array.isArray(options) ? options : []
@@ -478,9 +491,11 @@ function GenericMultipleChoiceCard({ question, onAnswer, onContinue }: QuestionC
             <AnimatePresence>
                 {submitted && (
                     <motion.div
-                        initial={{ y: 100, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        exit={{ y: 100, opacity: 0 }}
+                        role="status"
+                        aria-live="polite"
+                        initial={reduceMotion ? { opacity: 0 } : { y: 100, opacity: 0 }}
+                        animate={reduceMotion ? { opacity: 1 } : { y: 0, opacity: 1 }}
+                        exit={reduceMotion ? { opacity: 0 } : { y: 100, opacity: 0 }}
                         className={`fixed bottom-0 left-0 right-0 p-6 z-50 border-t-4 ${isCorrect
                                 ? 'bg-secondary/10 dark:bg-secondary/20 border-secondary dark:border-secondary-light backdrop-blur-xl'
                                 : 'bg-error/10 dark:bg-error/20 border-error dark:border-error-light backdrop-blur-xl'
@@ -536,6 +551,7 @@ function GenericTrueFalseCard({ question, onAnswer, onContinue }: QuestionCardPr
     const [selected, setSelected] = useState<boolean | null>(null)
     const [submitted, setSubmitted] = useState(false)
     const [reported, setReported] = useState(false)
+    const reduceMotion = useReducedMotion()
 
     const { prompt, correctAnswer, explanation } = question.payload
 
@@ -607,9 +623,11 @@ function GenericTrueFalseCard({ question, onAnswer, onContinue }: QuestionCardPr
             <AnimatePresence>
                 {submitted && (
                     <motion.div
-                        initial={{ y: 100, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        exit={{ y: 100, opacity: 0 }}
+                        role="status"
+                        aria-live="polite"
+                        initial={reduceMotion ? { opacity: 0 } : { y: 100, opacity: 0 }}
+                        animate={reduceMotion ? { opacity: 1 } : { y: 0, opacity: 1 }}
+                        exit={reduceMotion ? { opacity: 0 } : { y: 100, opacity: 0 }}
                         className={`fixed bottom-0 left-0 right-0 p-6 z-50 border-t-4 ${isCorrect
                                 ? 'bg-secondary/10 dark:bg-secondary/20 border-secondary dark:border-secondary-light backdrop-blur-xl'
                                 : 'bg-error/10 dark:bg-error/20 border-error dark:border-error-light backdrop-blur-xl'
@@ -664,6 +682,13 @@ function GenericTrueFalseCard({ question, onAnswer, onContinue }: QuestionCardPr
 function GenericFlashcardCard({ question, onAnswer, onContinue }: QuestionCardProps) {
     const [revealed, setRevealed] = useState(false)
     const [submitted, setSubmitted] = useState(false)
+    const reduceMotion = useReducedMotion()
+    const revealPanelRef = useRef<HTMLDivElement>(null)
+
+    useEffect(() => {
+        if (revealed) revealPanelRef.current?.focus()
+    }, [revealed])
+
     const { prompt, answer, explanation } = question.payload
 
     const submit = (quality: number) => {
@@ -689,15 +714,18 @@ function GenericFlashcardCard({ question, onAnswer, onContinue }: QuestionCardPr
                 {!revealed ? (
                     <button
                         onClick={() => setRevealed(true)}
-                        className="flex items-center gap-2 text-neutral-500 dark:text-neutral-400 hover:text-primary dark:hover:text-primary-light transition-colors font-semibold mt-4 group"
+                        aria-expanded={revealed}
+                        className="flex items-center gap-2 px-4 min-h-[44px] text-neutral-500 dark:text-neutral-400 hover:text-primary dark:hover:text-primary-light transition-colors font-semibold mt-4 group"
                     >
                         <Eye className="w-5 h-5 group-hover:scale-110 transition-transform" />
                         Tap to reveal answer
                     </button>
                 ) : (
                     <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
+                        ref={revealPanelRef}
+                        tabIndex={-1}
+                        initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 10 }}
+                        animate={reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
                         className="space-y-6 mt-4 w-full"
                     >
                         <div className="p-6 bg-primary/5 dark:bg-primary/10 rounded-2xl border-2 border-primary/20 dark:border-primary/30">
@@ -716,8 +744,8 @@ function GenericFlashcardCard({ question, onAnswer, onContinue }: QuestionCardPr
 
             {revealed && !submitted && (
                 <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
+                    initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 20 }}
+                    animate={reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
                     className="grid grid-cols-2 gap-4 w-full"
                 >
                     <button
@@ -746,6 +774,7 @@ function GenericWrittenCard({ question, onAnswer, onContinue }: QuestionCardProp
     const [value, setValue] = useState('')
     const [submitted, setSubmitted] = useState(false)
     const [reported, setReported] = useState(false)
+    const reduceMotion = useReducedMotion()
 
     const { prompt, answer, explanation } = question.payload
 
@@ -800,6 +829,7 @@ function GenericWrittenCard({ question, onAnswer, onContinue }: QuestionCardProp
                         disabled={submitted}
                         autoFocus={!submitted}
                         placeholder="Type your answer..."
+                        aria-label="Your answer"
                         className="input-field text-lg py-4"
                     />
                     {!submitted && (
@@ -817,9 +847,11 @@ function GenericWrittenCard({ question, onAnswer, onContinue }: QuestionCardProp
             <AnimatePresence>
                 {submitted && (
                     <motion.div
-                        initial={{ y: 100, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        exit={{ y: 100, opacity: 0 }}
+                        role="status"
+                        aria-live="polite"
+                        initial={reduceMotion ? { opacity: 0 } : { y: 100, opacity: 0 }}
+                        animate={reduceMotion ? { opacity: 1 } : { y: 0, opacity: 1 }}
+                        exit={reduceMotion ? { opacity: 0 } : { y: 100, opacity: 0 }}
                         className={`fixed bottom-0 left-0 right-0 p-6 z-50 border-t-4 ${normalize(value) === normalize(answer || '')
                                 ? 'bg-secondary/10 dark:bg-secondary/20 border-secondary dark:border-secondary-light backdrop-blur-xl'
                                 : 'bg-error/10 dark:bg-error/20 border-error dark:border-error-light backdrop-blur-xl'
@@ -933,7 +965,7 @@ function PlacementEditor({ step, answers, onSetSlot, chip }: {
                             key={idx}
                             onClick={() => chip.set(active ? null : idx)}
                             disabled={!!placed}
-                            className={`px-4 py-2 rounded-xl text-sm font-semibold border-2 transition-all ${active ? 'border-primary bg-primary/10' : placed ? 'opacity-40 cursor-not-allowed' : 'border-neutral-300 dark:border-neutral-600 hover:border-primary/50'}`}
+                            className={`px-4 py-2 min-h-[44px] rounded-xl text-sm font-semibold border-2 transition-all flex items-center ${active ? 'border-primary bg-primary/10' : placed ? 'opacity-40 cursor-not-allowed' : 'border-neutral-300 dark:border-neutral-600 hover:border-primary/50'}`}
                         >
                             {it}
                         </button>
@@ -952,7 +984,7 @@ function PlacementEditor({ step, answers, onSetSlot, chip }: {
                         >
                             <div className="flex items-center justify-between gap-3">
                                 <span className="text-sm font-bold text-neutral-600 dark:text-neutral-400">{label}</span>
-                                <span className={`flex-1 ${placedItem ? 'text-neutral-900 dark:text-neutral-100 font-semibold' : 'text-neutral-400'}`}>
+                                <span className={`flex-1 ${placedItem ? 'text-neutral-900 dark:text-neutral-100 font-semibold' : 'text-neutral-600 dark:text-neutral-400'}`}>
                                     {placedItem || (active ? 'Tap to place selected' : 'Empty slot')}
                                 </span>
                             </div>
@@ -968,8 +1000,51 @@ function SimulationCard({ question, onAnswer, onContinue }: QuestionCardProps) {
     const steps: SimulationStep[] = Array.isArray(question.payload?.steps) ? question.payload.steps : []
     const [stepIdx, setStepIdx] = useState(0)
     const [submitted, setSubmitted] = useState(false)
+    const [reported, setReported] = useState(false)
     const [answers, setAnswers] = useState<SimAnswers>({ choice: {}, checkbox: {}, placement: {} })
     const chip = useChipRequest()
+    const reduceMotion = useReducedMotion()
+    const modalRef = useRef<HTMLDivElement>(null)
+
+    useEffect(() => {
+        if (!submitted) return
+        const previous = document.activeElement as HTMLElement | null
+        const panel = modalRef.current
+        const focusable = () => Array.from(panel?.querySelectorAll<HTMLElement>(
+            'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        ) || [])
+        const focusFirst = () => (focusable()[0] || panel)?.focus()
+        focusFirst()
+        const onKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                event.preventDefault()
+                setSubmitted(false)
+                return
+            }
+            if (event.key !== 'Tab') return
+            const elements = focusable()
+            if (!elements.length) {
+                event.preventDefault()
+                panel?.focus()
+                return
+            }
+            const current = document.activeElement
+            const position = elements.indexOf(current as HTMLElement)
+            const next = event.shiftKey
+                ? (position <= 0 ? elements.length - 1 : position - 1)
+                : (position === elements.length - 1 ? 0 : position + 1)
+            event.preventDefault()
+            elements[next].focus()
+        }
+        document.addEventListener('keydown', onKeyDown)
+        const priorOverflow = document.body.style.overflow
+        document.body.style.overflow = 'hidden'
+        return () => {
+            document.removeEventListener('keydown', onKeyDown)
+            document.body.style.overflow = priorOverflow
+            previous?.focus?.()
+        }
+    }, [submitted])
 
     const step = steps[stepIdx]
     if (!steps.length) {
@@ -998,6 +1073,12 @@ function SimulationCard({ question, onAnswer, onContinue }: QuestionCardProps) {
     const grades = steps.map(s => gradeSimStep(s, answers))
     const score = Math.round((grades.filter(Boolean).length / steps.length) * 100)
     const allCorrect = grades.every(Boolean)
+
+    const submit = (quality = allCorrect ? 4 : 1) => {
+        if (reported) return
+        setReported(true)
+        onAnswer(allCorrect, null, question, quality)
+    }
 
     return (
         <div className="flex flex-col h-full max-w-3xl mx-auto w-full px-4">
@@ -1058,7 +1139,7 @@ function SimulationCard({ question, onAnswer, onContinue }: QuestionCardProps) {
                                         {on && <Check className="w-4 h-4 text-white" />}
                                     </span>
                                     <span className="flex-1 text-neutral-800 dark:text-neutral-200">{it.label}</span>
-                                    <span className="text-xs text-neutral-400 uppercase">{on ? 'Enabled' : 'Disabled'}</span>
+                                    <span className="text-xs text-neutral-600 dark:text-neutral-400 uppercase">{on ? 'Enabled' : 'Disabled'}</span>
                                 </button>
                             )
                         })}
@@ -1101,15 +1182,20 @@ function SimulationCard({ question, onAnswer, onContinue }: QuestionCardProps) {
                         exit={{ opacity: 0 }}
                         className="fixed inset-0 z-50 flex items-center justify-center p-4"
                     >
-                        <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+                        <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setSubmitted(false)} />
                         <motion.div
-                            initial={{ scale: 0.9, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.9, opacity: 0 }}
+                            ref={modalRef}
+                            role="dialog"
+                            aria-modal="true"
+                            aria-labelledby="simulation-review-heading"
+                            tabIndex={-1}
+                            initial={reduceMotion ? { opacity: 0 } : { scale: 0.9, opacity: 0 }}
+                            animate={reduceMotion ? { opacity: 1 } : { scale: 1, opacity: 1 }}
+                            exit={reduceMotion ? { opacity: 0 } : { scale: 0.9, opacity: 0 }}
                             className="bg-white dark:bg-surface-dark rounded-3xl p-6 shadow-2xl relative z-10 max-w-lg w-full max-h-[90vh] overflow-y-auto"
                         >
                             <div className="flex items-center justify-between mb-4">
-                                <h2 className="text-xl font-bold">Simulation Review</h2>
+                                <h2 id="simulation-review-heading" className="text-xl font-bold">Simulation Review</h2>
                                 <span className={`px-3 py-1 rounded-full text-sm font-bold ${allCorrect ? 'text-secondary dark:text-secondary-light' : 'text-error dark:text-error-light'}`}>
                                     {score}%
                                 </span>
@@ -1148,8 +1234,9 @@ function SimulationCard({ question, onAnswer, onContinue }: QuestionCardProps) {
                                 })}
                             </div>
 
+                            <SelfRatingButtons onRate={submit} />
                             <button
-                                onClick={() => { onAnswer(allCorrect, null, question, allCorrect ? 4 : 1); onContinue?.(question) }}
+                                onClick={() => { submit(); onContinue?.(question) }}
                                 className="w-full btn-primary mt-4 py-3"
                             >
                                 Continue
