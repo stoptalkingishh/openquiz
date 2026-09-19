@@ -8,6 +8,31 @@ import { motion, AnimatePresence } from 'framer-motion'
 interface QuestionCardProps {
     question: Question
     onAnswer: (correct: boolean, chosen?: string | number | boolean | null, question?: Question) => void
+    onRate?: (quality: number) => void
+}
+
+const RATINGS: { label: string; quality: number; className: string }[] = [
+    { label: 'Again', quality: 1, className: 'border-error/40 text-error dark:text-error-light hover:bg-error/10' },
+    { label: 'Hard', quality: 3, className: 'border-accent/40 text-accent dark:text-accent-light hover:bg-accent/10' },
+    { label: 'Good', quality: 4, className: 'border-secondary/40 text-secondary dark:text-secondary-light hover:bg-secondary/10' },
+    { label: 'Easy', quality: 5, className: 'border-primary/40 text-primary dark:text-primary-light hover:bg-primary/10' },
+]
+
+function SelfRatingButtons({ onRate }: { onRate?: (quality: number) => void }) {
+    if (!onRate) return null
+    return (
+        <div className="grid grid-cols-4 gap-2 w-full mt-4">
+            {RATINGS.map(r => (
+                <button
+                    key={r.label}
+                    onClick={() => onRate(r.quality)}
+                    className={`py-2 rounded-xl text-sm font-bold border-2 transition-all active:scale-95 ${r.className}`}
+                >
+                    {r.label}
+                </button>
+            ))}
+        </div>
+    )
 }
 
 function MediaImage({ image }: { image?: string }) {
@@ -24,12 +49,12 @@ function MediaImage({ image }: { image?: string }) {
     )
 }
 
-export default function QuestionCard({ question, onAnswer }: QuestionCardProps) {
+export default function QuestionCard({ question, onAnswer, onRate }: QuestionCardProps) {
     if (question.type === 'recall') {
-        return <RecallCard question={question} onAnswer={onAnswer} />
+        return <RecallCard question={question} onAnswer={onAnswer} onRate={onRate} />
     }
     if (question.type === 'simple_usage' || question.type === 'sat_cloze') {
-        return <MultipleChoiceCard question={question} onAnswer={onAnswer} />
+        return <MultipleChoiceCard question={question} onAnswer={onAnswer} onRate={onRate} />
     }
     if (question.type === 'generic_mc') {
         return <GenericMultipleChoiceCard question={question} onAnswer={onAnswer} />
@@ -49,7 +74,7 @@ export default function QuestionCard({ question, onAnswer }: QuestionCardProps) 
     return <div>Unknown question type</div>
 }
 
-function RecallCard({ question, onAnswer }: QuestionCardProps) {
+function RecallCard({ question, onAnswer, onRate }: QuestionCardProps) {
     const [revealed, setRevealed] = useState(false)
     const { word, ru, synonyms, example } = question.payload
     const syns = Array.isArray(synonyms) ? synonyms : []
@@ -117,29 +142,32 @@ function RecallCard({ question, onAnswer }: QuestionCardProps) {
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="grid grid-cols-2 gap-4 w-full"
+                    className="w-full"
                 >
-                    <button
-                        onClick={() => onAnswer(false)}
-                        className="btn-outline h-14 text-base font-bold"
-                    >
-                        <X className="w-5 h-5" />
-                        Didn&apos;t Know
-                    </button>
-                    <button
-                        onClick={() => onAnswer(true)}
-                        className="btn-primary h-14 text-base font-bold"
-                    >
-                        <Check className="w-5 h-5" />
-                        Got It!
-                    </button>
+                    <div className="grid grid-cols-2 gap-4 w-full">
+                        <button
+                            onClick={() => onAnswer(false)}
+                            className="btn-outline h-14 text-base font-bold"
+                        >
+                            <X className="w-5 h-5" />
+                            Didn&apos;t Know
+                        </button>
+                        <button
+                            onClick={() => onAnswer(true)}
+                            className="btn-primary h-14 text-base font-bold"
+                        >
+                            <Check className="w-5 h-5" />
+                            Got It!
+                        </button>
+                    </div>
+                    <SelfRatingButtons onRate={onRate} />
                 </motion.div>
             )}
         </div>
     )
 }
 
-function MultipleChoiceCard({ question, onAnswer }: QuestionCardProps) {
+function MultipleChoiceCard({ question, onAnswer, onRate }: QuestionCardProps) {
     const [selected, setSelected] = useState<number | null>(null)
     const [submitted, setSubmitted] = useState(false)
 
@@ -295,6 +323,7 @@ function MultipleChoiceCard({ question, onAnswer }: QuestionCardProps) {
                                     </div>
                                 </div>
                             </div>
+                            <SelfRatingButtons onRate={onRate} />
                         </div>
                     </motion.div>
                 )}
