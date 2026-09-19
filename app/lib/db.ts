@@ -1,4 +1,4 @@
-import { WordProgress, QuizQuestion, SimulationStep, Word, Folder, QuizStats } from './satTypes'
+import { WordProgress, QuizQuestion, SimulationStep, Word, Folder, QuizStats, CustomQuiz } from './satTypes'
 import { assetPath } from './paths'
 import { isDriveConfigured, readDriveFile, writeDriveFile, getDriveUser, hasLiveToken } from './drive'
 
@@ -944,4 +944,151 @@ export async function syncLocalToCloud(): Promise<boolean> {
         console.error('Local->Drive sync failed (local data preserved):', error)
         return false
     }
+}
+
+// ---------------------------------------------------------------------------
+// Import / export helpers (JSON + CSV)
+// ---------------------------------------------------------------------------
+
+const CSV_HEADER = ['word', 'ru', 'synonyms', 'simple_examples', 'advanced_example', 'confusions']
+
+function csvEscape(value: string): string {
+    if (/[,"\n\r]/.test(value)) {
+        return '"' + value.replace(/"/g, '""') + '"'
+    }
+    return value
+}
+
+function parseCSV(text: string): string[][] {
+    const rows: string[][] = []
+    let field = ''
+    let row: string[] = []
+    let inQuotes = false
+
+    const endField = () => { row.push(field); field = '' }
+    const endRow = () => { endField(); rows.push(row); row = [] }
+
+    for (let i = 0; i < text.length; i++) {
+        const c = text[i]
+        if (inQuotes) {
+            if (c === '"') {
+                if (text[i + 1] === '"') { field += '"'; i++ }
+                else inQuotes = false
+            } else {
+                field += c
+            }
+        } else if (c === '"') {
+            inQuotes = true
+        } else if (c === ',') {
+            endField()
+        } else if (c === '\n') {
+            endRow()
+        } else if (c === '\r') {
+            if (text[i + 1] === '\n') i++
+            endRow()
+        } else {
+            field += c
+        }
+    }
+
+    if (field !== '' || row.length > 0) endRow()
+
+    return rows
+}
+
+function splitList(value: string): string[] {
+    return String(value ?? '').split(';').map(s => s.trim()).filter(Boolean)
+}
+
+/**
+ * Serialize vocabulary words to CSV. Arrays are joined with "; " and values
+ * containing commas, quotes or newlines are quoted and escaped.
+ */
+export function wordsToCSV(words: Word[]): string {
+    const joinList = (list?: string[]) => (Array.isArray(list) ? list : []).join('; ')
+    const rows = words.map(w =>
+        [
+            w.word,
+            w.ru,
+            joinList(w.synonyms),
+            joinList(w.simple_examples),
+            w.advanced_example || '',
+            joinList(w.confusions)
+        ].map(csvEscape).join(',')
+    )
+    return [CSV_HEADER.join(','), ...rows].join('\n')
+}
+
+export function csvToWords(text: string): { words: Word[]; errors: string[] } {
+    const rows = parseCSV(text).filter(r => r.some(c => c.trim() !== ''))
+    const errors: string[] = []
+    const words: Word[] = []
+
+    if (!rows.length) return { words, errors: ['No rows found'] }
+
+    const isHeader = rows[0][0]?.trim().toLowerCase() === 'word'
+    const start = isHeader ? 1 : 0
+
+    for (let i = start; i < rows.length; i++) {
+        const row = rows[i]
+        const word = String(row[0] ?? '').trim()
+        const ru = String(row[1] ?? '').trim()
+        if (!word || !ru) {
+            errors.push(`Row ${i + 1}: missing ${!word ? '"word"' : '"ru"'}`)
+            continue
+        }
+        words.push({
+            word,
+            ru,
+            synonyms: splitList(row[2]),
+            simple_examples: splitList(row[3]),
+            advanced_example: String(row[4] ?? '').trim(),
+            confusions: splitList(row[5])
+        })
+    }
+
+    return { words, errors }
+}
+
+export function delimitedToWords(text: string): { words: Word[]; errors: string[] } {
+    const errors: string[] = []
+    const words: Word[] = []
+
+    text.split(/\r?\n/).forEach((line, i) => {
+        const trimmed = line.trim()
+        if (!trimmed) return
+
+        let word = ''
+        let ru = ''
+        const tabIdx = trimmed.indexOf('\t')
+        const dashIdx = trimmed.indexOf(' - ')
+        if (tabIdx >= 0) {
+            word = trimmed.slice(0, tabIdx).trim()
+            ru = trimmed.slice(tabIdx + 1).trim()
+        } else if (dashIdx >= 0) {
+            word = trimmed.slice(0, dashIdx).trim()
+            ru = trimmed.slice(dashIdx + 3).trim()
+        } else {
+            errors.push(`Line ${i + 1}: expected "word - definition" or "word<TAB>definition"`)
+            return
+        }
+
+        if (!word || !ru) {
+            errors.push(`Line ${i + 1}: missing ${!word ? 'word' : 'definition'}`)
+            return
+        }
+
+        words.push({ word, ru, synonyms: [], simple_examples: [], advanced_example: '', confusions: [] })
+    })
+
+    return { words, errors }
+}
+
+export async function exportQuizData(userId: string): Promise<{ quizzes: CustomQuiz[]; progress: Record<string, WordProgress>; json: string }> {
+    const [quizzes, progress] = await Promise.all([
+        getCustomQuizzes(userId),
+        getWordProgress(userId)
+    ])
+    const json = JSON.stringify({ quizzes, progress }, null, 2)
+    return { quizzes, progress, json }
 }
