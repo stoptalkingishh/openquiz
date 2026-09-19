@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Sparkles, BookOpen, Check, Users, Play, Globe, Lock, Share2, Copy, Twitter, Facebook, MessageCircle, X, Folder, FolderPlus, FolderOpen, Gamepad2, ClipboardList, Trash2 } from 'lucide-react'
+import { Plus, Sparkles, BookOpen, Check, Users, Play, Globe, Lock, Share2, Copy, Twitter, Facebook, MessageCircle, X, Folder, FolderPlus, FolderOpen, Gamepad2, ClipboardList, Trash2, Search } from 'lucide-react'
 import BottomNav from '../components/BottomNav'
 import { useAuth } from '../contexts/AuthContext'
 import { getQuizSets, getCustomQuizzes, getPublicQuizzes, createCustomQuiz, getFolders, createFolder, normalizeImportedQuizItems, validateQuizJSON, deleteCustomQuiz } from '../lib/db'
@@ -33,6 +33,7 @@ export default function QuizzesPage() {
     const [showShareModal, setShowShareModal] = useState(false)
     const [shareQuiz, setShareQuiz] = useState<any>(null)
     const [wordCounts, setWordCounts] = useState<Record<string, number>>({})
+    const [search, setSearch] = useState('')
     const { user, loading: authLoading } = useAuth()
     const router = useRouter()
     const { selectedQuizPath, setSelectedQuizPath } = useQuizStore()
@@ -90,7 +91,20 @@ export default function QuizzesPage() {
 
     const activeFolder = folders.find(f => f.id === activeFolderId) || null
     const folderQuizIds = activeFolder?.quiz_ids || []
-    const visibleCustomQuizzes = activeFolderId ? customQuizzes.filter(q => folderQuizIds.includes(q.id)) : customQuizzes
+
+    const query = search.trim().toLowerCase()
+    const matchesNameDesc = (item: any) =>
+        !query ||
+        (item.name || '').toLowerCase().includes(query) ||
+        (item.description || '').toLowerCase().includes(query)
+    const matchesCustom = (item: any) =>
+        matchesNameDesc(item) ||
+        (Array.isArray(item.tags) && item.tags.some((t: string) => (t || '').toLowerCase().includes(query)))
+
+    const visibleCustomQuizzes = customQuizzes
+        .filter(q => activeFolderId ? folderQuizIds.includes(q.id) : true)
+        .filter(matchesCustom)
+    const visiblePeerQuizzes = peerQuizzes.filter(matchesCustom)
 
     const handleShare = (quiz: any, isCustom: boolean = false) => {
         setShareQuiz({ ...quiz, isCustom })
@@ -175,7 +189,7 @@ export default function QuizzesPage() {
 
     // Group official sets by category so pre-made content stays tidy
     // (e.g. one "CompTIA Security+" group instead of many loose cards).
-    const categorized = quizSets.reduce<Record<string, any[]>>((acc, set) => {
+    const categorized = quizSets.filter(matchesNameDesc).reduce<Record<string, any[]>>((acc, set) => {
         const key = set.category_label || 'Official Sets'
         if (!acc[key]) acc[key] = []
         acc[key].push(set)
@@ -200,6 +214,18 @@ export default function QuizzesPage() {
                     >
                         <Plus className="w-5 h-5" /> Create
                     </button>
+                </div>
+
+                {/* Search */}
+                <div className="relative">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                        type="text"
+                        placeholder="Search quizzes by name, description, or tags..."
+                        className="input-field pl-12"
+                        value={search}
+                        onChange={e => setSearch(e.target.value)}
+                    />
                 </div>
 
                 {/* Folders */}
@@ -340,14 +366,14 @@ export default function QuizzesPage() {
                 ))}
 
                 {/* Peer Sets */}
-                {peerQuizzes.length > 0 && (
+                {visiblePeerQuizzes.length > 0 && (
                     <div>
                         <h2 className="text-lg font-bold text-neutral-900 dark:text-neutral-100 mb-4 flex items-center gap-2">
                             <Users className="w-5 h-5 text-primary" />
                             Peer Sets
                         </h2>
                         <div className="grid gap-4 md:grid-cols-2">
-                            {peerQuizzes.map((quiz) => {
+                            {visiblePeerQuizzes.map((quiz) => {
                                 const quizPath = `/custom-quiz/${quiz.id}`
                                 const isSelected = selectedQuizPath === quizPath
                                 
@@ -721,6 +747,7 @@ function CreateQuizModal({ onClose, onCreated }: { onClose: () => void, onCreate
     const [name, setName] = useState('')
     const [description, setDescription] = useState('')
     const [authorName, setAuthorName] = useState('')
+    const [tagsText, setTagsText] = useState('')
     const [isPublic, setIsPublic] = useState(false)
     const [jsonText, setJsonText] = useState('')
     const [questions, setQuestions] = useState<QuizQuestion[]>([])
@@ -895,6 +922,8 @@ Remember:
         setError('')
         setLoading(true)
 
+        const tags = tagsText.split(',').map(t => t.trim()).filter(Boolean)
+
         try {
             if (step === 'json-mode') {
                 const parsed = JSON.parse(jsonText)
@@ -908,10 +937,10 @@ Remember:
                     throw new Error('Some items were invalid:\n' + errors.slice(0, 10).map((e: string) => `• ${e}`).join('\n'))
                 }
                 if (questions.length) {
-                    await createCustomQuiz(user.id, name, description, [], isPublic, authorName || undefined, questions)
+                    await createCustomQuiz(user.id, name, description, [], isPublic, authorName || undefined, questions, tags)
                 } else {
                     if (!words.length) throw new Error('No valid quiz content found in JSON')
-                    await createCustomQuiz(user.id, name, description, words, isPublic, authorName || undefined)
+                    await createCustomQuiz(user.id, name, description, words, isPublic, authorName || undefined, undefined, tags)
                 }
             } else {
                 const cleanQuestions = questions
@@ -935,7 +964,7 @@ Remember:
                     throw new Error('Every multiple-choice question needs at least 2 options')
                 }
 
-                await createCustomQuiz(user.id, name, description, [], isPublic, authorName || undefined, cleanQuestions)
+                await createCustomQuiz(user.id, name, description, [], isPublic, authorName || undefined, cleanQuestions, tags)
             }
 
             onCreated()
@@ -989,6 +1018,19 @@ Remember:
                                 onChange={(e) => setDescription(e.target.value)}
                                 className="input-field min-h-[100px]"
                                 placeholder="Brief description of your quiz"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-2">
+                                Tags (comma-separated)
+                            </label>
+                            <input
+                                type="text"
+                                value={tagsText}
+                                onChange={(e) => setTagsText(e.target.value)}
+                                className="input-field"
+                                placeholder="e.g., biology, cells, exam-prep"
                             />
                         </div>
 

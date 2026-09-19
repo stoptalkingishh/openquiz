@@ -271,6 +271,18 @@ function kindLabel(kind: string): string {
                                 <p className="text-neutral-700 dark:text-neutral-300 mb-4">
                                     {quiz.description}
                                 </p>
+                                {Array.isArray(quiz.tags) && quiz.tags.length > 0 && (
+                                    <div className="flex flex-wrap gap-2 mb-4">
+                                        {quiz.tags.map((tag: string, i: number) => (
+                                            <span
+                                                key={i}
+                                                className="px-3 py-1 bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary-light rounded-lg text-xs font-semibold"
+                                            >
+                                                {tag}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
                                 <div className="flex items-center gap-4 text-sm text-neutral-600 dark:text-neutral-400">
                                     <span className="flex items-center gap-2">
                                         <BookOpen className="w-4 h-4" />

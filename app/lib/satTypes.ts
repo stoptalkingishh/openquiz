@@ -186,6 +186,7 @@ export interface CustomQuiz {
   user_id: string;
   name: string;
   description: string;
+  tags?: string[];
   words?: Word[];
   questions?: QuizQuestion[];
   is_public: boolean;
