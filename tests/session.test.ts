@@ -174,6 +174,20 @@ describe('buildQuestionSession', () => {
         expect(result[0]?.word).toBe('q9')
     })
 
+    it('keeps a due card ahead of new cards when multiple are selected', () => {
+        const questions: QuizQuestion[] = Array.from({ length: 6 }, (_, i) => ({
+            id: `q${i}`, kind: 'flashcard', prompt: `Prompt ${i}`, answer: `Answer ${i}`
+        }))
+        const progress: Record<string, WordProgress> = {
+            q5: { word: 'q5', strength: 0.1, seenCount: 3, wrongStreak: 2, lastSeen: 1, nextDue: 1 }
+        }
+        const result = buildQuestionSession('drill', questions, progress, 4)
+        expect(result).toHaveLength(4)
+        // The due/missed card must be selected and must come before every new card.
+        expect(result.some(q => q.word === 'q5')).toBe(true)
+        expect(result[0]?.word).toBe('q5')
+    })
+
     it('turns generic multiple choice and true/false items into written answers in write mode', () => {
         const questions: QuizQuestion[] = [
             { id: 'mc', kind: 'multiple_choice', prompt: 'Pick', options: ['right', 'wrong'], correctIndex: 0 },

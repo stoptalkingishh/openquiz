@@ -172,6 +172,7 @@ export interface QuizQuestion {
   id: string;
   kind: QuizQuestionKind;
   prompt: string;
+  word?: string;           // optional display label (e.g. a term being tested)
   image?: string;          // URL or data URI — shown alongside the question (Quizlet-style)
   options?: string[];      // for multiple_choice
   correctIndex?: number;   // for multiple_choice
