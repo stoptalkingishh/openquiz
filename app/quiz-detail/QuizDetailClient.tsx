@@ -251,6 +251,7 @@ function kindLabel(kind: string): string {
                                             onClick={handleDeleteQuiz}
                                             className="p-2 rounded-lg text-neutral-400 hover:text-error hover:bg-error/10 transition-colors"
                                             title="Delete quiz"
+                                            aria-label="Delete quiz"
                                         >
                                             <Trash2 className="w-5 h-5" />
                                         </button>
@@ -627,6 +628,7 @@ function kindLabel(kind: string): string {
                                 <button
                                     onClick={() => setShowShareModal(false)}
                                     className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 transition-colors"
+                                    aria-label="Close share dialog"
                                 >
                                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

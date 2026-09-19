@@ -12,7 +12,7 @@ import { getWordProgress, saveWordProgress, getCustomQuizById, getQuizSetByPath,
 import { useQuizStore } from '../../lib/quizStore'
 import { assetPath } from '../../lib/paths'
 import { stopSpeech, isSpeaking, setOnTtsEnd } from '../../lib/tts'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 
 export default function SessionModePage() {
     const params = useParams()
@@ -36,6 +36,7 @@ export default function SessionModePage() {
     const correctCountRef = useRef(0)
     const quizMetaRef = useRef<{ id: string; name: string }>({ id: selectedQuizPath, name: selectedQuizPath })
     const progressRef = useRef<Record<string, any>>({})
+    const reduceMotion = useReducedMotion()
 
     // Reflect TTS state so a floating "reading" pill can appear even while the
     // tools menu is closed.
@@ -210,6 +211,17 @@ export default function SessionModePage() {
         if (index + 1 < questions.length) setIndex(i => i + 1)
     }
 
+    useEffect(() => {
+        const onKeyDown = (e: KeyboardEvent) => {
+            const tag = (e.target as HTMLElement | null)?.tagName?.toLowerCase()
+            if (tag === 'input' || tag === 'textarea' || tag === 'select' || tag === 'button') return
+            if (e.key === 'ArrowLeft') goPrev()
+            else if (e.key === 'ArrowRight') goNext()
+        }
+        window.addEventListener('keydown', onKeyDown)
+        return () => window.removeEventListener('keydown', onKeyDown)
+    }, [goPrev, goNext])
+
     const googleSearch = () => {
         const q = questions[index]
         const payload = q?.payload || {}
@@ -319,9 +331,9 @@ export default function SessionModePage() {
             <AnimatePresence>
                 {reading && !menuOpen && (
                     <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 20 }}
+                        initial={reduceMotion ? false : { opacity: 0, y: 20 }}
+                        animate={reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
+                        exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 20 }}
                         className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40"
                     >
                         <button
@@ -359,16 +371,16 @@ export default function SessionModePage() {
                 {showExitConfirm && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                         <motion.div
-                            initial={{ opacity: 0 }}
+                            initial={reduceMotion ? false : { opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             onClick={() => setShowExitConfirm(false)}
                             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
                         />
                         <motion.div
-                            initial={{ scale: 0.9, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.9, opacity: 0 }}
+                            initial={reduceMotion ? false : { scale: 0.9, opacity: 0 }}
+                            animate={reduceMotion ? { opacity: 1 } : { scale: 1, opacity: 1 }}
+                            exit={reduceMotion ? { opacity: 0 } : { scale: 0.9, opacity: 0 }}
                             className="bg-white dark:bg-surface-dark rounded-3xl p-6 shadow-2xl relative z-10 max-w-sm w-full"
                             onClick={(e) => e.stopPropagation()}
                         >
