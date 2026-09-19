@@ -76,11 +76,13 @@ export default function TermsPage() {
           <section>
             <h2 className="text-xl font-bold mb-2">6. Intellectual property &amp; licensing</h2>
             <p>
-              The OpenQuiz source code is licensed under the MIT License and is free
-              for individual, personal, educational, and non-commercial use. Use of
-              OpenQuiz in a corporate or other for-profit environment requires a paid
-              commercial license, which can be purchased by contacting the creator
-              (see the LICENSE file in the repository).
+              The OpenQuiz source code is free software licensed under the GNU
+              Affero General Public License v3.0 (or later). It is free for
+              individual, personal, educational, and non-commercial use. If you
+              use OpenQuiz in a corporate or other for-profit environment and
+              prefer not to comply with the AGPL&rsquo;s copyleft obligations, a
+              paid commercial license is available — contact the creator (see the
+              LICENSE file in the repository).
             </p>
             <p>
               CompTIA, Network+, Security+, CySA+, PenTest+, Cloud+, Linux+, and

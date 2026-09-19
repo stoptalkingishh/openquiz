@@ -262,7 +262,7 @@ export default function ProfilePage() {
 
                 <div className="mt-8 pt-6 border-t border-neutral-200 dark:border-neutral-800 text-center">
                     <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-3">
-                        © 2024-present OpenQuiz contributors · MIT License
+                        © 2024-present OpenQuiz contributors · AGPL-3.0-or-later
                     </p>
                     <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs font-semibold">
                         <Link href="/terms" className="text-neutral-500 dark:text-neutral-400 hover:text-primary dark:hover:text-primary-light">Terms</Link>

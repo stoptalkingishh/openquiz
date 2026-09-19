@@ -1,8 +1,9 @@
 # Third-Party Notices
 
 OpenQuiz bundles open-source software and study content. Each is licensed under
-its own terms. The MIT license for OpenQuiz itself does NOT cover these
-third-party works; attribution and license headers are preserved here.
+its own terms. The GNU Affero General Public License v3.0 (or later) for
+OpenQuiz itself does NOT cover these third-party works; attribution and license
+headers are preserved here.
 
 ## Study Content (in this repo)
 
