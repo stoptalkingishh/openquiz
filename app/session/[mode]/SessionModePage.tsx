@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { X, AlertCircle, Menu, Volume2, VolumeX } from 'lucide-react'
-import { buildSession, updateProgress, buildQuestionSession, buildTestSession } from '../../lib/session'
+import { buildSession, updateProgress, buildQuestionSession, buildTestSession, buildWriteSession } from '../../lib/session'
 import { Word, Question, SessionMode, QuizQuestion } from '../../lib/satTypes'
 import QuestionCard from '../../components/QuestionCard'
 import SessionMenu, { ReviewRecord } from '../../components/SessionMenu'
@@ -127,7 +127,9 @@ export default function SessionModePage() {
             const sessionLimit = mode === 'learn' ? undefined : Math.min(50, wordsOrUndefined.length)
             const q = mode === 'test'
                 ? buildTestSession(wordsOrUndefined, undefined, 20)
-                : buildSession(mode, wordsOrUndefined, progressData, sessionLimit)
+                : mode === 'write'
+                    ? buildWriteSession(wordsOrUndefined, 20)
+                    : buildSession(mode, wordsOrUndefined, progressData, sessionLimit)
             buildFromQuestions(q)
         }).catch(err => {
             clearTimeout(timeout)
@@ -183,6 +185,20 @@ export default function SessionModePage() {
             // Answered the last question and it is still the one on screen.
             finishSession(correctCountRef.current, questions.length)
         }
+    }
+
+    const handleRate = async (quality: number) => {
+        if (!user) return
+
+        const currentQ = questions[index]
+        if (!currentQ) return
+
+        const prev = progressRef.current[currentQ.word]
+        if (!prev) return
+
+        const updated = updateProgress(prev, quality >= 3, currentQ.word, quality)
+        progressRef.current = { ...progressRef.current, [currentQ.word]: updated }
+        await saveWordProgress(user.id, currentQ.word, updated)
     }
 
     const goPrev = () => {
@@ -307,6 +323,7 @@ export default function SessionModePage() {
                     key={current.id}
                     question={current}
                     onAnswer={handleAnswer}
+                    onRate={handleRate}
                 />
             </div>
 

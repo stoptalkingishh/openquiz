@@ -1,4 +1,5 @@
 import { Word, WordProgress, Question, SessionMode, QuizQuestion } from './satTypes';
+import { hasCloze, extractClozeCards } from './cloze';
 
 // Helper to shuffle array
 function shuffle<T>(array: T[]): T[] {
@@ -24,7 +25,7 @@ function uniqueOptions(correct: string, distractors: string[]): string[] {
     })
 }
 
-export function updateProgress(prev: WordProgress | undefined, correct: boolean, word: string): WordProgress {
+export function updateProgress(prev: WordProgress | undefined, correct: boolean, word: string, quality?: number): WordProgress {
     const now = Date.now();
     const base = prev ?? {
         word: word,
@@ -37,21 +38,33 @@ export function updateProgress(prev: WordProgress | undefined, correct: boolean,
     };
 
     const seenCount = (base.seenCount || 0) + 1;
-    let strength = base.strength || 0;
     let wrongStreak = base.wrongStreak || 0;
 
     if (correct) {
         wrongStreak = 0;
-        strength = Math.min(1, strength + 0.15);
     } else {
         wrongStreak += 1;
-        strength = Math.max(0, strength - 0.2);
     }
 
-    // Intervals: 10m, 8h, 2d, 5d
-    const intervals = [10 * 60e3, 8 * 60 * 60e3, 2 * 24 * 60 * 60e3, 5 * 24 * 60 * 60e3];
-    const idx = Math.min(intervals.length - 1, Math.floor(strength * intervals.length));
-    const nextDue = now + intervals[idx];
+    // SM-2-lite: quality (0–5) either comes from an explicit self-rating or is
+    // derived from the boolean result (correct → "Good", wrong → "Again").
+    const q = quality != null ? quality : (correct ? 4 : 1);
+    const ease = Math.max(1.3, (base.ease ?? 2.5) + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02)));
+
+    let repetitions = base.repetitions || 0;
+    let interval = base.interval || 0;
+
+    if (q < 3) {
+        repetitions = 0;
+        interval = 0;
+    } else {
+        repetitions += 1;
+        interval = repetitions === 1 ? 1 : repetitions === 2 ? 6 : Math.round((base.interval || 1) * ease);
+    }
+
+    const nextDue = now + interval * 24 * 60 * 60 * 1000;
+
+    const strength = Math.min(1, Math.max(0, (ease - 1.3) / 1.7));
 
     let status: 'new' | 'learning' | 'mastered' = 'learning';
     if (strength > 0.8) status = 'mastered';
@@ -63,7 +76,10 @@ export function updateProgress(prev: WordProgress | undefined, correct: boolean,
         strength,
         wrongStreak,
         nextDue,
-        status
+        status,
+        ease,
+        repetitions,
+        interval
     };
 }
 
@@ -283,7 +299,7 @@ export function buildQuestionSession(
 
     return shuffle(list)
         .filter(q => q && typeof q.prompt === 'string' && q.prompt.trim())
-        .map(q => {
+        .flatMap((q): Question[] => {
         const base = {
             id: q.id,
             word: q.id,
@@ -291,7 +307,7 @@ export function buildQuestionSession(
         };
 
         if (q.kind === 'simulation') {
-            return {
+            return [{
                 ...base,
                 type: 'simulation' as const,
                 payload: {
@@ -299,7 +315,7 @@ export function buildQuestionSession(
                     steps: Array.isArray(q.steps) ? q.steps : [],
                     language: q.language || ''
                 }
-            };
+            }];
         }
 
         if (q.kind === 'multiple_choice') {
@@ -309,7 +325,7 @@ export function buildQuestionSession(
                 correctIndex = q.correctIndex;
                 if (correctIndex < 0 || correctIndex >= options.length) correctIndex = 0;
             }
-            return {
+            return [{
                 ...base,
                 type: 'generic_mc' as const,
                 payload: {
@@ -318,10 +334,10 @@ export function buildQuestionSession(
                     correctIndex,
                     explanation: q.explanation || ''
                 }
-            };
+            }];
         }
         if (q.kind === 'true_false') {
-            return {
+            return [{
                 ...base,
                 type: 'generic_tf' as const,
                 payload: {
@@ -329,10 +345,30 @@ export function buildQuestionSession(
                     correctAnswer: q.correctAnswer === true,
                     explanation: q.explanation || ''
                 }
-            };
+            }];
         }
-        // flashcard
-        return {
+
+        // flashcard — split Anki-style cloze deletions into written-answer cards
+        const clozeCards = hasCloze(q.prompt)
+            ? extractClozeCards(q.prompt)
+            : hasCloze(q.answer || '')
+                ? extractClozeCards(q.answer || '')
+                : []
+
+        if (clozeCards.length) {
+            return clozeCards.map((card, i) => ({
+                ...base,
+                id: `${q.id}-c${i}`,
+                type: 'generic_written' as const,
+                payload: {
+                    prompt: card.prompt,
+                    answer: card.answer,
+                    explanation: q.explanation || ''
+                }
+            }));
+        }
+
+        return [{
             ...base,
             type: 'generic_flashcard' as const,
             payload: {
@@ -340,7 +376,7 @@ export function buildQuestionSession(
                 answer: q.answer || '',
                 explanation: q.explanation || ''
             }
-        };
+        }];
     });
 }
 
@@ -348,6 +384,42 @@ export function buildQuestionSession(
 // Test mode: auto-generate a mixed test (multiple choice, true/false, written)
 // from a vocabulary list OR from a generic question quiz.
 // ---------------------------------------------------------------------------
+
+export function buildWriteSession(words: Word[], limit = 20): Question[] {
+    const safe = (words || []).filter(w =>
+        w && typeof w.word === 'string' && w.word.trim() && typeof w.ru === 'string'
+    )
+    if (!safe.length) return []
+
+    const list = shuffle(safe).slice(0, limit)
+
+    const questions: Question[] = []
+    for (const w of list) {
+        const ts = `${Date.now()}-${Math.random()}`
+        questions.push({
+            id: `write-word-${w.word}-${ts}`,
+            word: w.word,
+            type: 'generic_written',
+            payload: {
+                prompt: `Type the word that means: "${w.ru}"`,
+                answer: w.word,
+                explanation: ''
+            }
+        })
+        questions.push({
+            id: `write-meaning-${w.word}-${ts}`,
+            word: w.word,
+            type: 'generic_written',
+            payload: {
+                prompt: `Type the meaning of: "${w.word}"`,
+                answer: w.ru,
+                explanation: ''
+            }
+        })
+    }
+
+    return shuffle(questions).slice(0, limit)
+}
 
 export function buildTestSession(
     words: Word[] | undefined,
