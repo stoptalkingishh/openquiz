@@ -13,6 +13,7 @@ interface HeaderProps {
 const NAV = [
     { href: '/', label: 'Home' },
     { href: '/quizzes', label: 'Quizzes' },
+    { href: '/community', label: 'Community' },
     { href: '/library', label: 'Library' },
     { href: '/profile', label: 'Profile' },
 ]
