@@ -1,4 +1,4 @@
-import { WordProgress, QuizQuestion, SimulationStep, Word, Folder, QuizStats } from './satTypes'
+import { WordProgress, QuizQuestion, SimulationStep, Word, Folder, QuizStats, CustomQuiz } from './satTypes'
 import { assetPath } from './paths'
 import { isDriveConfigured, readDriveFile, writeDriveFile, getDriveUser, hasLiveToken } from './drive'
 
@@ -466,7 +466,8 @@ export async function createCustomQuiz(
     words: any[],
     isPublic: boolean = false,
     authorName?: string,
-    questions?: QuizQuestion[]
+    questions?: QuizQuestion[],
+    tags: string[] = []
 ) {
     const id = typeof crypto !== 'undefined' && 'randomUUID' in crypto
         ? crypto.randomUUID()
@@ -477,6 +478,7 @@ export async function createCustomQuiz(
         user_id: userId,
         name,
         description,
+        tags: Array.isArray(tags) ? tags : [],
         words: Array.isArray(words) ? words : [],
         questions: Array.isArray(questions) && questions.length ? questions : undefined,
         is_public: isPublic,
@@ -782,6 +784,103 @@ function flattenActivity(all: Record<string, QuizStats>) {
     return entries.sort((a, b) => b.date.localeCompare(a.date))
 }
 
+async function getAllQuizStats(): Promise<Record<string, QuizStats>> {
+    const local = readJson<Record<string, QuizStats>>(QUIZ_STATS_KEY, {})
+    if (!isCloudActive()) return local
+    const remote = await readDriveFile<Record<string, QuizStats>>(QUIZ_STATS_FILE)
+    if (!remote) return local
+    const merged: Record<string, QuizStats> = { ...local }
+    for (const [quizId, stats] of Object.entries(remote)) {
+        const existing = merged[quizId]
+        if (!existing) {
+            merged[quizId] = stats
+            continue
+        }
+        const history = [...(existing.history || []), ...(stats.history || [])]
+            .filter((entry, i, arr) => arr.findIndex(o => o.date === entry.date && o.correct === entry.correct && o.total === entry.total) === i)
+            .sort((a, b) => a.date.localeCompare(b.date))
+        merged[quizId] = { ...existing, ...stats, history }
+    }
+    return merged
+}
+
+async function getAllDailyStats(): Promise<Record<string, any>> {
+    const local = readJson<Record<string, any>>(DAILY_STATS_KEY, {})
+    if (!isCloudActive()) return local
+    const remote = await readDriveFile<Record<string, any>>(DAILY_STATS_FILE)
+    return remote ? { ...local, ...remote } : local
+}
+
+export interface StudyAnalytics {
+    studyDays: { date: string; count: number }[]
+    totals: { sessions: number; correct: number; total: number; accuracy: number }
+    weakestWords: { word: string; strength: number; wrongStreak: number }[]
+    activity: { quizName: string; date: string; correct: number; total: number }[]
+}
+
+export async function getStudyAnalytics(userId: string): Promise<StudyAnalytics> {
+    const quizStats = await getAllQuizStats()
+    const dailyStats = await getAllDailyStats()
+
+    const countsByDate = new Map<string, number>()
+    for (const stats of Object.values(quizStats)) {
+        for (const h of stats.history || []) {
+            const date = String(h.date || '').slice(0, 10)
+            if (!date) continue
+            countsByDate.set(date, (countsByDate.get(date) || 0) + (h.total || 0))
+        }
+    }
+    for (const entry of Object.values(dailyStats)) {
+        if (!entry || entry.user_id !== userId) continue
+        const date = String(entry.date || '').slice(0, 10)
+        if (!date) continue
+        const answers = (Number(entry.words_learned) || 0) + (Number(entry.words_drilled) || 0) + (Number(entry.words_examined) || 0)
+        countsByDate.set(date, (countsByDate.get(date) || 0) + answers)
+    }
+
+    let sessions = 0
+    let correct = 0
+    let total = 0
+    for (const stats of Object.values(quizStats)) {
+        for (const h of stats.history || []) {
+            sessions += 1
+            correct += h.correct || 0
+            total += h.total || 0
+        }
+    }
+    const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0
+
+    const progress = await getWordProgress(userId)
+    const weakestWords = Object.entries(progress || {})
+        .map(([key, p]) => ({
+            word: p?.word || key,
+            strength: typeof p?.strength === 'number' ? p.strength : 0,
+            wrongStreak: p?.wrongStreak || 0
+        }))
+        .sort((a, b) => a.strength - b.strength || b.wrongStreak - a.wrongStreak)
+        .slice(0, 8)
+
+    const activity = flattenActivity(quizStats)
+        .slice(0, 10)
+        .map(e => ({ quizName: e.quizName, date: e.date, correct: e.correct, total: e.total }))
+
+    const studyDays: { date: string; count: number }[] = []
+    const today = new Date()
+    for (let i = 89; i >= 0; i--) {
+        const d = new Date(today)
+        d.setDate(today.getDate() - i)
+        const date = d.toISOString().split('T')[0]
+        studyDays.push({ date, count: countsByDate.get(date) || 0 })
+    }
+
+    return {
+        studyDays,
+        totals: { sessions, correct, total, accuracy },
+        weakestWords,
+        activity
+    }
+}
+
 // ---------------------------------------------------------------------------
 // One-time migration of guest (localStorage) data into the user's Drive
 // account. Called after a successful sign-in. Drive always wins on conflict.
@@ -847,4 +946,151 @@ export async function syncLocalToCloud(): Promise<boolean> {
         console.error('Local->Drive sync failed (local data preserved):', error)
         return false
     }
+}
+
+// ---------------------------------------------------------------------------
+// Import / export helpers (JSON + CSV)
+// ---------------------------------------------------------------------------
+
+const CSV_HEADER = ['word', 'ru', 'synonyms', 'simple_examples', 'advanced_example', 'confusions']
+
+function csvEscape(value: string): string {
+    if (/[,"\n\r]/.test(value)) {
+        return '"' + value.replace(/"/g, '""') + '"'
+    }
+    return value
+}
+
+function parseCSV(text: string): string[][] {
+    const rows: string[][] = []
+    let field = ''
+    let row: string[] = []
+    let inQuotes = false
+
+    const endField = () => { row.push(field); field = '' }
+    const endRow = () => { endField(); rows.push(row); row = [] }
+
+    for (let i = 0; i < text.length; i++) {
+        const c = text[i]
+        if (inQuotes) {
+            if (c === '"') {
+                if (text[i + 1] === '"') { field += '"'; i++ }
+                else inQuotes = false
+            } else {
+                field += c
+            }
+        } else if (c === '"') {
+            inQuotes = true
+        } else if (c === ',') {
+            endField()
+        } else if (c === '\n') {
+            endRow()
+        } else if (c === '\r') {
+            if (text[i + 1] === '\n') i++
+            endRow()
+        } else {
+            field += c
+        }
+    }
+
+    if (field !== '' || row.length > 0) endRow()
+
+    return rows
+}
+
+function splitList(value: string): string[] {
+    return String(value ?? '').split(';').map(s => s.trim()).filter(Boolean)
+}
+
+/**
+ * Serialize vocabulary words to CSV. Arrays are joined with "; " and values
+ * containing commas, quotes or newlines are quoted and escaped.
+ */
+export function wordsToCSV(words: Word[]): string {
+    const joinList = (list?: string[]) => (Array.isArray(list) ? list : []).join('; ')
+    const rows = words.map(w =>
+        [
+            w.word,
+            w.ru,
+            joinList(w.synonyms),
+            joinList(w.simple_examples),
+            w.advanced_example || '',
+            joinList(w.confusions)
+        ].map(csvEscape).join(',')
+    )
+    return [CSV_HEADER.join(','), ...rows].join('\n')
+}
+
+export function csvToWords(text: string): { words: Word[]; errors: string[] } {
+    const rows = parseCSV(text).filter(r => r.some(c => c.trim() !== ''))
+    const errors: string[] = []
+    const words: Word[] = []
+
+    if (!rows.length) return { words, errors: ['No rows found'] }
+
+    const isHeader = rows[0][0]?.trim().toLowerCase() === 'word'
+    const start = isHeader ? 1 : 0
+
+    for (let i = start; i < rows.length; i++) {
+        const row = rows[i]
+        const word = String(row[0] ?? '').trim()
+        const ru = String(row[1] ?? '').trim()
+        if (!word || !ru) {
+            errors.push(`Row ${i + 1}: missing ${!word ? '"word"' : '"ru"'}`)
+            continue
+        }
+        words.push({
+            word,
+            ru,
+            synonyms: splitList(row[2]),
+            simple_examples: splitList(row[3]),
+            advanced_example: String(row[4] ?? '').trim(),
+            confusions: splitList(row[5])
+        })
+    }
+
+    return { words, errors }
+}
+
+export function delimitedToWords(text: string): { words: Word[]; errors: string[] } {
+    const errors: string[] = []
+    const words: Word[] = []
+
+    text.split(/\r?\n/).forEach((line, i) => {
+        const trimmed = line.trim()
+        if (!trimmed) return
+
+        let word = ''
+        let ru = ''
+        const tabIdx = trimmed.indexOf('\t')
+        const dashIdx = trimmed.indexOf(' - ')
+        if (tabIdx >= 0) {
+            word = trimmed.slice(0, tabIdx).trim()
+            ru = trimmed.slice(tabIdx + 1).trim()
+        } else if (dashIdx >= 0) {
+            word = trimmed.slice(0, dashIdx).trim()
+            ru = trimmed.slice(dashIdx + 3).trim()
+        } else {
+            errors.push(`Line ${i + 1}: expected "word - definition" or "word<TAB>definition"`)
+            return
+        }
+
+        if (!word || !ru) {
+            errors.push(`Line ${i + 1}: missing ${!word ? 'word' : 'definition'}`)
+            return
+        }
+
+        words.push({ word, ru, synonyms: [], simple_examples: [], advanced_example: '', confusions: [] })
+    })
+
+    return { words, errors }
+}
+
+export async function exportQuizData(userId: string): Promise<{ quizzes: CustomQuiz[]; progress: Record<string, WordProgress>; json: string }> {
+    const [quizzes, progress] = await Promise.all([
+        getCustomQuizzes(userId),
+        getWordProgress(userId)
+    ])
+    const json = JSON.stringify({ quizzes, progress }, null, 2)
+    return { quizzes, progress, json }
 }

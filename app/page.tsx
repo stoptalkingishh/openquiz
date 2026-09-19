@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Dumbbell, Brain, Award, AlertCircle, ChevronRight, LogOut, ClipboardList, Gamepad2 } from 'lucide-react'
+import { Dumbbell, Brain, Award, AlertCircle, ChevronRight, LogOut, ClipboardList, Gamepad2, PenLine } from 'lucide-react'
 import Header from './components/Header'
 import BottomNav from './components/BottomNav'
 import Logo from './components/Logo'
@@ -161,6 +161,12 @@ export default function Home() {
             <ClipboardList className="w-10 h-10 text-secondary mb-3 group-hover:scale-110 transition-transform" />
             <h3 className="font-bold text-lg">Test</h3>
             <p className="text-sm text-gray-400">Mixed questions</p>
+          </Link>
+
+          <Link href={modeHref('/session/write')} className="card hover:border-primary/50 transition-all group flex flex-col items-center text-center hover:shadow-glow">
+            <PenLine className="w-10 h-10 text-primary mb-3 group-hover:scale-110 transition-transform" />
+            <h3 className="font-bold text-lg">Write</h3>
+            <p className="text-sm text-gray-400">Type answers</p>
           </Link>
 
           <Link href={modeHref('/match')} className="card hover:border-accent/50 transition-all group flex flex-col items-center text-center hover:shadow-glow">
