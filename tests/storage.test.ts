@@ -98,4 +98,17 @@ describe('account storage and failed saves', () => {
         expect(state.remote['quiz_stats.json'].quiz.history).toHaveLength(2)
         expect(JSON.parse(data.get(accountKey('oquiz:quiz_stats'))!).quiz.history).toHaveLength(2)
     })
+    it('merges local and cloud activity in recent study', async () => {
+        await recordQuizSession('quiz', 'Example', { id: 'local', correct: 2, total: 3 })
+        state.remote['quiz_stats.json'] = { quiz: { plays: 1, bestCorrect: 1, bestAccuracy: 100, quizName: 'Example', lastStudied: '2026-09-17T12:00:00Z', history: [{ id: 'remote', date: '2026-09-17T12:00:00Z', correct: 1, total: 1 }] } }
+        state.cloud = true
+        const activity = await getRecentActivity(100)
+        expect(activity).toHaveLength(2)
+    })
+    it('caps history retention at 200 entries', async () => {
+        for (let n = 0; n < 205; n++) {
+            await recordQuizSession('quiz', 'Example', { id: 's' + n, correct: 1, total: 1 })
+        }
+        expect(await getRecentActivity(1000)).toHaveLength(200)
+    })
 })

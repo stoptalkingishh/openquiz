@@ -74,6 +74,40 @@ describe('normalizeImportedQuizItems', () => {
         ])
         expect(questions.map(q => q.id)).toEqual(['q1', 'q1-1'])
     })
+
+    it('preserves a display word on a flashcard', () => {
+        const result = normalizeImportedQuizItems([{ kind: 'flashcard', word: 'NAT', prompt: 'What does NAT do?', answer: 'Translates addresses' }])
+        expect(result.errors).toEqual([])
+        expect(result.questions).toHaveLength(1)
+        expect(result.questions[0].word).toBe('NAT')
+        expect(result.questions[0].kind).toBe('flashcard')
+    })
+
+    it('preserves decimal options instead of stripping their digits', () => {
+        const result = normalizeImportedQuizItems([{ prompt: 'p', options: ['1.5', '2.5'], correctIndex: 0 }])
+        expect(result.questions[0].options).toEqual(['1.5', '2.5'])
+    })
+
+    it('strips labeled options', () => {
+        const result = normalizeImportedQuizItems([{ prompt: 'p', options: ['A. Apple', 'B. Banana'], correctIndex: 0 }])
+        expect(result.questions[0].options).toEqual(['Apple', 'Banana'])
+    })
+
+    it('rejects a simulation with no steps', () => {
+        const result = normalizeImportedQuizItems([{ kind: 'simulation', prompt: 's', steps: [] }])
+        expect(result.errors.length).toBeGreaterThan(0)
+        expect(result.questions).toEqual([])
+    })
+
+    it('rejects a simulation choice step missing options', () => {
+        const result = normalizeImportedQuizItems([{ kind: 'simulation', prompt: 's', steps: [{ kind: 'choice', title: 'Pick' }] }])
+        expect(result.errors.length).toBeGreaterThan(0)
+    })
+
+    it('rejects a flashcard with an empty answer', () => {
+        expect(normalizeImportedQuizItems([{ prompt: 'p', answer: '' }]).errors.length).toBeGreaterThan(0)
+        expect(normalizeImportedQuizItems([{ prompt: 'p', answer: '   ' }]).errors.length).toBeGreaterThan(0)
+    })
 })
 
 describe('validateQuizJSON', () => {

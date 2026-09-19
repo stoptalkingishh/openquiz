@@ -22,6 +22,8 @@ const FOLDERS_KEY = 'oquiz:folders'
 const QUIZ_STATS_KEY = 'oquiz:quiz_stats'
 const DELETED_IDS_KEY = 'oquiz:deleted_ids'
 
+const MAX_HISTORY_ENTRIES = 200
+
 const PROGRESS_FILE = 'progress.json'
 const CUSTOM_QUIZZES_FILE = 'custom_quizzes.json'
 const DAILY_STATS_FILE = 'daily_stats.json'
@@ -141,6 +143,7 @@ function mergeQuizStats(local: Record<string, QuizStats>, remote: Record<string,
         const history = [...(other.history || []), ...(value.history || [])]
             .filter((entry, i, entries) => entries.findIndex(e => e.id && entry.id ? e.id === entry.id : e.date === entry.date && e.correct === entry.correct && e.total === entry.total) === i)
             .sort((a, b) => a.date.localeCompare(b.date))
+            .slice(-MAX_HISTORY_ENTRIES)
         merged[key] = {
             ...(value.lastStudied >= other.lastStudied ? value : other), history,
             plays: Math.max(value.plays, other.plays, history.length),
@@ -385,8 +388,11 @@ export function normalizeImportedQuizItems(
     const stripPrefix = (opt: unknown): string =>
         String(opt ?? '')
             .trim()
-            .replace(/^[A-Ea-e0-9][.)\-:]\s*/, '')
+            .replace(/^(?:[A-Ea-e][.)\-:]|\d+[.)\-:])\s+/, '')
             .trim()
+
+    const displayWord = (it: any): string | undefined =>
+        it && typeof it.word === 'string' && it.word.trim() ? it.word.trim() : undefined
 
     const questions: QuizQuestion[] = []
     const errors: string[] = []
@@ -402,39 +408,94 @@ export function normalizeImportedQuizItems(
         }
 
         if (it.kind === 'simulation') {
-            const steps = Array.isArray(it.steps) ? it.steps.map((s: any, si: number): SimulationStep => {
-                const base: SimulationStep = {
-                    id: s?.id || `step-${makeId(it, i)}-${si}`,
-                    kind: (s?.kind === 'choice' || s?.kind === 'checkbox' || s?.kind === 'config' || s?.kind === 'placement') ? s.kind : 'choice',
-                    title: String(s?.title || ''),
-                    explanation: s?.explanation ? String(s.explanation) : ''
+            if (!Array.isArray(it.steps) || !it.steps.length) {
+                errors.push(`Item ${i + 1}: simulation requires at least one step`)
+                return
+            }
+            const steps: SimulationStep[] = []
+            for (let si = 0; si < it.steps.length; si++) {
+                const s = it.steps[si]
+                const title = String(s?.title ?? '').trim()
+                if (!title) {
+                    errors.push(`Item ${i + 1}, step ${si + 1}: missing a title`)
+                    return
                 }
-                if (base.kind === 'choice') {
-                    base.options = Array.isArray(s?.options) ? s.options.map(String) : []
-                    base.correctIndex = Number.isInteger(s?.correctIndex) ? s.correctIndex : 0
-                }
-                if (base.kind === 'checkbox') {
-                    base.items = Array.isArray(s?.items) ? s.items.map((it2: any, ix: number) => ({
+                const kind = (s?.kind === 'choice' || s?.kind === 'checkbox' || s?.kind === 'config' || s?.kind === 'placement') ? s.kind : 'choice'
+                if (kind === 'choice') {
+                    const options = Array.isArray(s?.options) ? s.options.map(String) : []
+                    if (options.length < 2) {
+                        errors.push(`Item ${i + 1}, step ${si + 1}: choice requires at least two options`)
+                        return
+                    }
+                    const correctIndex = Number.isInteger(s?.correctIndex) ? s.correctIndex : -1
+                    if (correctIndex < 0 || correctIndex >= options.length) {
+                        errors.push(`Item ${i + 1}, step ${si + 1}: invalid correctIndex`)
+                        return
+                    }
+                    const step: SimulationStep = {
+                        id: s?.id || `step-${makeId(it, i)}-${si}`,
+                        kind: 'choice',
+                        title,
+                        explanation: s?.explanation ? String(s.explanation) : '',
+                        options,
+                        correctIndex
+                    }
+                    if (s?.image) step.image = String(s.image)
+                    steps.push(step)
+                } else if (kind === 'checkbox' || kind === 'config') {
+                    const rawItems = kind === 'checkbox' ? s?.items : s?.config
+                    if (!Array.isArray(rawItems) || !rawItems.length) {
+                        errors.push(`Item ${i + 1}, step ${si + 1}: ${kind} requires at least one item`)
+                        return
+                    }
+                    const items = rawItems.map((it2: any, ix: number) => ({
                         id: it2?.id || `it-${makeId(it, i)}-${ix}`,
-                        label: String(it2?.label || ''),
+                        label: String(it2?.label ?? '').trim(),
                         correct: !!it2?.correct
-                    })) : []
+                    }))
+                    if (items.some(item => !item.label)) {
+                        errors.push(`Item ${i + 1}, step ${si + 1}: ${kind} items must have a non-empty label`)
+                        return
+                    }
+                    const step: SimulationStep = {
+                        id: s?.id || `step-${makeId(it, i)}-${si}`,
+                        kind,
+                        title,
+                        explanation: s?.explanation ? String(s.explanation) : ''
+                    }
+                    if (kind === 'checkbox') step.items = items
+                    else step.config = items
+                    if (s?.image) step.image = String(s.image)
+                    steps.push(step)
+                } else {
+                    const itemsToPlace = Array.isArray(s?.itemsToPlace) ? s.itemsToPlace.map(String) : []
+                    const slots = Array.isArray(s?.slots) ? s.slots.map(String) : []
+                    const correctMapping: number[] = Array.isArray(s?.correctMapping) ? s.correctMapping.map(Number) : []
+                    if (!itemsToPlace.length) {
+                        errors.push(`Item ${i + 1}, step ${si + 1}: placement requires itemsToPlace`)
+                        return
+                    }
+                    if (!slots.length) {
+                        errors.push(`Item ${i + 1}, step ${si + 1}: placement requires slots`)
+                        return
+                    }
+                    if (correctMapping.length !== itemsToPlace.length || !correctMapping.every(m => Number.isInteger(m) && m >= 0 && m < slots.length)) {
+                        errors.push(`Item ${i + 1}, step ${si + 1}: placement correctMapping must map each item to a slot`)
+                        return
+                    }
+                    const step: SimulationStep = {
+                        id: s?.id || `step-${makeId(it, i)}-${si}`,
+                        kind: 'placement',
+                        title,
+                        explanation: s?.explanation ? String(s.explanation) : '',
+                        itemsToPlace,
+                        slots,
+                        correctMapping
+                    }
+                    if (s?.image) step.image = String(s.image)
+                    steps.push(step)
                 }
-                if (base.kind === 'config') {
-                    base.config = Array.isArray(s?.config) ? s.config.map((it2: any, ix: number) => ({
-                        id: it2?.id || `it-${makeId(it, i)}-${ix}`,
-                        label: String(it2?.label || ''),
-                        correct: !!it2?.correct
-                    })) : []
-                }
-                if (base.kind === 'placement') {
-                    base.itemsToPlace = Array.isArray(s?.itemsToPlace) ? s.itemsToPlace.map(String) : []
-                    base.slots = Array.isArray(s?.slots) ? s.slots.map(String) : []
-                    base.correctMapping = Array.isArray(s?.correctMapping) ? s.correctMapping.map(Number) : []
-                }
-                if (s?.image) base.image = String(s.image)
-                return base
-            }) : []
+            }
             const q: QuizQuestion = {
                 id: uniqueId(makeId(it, i)),
                 kind: 'simulation',
@@ -442,6 +503,8 @@ export function normalizeImportedQuizItems(
                 steps,
                 explanation: it.explanation ? String(it.explanation) : ''
             }
+            const dw = displayWord(it)
+            if (dw) q.word = dw
             if (it.image) q.image = String(it.image)
             questions.push(q)
             return
@@ -482,6 +545,8 @@ export function normalizeImportedQuizItems(
                 correctIndex,
                 explanation: it.explanation ? String(it.explanation) : ''
             }
+            const dw = displayWord(it)
+            if (dw) q.word = dw
             if (it.image) q.image = String(it.image)
             questions.push(q)
         } else if (
@@ -499,10 +564,16 @@ export function normalizeImportedQuizItems(
                 correctAnswer: parseTrueFalse(rawAnswer),
                 explanation: it.explanation ? String(it.explanation) : ''
             }
+            const dw = displayWord(it)
+            if (dw) q.word = dw
             if (it.image) q.image = String(it.image)
             questions.push(q)
         } else {
             const answer = String(it.answer ?? it.correct_answer ?? '').trim()
+            if (!answer) {
+                errors.push(`Item ${i + 1}: flashcard answer is required`)
+                return
+            }
             const q: QuizQuestion = {
                 id: uniqueId(makeId(it, i)),
                 kind: 'flashcard',
@@ -510,6 +581,8 @@ export function normalizeImportedQuizItems(
                 answer,
                 explanation: it.explanation ? String(it.explanation) : ''
             }
+            const dw = displayWord(it)
+            if (dw) q.word = dw
             if (it.image) q.image = String(it.image)
             questions.push(q)
         }
@@ -828,7 +901,7 @@ export async function recordQuizSession(
                     total: result.total,
                     seconds: result.seconds
                 }
-            ]
+            ].slice(-MAX_HISTORY_ENTRIES)
         }
 
         all[quizId] = stats
@@ -846,15 +919,8 @@ export async function recordQuizSession(
 }
 
 export async function getRecentActivity(limit = 10): Promise<{ quizId: string; quizName: string; correct: number; total: number; seconds?: number; date: string }[]> {
-    const all = readJson<Record<string, QuizStats>>(QUIZ_STATS_KEY, {})
-    if (!Object.keys(all).length && isCloudActive()) {
-        const remote = await readForDisplay<Record<string, QuizStats>>(QUIZ_STATS_FILE)
-        if (remote) {
-            const merged = { ...all, ...remote }
-            return flattenActivity(merged).slice(0, limit)
-        }
-    }
-    return flattenActivity(all).slice(0, limit)
+    const merged = await getAllQuizStats()
+    return flattenActivity(merged).slice(0, limit)
 }
 
 function flattenActivity(all: Record<string, QuizStats>) {
