@@ -20,6 +20,9 @@ export interface WordProgress {
   seenCount?: number;    // how many times seen (optional)
   wrongStreak?: number;  // consecutive errors (optional)
   status?: 'new' | 'learning' | 'mastered'; // derived status (optional)
+  ease?: number;         // SM-2 ease factor (default ~2.5, floored at 1.3)
+  repetitions?: number;  // consecutive successful reviews
+  interval?: number;     // days until next review
   // Additional fields used by satSessionManager
   difficulty?: 'easy' | 'hard';
   reviewCount?: number;
@@ -48,7 +51,7 @@ export interface Question {
   payload: any;
 }
 
-export type SessionMode = 'learn' | 'drill' | 'exam' | 'mistakes' | 'test';
+export type SessionMode = 'learn' | 'drill' | 'exam' | 'mistakes' | 'test' | 'write';
 
 export interface DailyProgress {
   date: string;
@@ -186,6 +189,7 @@ export interface CustomQuiz {
   user_id: string;
   name: string;
   description: string;
+  tags?: string[];
   words?: Word[];
   questions?: QuizQuestion[];
   is_public: boolean;

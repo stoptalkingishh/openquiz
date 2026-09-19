@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Sparkles, BookOpen, Check, Users, Play, Globe, Lock, Share2, Copy, Twitter, Facebook, MessageCircle, X, Folder, FolderPlus, FolderOpen, Gamepad2, ClipboardList, Trash2, ChevronDown } from 'lucide-react'
+import { Plus, Sparkles, BookOpen, Check, Users, Play, Globe, Lock, Share2, Copy, Twitter, Facebook, MessageCircle, X, Folder, FolderPlus, FolderOpen, Gamepad2, ClipboardList, Trash2, ChevronDown, Search } from 'lucide-react'
 import BottomNav from '../components/BottomNav'
 import { useAuth } from '../contexts/AuthContext'
-import { getQuizSets, getCustomQuizzes, getPublicQuizzes, createCustomQuiz, getFolders, createFolder, normalizeImportedQuizItems, validateQuizJSON, deleteCustomQuiz } from '../lib/db'
+import { getQuizSets, getCustomQuizzes, getPublicQuizzes, createCustomQuiz, getFolders, createFolder, normalizeImportedQuizItems, validateQuizJSON, deleteCustomQuiz, csvToWords, delimitedToWords } from '../lib/db'
+import { buildShareData } from '../lib/share'
 import { useQuizStore } from '../lib/quizStore'
 import { generateQuizFromNotes, getAiSettings, saveAiSettings, AiSettings } from '../lib/ai'
 import { assetPath, BASE_PATH } from '../lib/paths'
@@ -34,6 +35,7 @@ export default function QuizzesPage() {
     const [showShareModal, setShowShareModal] = useState(false)
     const [shareQuiz, setShareQuiz] = useState<any>(null)
     const [wordCounts, setWordCounts] = useState<Record<string, number>>({})
+    const [search, setSearch] = useState('')
     const { user, loading: authLoading } = useAuth()
     const router = useRouter()
     const { selectedQuizPath, setSelectedQuizPath } = useQuizStore()
@@ -91,7 +93,20 @@ export default function QuizzesPage() {
 
     const activeFolder = folders.find(f => f.id === activeFolderId) || null
     const folderQuizIds = activeFolder?.quiz_ids || []
-    const visibleCustomQuizzes = activeFolderId ? customQuizzes.filter(q => folderQuizIds.includes(q.id)) : customQuizzes
+
+    const query = search.trim().toLowerCase()
+    const matchesNameDesc = (item: any) =>
+        !query ||
+        (item.name || '').toLowerCase().includes(query) ||
+        (item.description || '').toLowerCase().includes(query)
+    const matchesCustom = (item: any) =>
+        matchesNameDesc(item) ||
+        (Array.isArray(item.tags) && item.tags.some((t: string) => (t || '').toLowerCase().includes(query)))
+
+    const visibleCustomQuizzes = customQuizzes
+        .filter(q => activeFolderId ? folderQuizIds.includes(q.id) : true)
+        .filter(matchesCustom)
+    const visiblePeerQuizzes = peerQuizzes.filter(matchesCustom)
 
     const handleShare = (quiz: any, isCustom: boolean = false) => {
         setShareQuiz({ ...quiz, isCustom })
@@ -121,14 +136,8 @@ export default function QuizzesPage() {
         const origin = window.location.origin
         if (quiz.isCustom) {
             // Embed the whole quiz in the URL so the link works on any static host
-            const data = encodeURIComponent(JSON.stringify({
-                id: quiz.id,
-                name: quiz.name,
-                description: quiz.description,
-                author_name: quiz.author_name || null,
-                words: quiz.words || [],
-                questions: quiz.questions || []
-            }))
+            const data = buildShareData(quiz)
+            if (data === null) return ''
             return `${origin}${BASE_PATH}/quiz/share?data=${data}`
         } else {
             // For official quizzes, create a shareable link
@@ -176,7 +185,7 @@ export default function QuizzesPage() {
 
     // Group official sets by category so pre-made content stays tidy
     // (e.g. one "CompTIA Security+" group instead of many loose cards).
-    const categorized = quizSets.reduce<Record<string, any[]>>((acc, set) => {
+    const categorized = quizSets.filter(matchesNameDesc).reduce<Record<string, any[]>>((acc, set) => {
         const key = set.category_label || 'Official Sets'
         if (!acc[key]) acc[key] = []
         acc[key].push(set)
@@ -201,6 +210,18 @@ export default function QuizzesPage() {
                     >
                         <Plus className="w-5 h-5" /> Create
                     </button>
+                </div>
+
+                {/* Search */}
+                <div className="relative">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                        type="text"
+                        placeholder="Search quizzes by name, description, or tags..."
+                        className="input-field pl-12"
+                        value={search}
+                        onChange={e => setSearch(e.target.value)}
+                    />
                 </div>
 
                 {/* Folders */}
@@ -341,14 +362,14 @@ export default function QuizzesPage() {
                 ))}
 
                 {/* Peer Sets */}
-                {peerQuizzes.length > 0 && (
+                {visiblePeerQuizzes.length > 0 && (
                     <div>
                         <h2 className="text-lg font-bold text-neutral-900 dark:text-neutral-100 mb-4 flex items-center gap-2">
                             <Users className="w-5 h-5 text-primary" />
                             Peer Sets
                         </h2>
                         <div className="grid gap-4 md:grid-cols-2">
-                            {peerQuizzes.map((quiz) => {
+                            {visiblePeerQuizzes.map((quiz) => {
                                 const quizPath = `/custom-quiz/${quiz.id}`
                                 const isSelected = selectedQuizPath === quizPath
                                 
@@ -722,6 +743,7 @@ function CreateQuizModal({ onClose, onCreated }: { onClose: () => void, onCreate
     const [name, setName] = useState('')
     const [description, setDescription] = useState('')
     const [authorName, setAuthorName] = useState('')
+    const [tagsText, setTagsText] = useState('')
     const [isPublic, setIsPublic] = useState(false)
     const [jsonText, setJsonText] = useState('')
     const [questions, setQuestions] = useState<QuizQuestion[]>([])
@@ -901,23 +923,43 @@ Remember:
         setError('')
         setLoading(true)
 
+        const tags = tagsText.split(',').map(t => t.trim()).filter(Boolean)
+
         try {
             if (step === 'json-mode') {
-                const parsed = JSON.parse(jsonText)
+                let parsed: any
+                let isJson = true
+                try {
+                    parsed = JSON.parse(jsonText)
+                } catch {
+                    isJson = false
+                }
 
-                if (!Array.isArray(parsed)) {
+                if (!isJson) {
+                    const csv = csvToWords(jsonText)
+                    if (csv.words.length) {
+                        await createCustomQuiz(user.id, name, description, csv.words, isPublic, authorName || undefined)
+                    } else {
+                        const delimited = delimitedToWords(jsonText)
+                        if (delimited.words.length) {
+                            await createCustomQuiz(user.id, name, description, delimited.words, isPublic, authorName || undefined)
+                        } else {
+                            throw new Error('Could not parse the pasted text as JSON, CSV, or a simple word list.')
+                        }
+                    }
+                } else if (!Array.isArray(parsed)) {
                     throw new Error('JSON must be an array')
-                }
-
-                const { words, questions, errors } = normalizeImportedQuizItems(parsed)
-                if (errors.length) {
-                    throw new Error('Some items were invalid:\n' + errors.slice(0, 10).map((e: string) => `• ${e}`).join('\n'))
-                }
-                if (questions.length) {
-                    await createCustomQuiz(user.id, name, description, [], isPublic, authorName || undefined, questions)
                 } else {
-                    if (!words.length) throw new Error('No valid quiz content found in JSON')
-                    await createCustomQuiz(user.id, name, description, words, isPublic, authorName || undefined)
+                    const { words, questions, errors } = normalizeImportedQuizItems(parsed)
+                    if (errors.length) {
+                        throw new Error('Some items were invalid:\n' + errors.slice(0, 10).map((e: string) => `• ${e}`).join('\n'))
+                    }
+                    if (questions.length) {
+                        await createCustomQuiz(user.id, name, description, [], isPublic, authorName || undefined, questions, tags)
+                    } else {
+                        if (!words.length) throw new Error('No valid quiz content found in JSON')
+                        await createCustomQuiz(user.id, name, description, words, isPublic, authorName || undefined, undefined, tags)
+                    }
                 }
             } else {
                 const cleanQuestions = questions
@@ -941,7 +983,7 @@ Remember:
                     throw new Error('Every multiple-choice question needs at least 2 options')
                 }
 
-                await createCustomQuiz(user.id, name, description, [], isPublic, authorName || undefined, cleanQuestions)
+                await createCustomQuiz(user.id, name, description, [], isPublic, authorName || undefined, cleanQuestions, tags)
             }
 
             onCreated()
@@ -1022,6 +1064,19 @@ Remember:
                                 onChange={(e) => setDescription(e.target.value)}
                                 className="input-field min-h-[100px]"
                                 placeholder="Brief description of your quiz"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-2">
+                                Tags (comma-separated)
+                            </label>
+                            <input
+                                type="text"
+                                value={tagsText}
+                                onChange={(e) => setTagsText(e.target.value)}
+                                className="input-field"
+                                placeholder="e.g., biology, cells, exam-prep"
                             />
                         </div>
 
@@ -1170,10 +1225,25 @@ Remember:
                                 onClick={() => {
                                     setError('')
                                     const result = validateQuizJSON(jsonText)
-                                    if (!result.ok) {
-                                        setError('Validation failed:\n' + result.errors.map((e: string) => `• ${e}`).join('\n'))
-                                    } else {
+                                    if (result.ok) {
                                         setError(`Valid! ${result.count} item${result.count === 1 ? '' : 's'} ready to create.`)
+                                        return
+                                    }
+                                    try {
+                                        JSON.parse(jsonText)
+                                        setError('Validation failed:\n' + result.errors.map((e: string) => `• ${e}`).join('\n'))
+                                    } catch {
+                                        const csv = csvToWords(jsonText)
+                                        if (csv.words.length) {
+                                            setError(`Detected CSV — ${csv.words.length} word${csv.words.length === 1 ? '' : 's'} ready to create.`)
+                                            return
+                                        }
+                                        const delimited = delimitedToWords(jsonText)
+                                        if (delimited.words.length) {
+                                            setError(`Detected a word list — ${delimited.words.length} word${delimited.words.length === 1 ? '' : 's'} ready to create.`)
+                                            return
+                                        }
+                                        setError('Could not parse the pasted text as JSON, CSV, or a simple word list.')
                                     }
                                 }}
                                 disabled={!jsonText || loading}
@@ -1322,14 +1392,8 @@ function ShareQuizModal({
     const getShareUrl = () => {
         const origin = typeof window !== 'undefined' ? window.location.origin : ''
         if (quiz.isCustom) {
-            const data = encodeURIComponent(JSON.stringify({
-                id: quiz.id,
-                name: quiz.name,
-                description: quiz.description,
-                author_name: quiz.author_name || null,
-                words: quiz.words || [],
-                questions: quiz.questions || []
-            }))
+            const data = buildShareData(quiz)
+            if (data === null) return ''
             return `${origin}${BASE_PATH}/quiz/share?data=${data}`
         } else {
             // Normalize file_path: ensure it starts with /
@@ -1339,6 +1403,7 @@ function ShareQuizModal({
         }
     }
     const shareUrl = getShareUrl()
+    const shareTooLarge = quiz.isCustom && shareUrl === ''
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -1378,59 +1443,69 @@ function ShareQuizModal({
                     </p>
 
                     {/* Share Link */}
-                    <div className="bg-neutral-100 dark:bg-neutral-800 rounded-xl p-4 mb-4">
-                        <div className="flex items-center gap-2 mb-2">
-                            <Share2 className="w-4 h-4 text-neutral-500" />
-                            <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase">
-                                Share Link
-                            </span>
+                    {shareTooLarge ? (
+                        <div className="bg-warning/10 border-2 border-warning rounded-xl p-4 mb-4">
+                            <p className="text-sm text-neutral-700 dark:text-neutral-300">
+                                This quiz is too large to share as a link — export it as JSON instead.
+                            </p>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <input
-                                type="text"
-                                value={shareUrl}
-                                readOnly
-                                className="flex-1 px-3 py-2 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-700 dark:text-neutral-300"
-                            />
-                            <button
-                                onClick={onCopyLink}
-                                className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2 text-sm font-semibold"
-                            >
-                                <Copy className="w-4 h-4" />
-                                Copy
-                            </button>
-                        </div>
-                    </div>
+                    ) : (
+                        <>
+                            <div className="bg-neutral-100 dark:bg-neutral-800 rounded-xl p-4 mb-4">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Share2 className="w-4 h-4 text-neutral-500" />
+                                    <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase">
+                                        Share Link
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        type="text"
+                                        value={shareUrl}
+                                        readOnly
+                                        className="flex-1 px-3 py-2 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-700 dark:text-neutral-300"
+                                    />
+                                    <button
+                                        onClick={onCopyLink}
+                                        className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2 text-sm font-semibold"
+                                    >
+                                        <Copy className="w-4 h-4" />
+                                        Copy
+                                    </button>
+                                </div>
+                            </div>
 
-                    {/* Social Share Buttons */}
-                    <div className="space-y-2">
-                        <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase mb-3">
-                            Share on Social Media
-                        </p>
-                        <div className="grid grid-cols-3 gap-3">
-                            <button
-                                onClick={() => onShareSocial('twitter')}
-                                className="flex flex-col items-center gap-2 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors group"
-                            >
-                                <Twitter className="w-6 h-6 text-blue-500 group-hover:scale-110 transition-transform" />
-                                <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">Twitter</span>
-                            </button>
-                            <button
-                                onClick={() => onShareSocial('facebook')}
-                                className="flex flex-col items-center gap-2 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors group"
-                            >
-                                <Facebook className="w-6 h-6 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform" />
-                                <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">Facebook</span>
-                            </button>
-                            <button
-                                onClick={() => onShareSocial('telegram')}
-                                className="flex flex-col items-center gap-2 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors group"
-                            >
-                                <MessageCircle className="w-6 h-6 text-blue-500 group-hover:scale-110 transition-transform" />
-                                <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">Telegram</span>
-                            </button>
-                        </div>
-                    </div>
+                            {/* Social Share Buttons */}
+                            <div className="space-y-2">
+                                <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase mb-3">
+                                    Share on Social Media
+                                </p>
+                                <div className="grid grid-cols-3 gap-3">
+                                    <button
+                                        onClick={() => onShareSocial('twitter')}
+                                        className="flex flex-col items-center gap-2 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors group"
+                                    >
+                                        <Twitter className="w-6 h-6 text-blue-500 group-hover:scale-110 transition-transform" />
+                                        <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">Twitter</span>
+                                    </button>
+                                    <button
+                                        onClick={() => onShareSocial('facebook')}
+                                        className="flex flex-col items-center gap-2 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors group"
+                                    >
+                                        <Facebook className="w-6 h-6 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform" />
+                                        <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">Facebook</span>
+                                    </button>
+                                    <button
+                                        onClick={() => onShareSocial('telegram')}
+                                        className="flex flex-col items-center gap-2 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors group"
+                                    >
+                                        <MessageCircle className="w-6 h-6 text-blue-500 group-hover:scale-110 transition-transform" />
+                                        <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">Telegram</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </>
+                    )}
                 </div>
 
                 <button
