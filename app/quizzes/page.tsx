@@ -6,6 +6,7 @@ import { Plus, Sparkles, BookOpen, Check, Users, Play, Globe, Lock, Share2, Copy
 import BottomNav from '../components/BottomNav'
 import { useAuth } from '../contexts/AuthContext'
 import { getQuizSets, getCustomQuizzes, getPublicQuizzes, createCustomQuiz, getFolders, createFolder, normalizeImportedQuizItems, validateQuizJSON, deleteCustomQuiz } from '../lib/db'
+import { buildShareData } from '../lib/share'
 import { useQuizStore } from '../lib/quizStore'
 import { assetPath, BASE_PATH } from '../lib/paths'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -120,14 +121,8 @@ export default function QuizzesPage() {
         const origin = window.location.origin
         if (quiz.isCustom) {
             // Embed the whole quiz in the URL so the link works on any static host
-            const data = encodeURIComponent(JSON.stringify({
-                id: quiz.id,
-                name: quiz.name,
-                description: quiz.description,
-                author_name: quiz.author_name || null,
-                words: quiz.words || [],
-                questions: quiz.questions || []
-            }))
+            const data = buildShareData(quiz)
+            if (data === null) return ''
             return `${origin}${BASE_PATH}/quiz/share?data=${data}`
         } else {
             // For official quizzes, create a shareable link
@@ -1190,14 +1185,8 @@ function ShareQuizModal({
     const getShareUrl = () => {
         const origin = typeof window !== 'undefined' ? window.location.origin : ''
         if (quiz.isCustom) {
-            const data = encodeURIComponent(JSON.stringify({
-                id: quiz.id,
-                name: quiz.name,
-                description: quiz.description,
-                author_name: quiz.author_name || null,
-                words: quiz.words || [],
-                questions: quiz.questions || []
-            }))
+            const data = buildShareData(quiz)
+            if (data === null) return ''
             return `${origin}${BASE_PATH}/quiz/share?data=${data}`
         } else {
             // Normalize file_path: ensure it starts with /
@@ -1207,6 +1196,7 @@ function ShareQuizModal({
         }
     }
     const shareUrl = getShareUrl()
+    const shareTooLarge = quiz.isCustom && shareUrl === ''
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -1246,59 +1236,69 @@ function ShareQuizModal({
                     </p>
 
                     {/* Share Link */}
-                    <div className="bg-neutral-100 dark:bg-neutral-800 rounded-xl p-4 mb-4">
-                        <div className="flex items-center gap-2 mb-2">
-                            <Share2 className="w-4 h-4 text-neutral-500" />
-                            <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase">
-                                Share Link
-                            </span>
+                    {shareTooLarge ? (
+                        <div className="bg-warning/10 border-2 border-warning rounded-xl p-4 mb-4">
+                            <p className="text-sm text-neutral-700 dark:text-neutral-300">
+                                This quiz is too large to share as a link — export it as JSON instead.
+                            </p>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <input
-                                type="text"
-                                value={shareUrl}
-                                readOnly
-                                className="flex-1 px-3 py-2 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-700 dark:text-neutral-300"
-                            />
-                            <button
-                                onClick={onCopyLink}
-                                className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2 text-sm font-semibold"
-                            >
-                                <Copy className="w-4 h-4" />
-                                Copy
-                            </button>
-                        </div>
-                    </div>
+                    ) : (
+                        <>
+                            <div className="bg-neutral-100 dark:bg-neutral-800 rounded-xl p-4 mb-4">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Share2 className="w-4 h-4 text-neutral-500" />
+                                    <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase">
+                                        Share Link
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        type="text"
+                                        value={shareUrl}
+                                        readOnly
+                                        className="flex-1 px-3 py-2 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-700 dark:text-neutral-300"
+                                    />
+                                    <button
+                                        onClick={onCopyLink}
+                                        className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2 text-sm font-semibold"
+                                    >
+                                        <Copy className="w-4 h-4" />
+                                        Copy
+                                    </button>
+                                </div>
+                            </div>
 
-                    {/* Social Share Buttons */}
-                    <div className="space-y-2">
-                        <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase mb-3">
-                            Share on Social Media
-                        </p>
-                        <div className="grid grid-cols-3 gap-3">
-                            <button
-                                onClick={() => onShareSocial('twitter')}
-                                className="flex flex-col items-center gap-2 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors group"
-                            >
-                                <Twitter className="w-6 h-6 text-blue-500 group-hover:scale-110 transition-transform" />
-                                <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">Twitter</span>
-                            </button>
-                            <button
-                                onClick={() => onShareSocial('facebook')}
-                                className="flex flex-col items-center gap-2 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors group"
-                            >
-                                <Facebook className="w-6 h-6 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform" />
-                                <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">Facebook</span>
-                            </button>
-                            <button
-                                onClick={() => onShareSocial('telegram')}
-                                className="flex flex-col items-center gap-2 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors group"
-                            >
-                                <MessageCircle className="w-6 h-6 text-blue-500 group-hover:scale-110 transition-transform" />
-                                <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">Telegram</span>
-                            </button>
-                        </div>
-                    </div>
+                            {/* Social Share Buttons */}
+                            <div className="space-y-2">
+                                <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase mb-3">
+                                    Share on Social Media
+                                </p>
+                                <div className="grid grid-cols-3 gap-3">
+                                    <button
+                                        onClick={() => onShareSocial('twitter')}
+                                        className="flex flex-col items-center gap-2 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors group"
+                                    >
+                                        <Twitter className="w-6 h-6 text-blue-500 group-hover:scale-110 transition-transform" />
+                                        <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">Twitter</span>
+                                    </button>
+                                    <button
+                                        onClick={() => onShareSocial('facebook')}
+                                        className="flex flex-col items-center gap-2 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors group"
+                                    >
+                                        <Facebook className="w-6 h-6 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform" />
+                                        <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">Facebook</span>
+                                    </button>
+                                    <button
+                                        onClick={() => onShareSocial('telegram')}
+                                        className="flex flex-col items-center gap-2 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors group"
+                                    >
+                                        <MessageCircle className="w-6 h-6 text-blue-500 group-hover:scale-110 transition-transform" />
+                                        <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">Telegram</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </>
+                    )}
                 </div>
 
                 <button
