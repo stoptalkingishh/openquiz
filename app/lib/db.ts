@@ -466,7 +466,8 @@ export async function createCustomQuiz(
     words: any[],
     isPublic: boolean = false,
     authorName?: string,
-    questions?: QuizQuestion[]
+    questions?: QuizQuestion[],
+    tags: string[] = []
 ) {
     const id = typeof crypto !== 'undefined' && 'randomUUID' in crypto
         ? crypto.randomUUID()
@@ -477,6 +478,7 @@ export async function createCustomQuiz(
         user_id: userId,
         name,
         description,
+        tags: Array.isArray(tags) ? tags : [],
         words: Array.isArray(words) ? words : [],
         questions: Array.isArray(questions) && questions.length ? questions : undefined,
         is_public: isPublic,
