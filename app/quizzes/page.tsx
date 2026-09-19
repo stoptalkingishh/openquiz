@@ -2,11 +2,12 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Sparkles, BookOpen, Check, Users, Play, Globe, Lock, Share2, Copy, Twitter, Facebook, MessageCircle, X, Folder, FolderPlus, FolderOpen, Gamepad2, ClipboardList, Trash2 } from 'lucide-react'
+import { Plus, Sparkles, BookOpen, Check, Users, Play, Globe, Lock, Share2, Copy, Twitter, Facebook, MessageCircle, X, Folder, FolderPlus, FolderOpen, Gamepad2, ClipboardList, Trash2, ChevronDown } from 'lucide-react'
 import BottomNav from '../components/BottomNav'
 import { useAuth } from '../contexts/AuthContext'
 import { getQuizSets, getCustomQuizzes, getPublicQuizzes, createCustomQuiz, getFolders, createFolder, normalizeImportedQuizItems, validateQuizJSON, deleteCustomQuiz } from '../lib/db'
 import { useQuizStore } from '../lib/quizStore'
+import { generateQuizFromNotes, getAiSettings, saveAiSettings, AiSettings } from '../lib/ai'
 import { assetPath, BASE_PATH } from '../lib/paths'
 import { motion, AnimatePresence } from 'framer-motion'
 import QuizBuilder from '../components/QuizBuilder'
@@ -717,7 +718,7 @@ function CreateFolderModal({ onClose, onCreated }: { onClose: () => void; onCrea
 }
 
 function CreateQuizModal({ onClose, onCreated }: { onClose: () => void, onCreated: () => void }) {
-    const [step, setStep] = useState<'info' | 'method' | 'json-mode' | 'builder'>('info')
+    const [step, setStep] = useState<'info' | 'method' | 'json-mode' | 'builder' | 'ai'>('info')
     const [name, setName] = useState('')
     const [description, setDescription] = useState('')
     const [authorName, setAuthorName] = useState('')
@@ -726,6 +727,11 @@ function CreateQuizModal({ onClose, onCreated }: { onClose: () => void, onCreate
     const [questions, setQuestions] = useState<QuizQuestion[]>([])
     const [error, setError] = useState('')
     const [loading, setLoading] = useState(false)
+    const [aiNotes, setAiNotes] = useState('')
+    const [aiSettings, setAiSettings] = useState<AiSettings>(() => getAiSettings())
+    const [showAiSettings, setShowAiSettings] = useState(false)
+    const [aiError, setAiError] = useState('')
+    const [aiGenerating, setAiGenerating] = useState(false)
     const { user } = useAuth()
 
     const promptText = `You are building an SAT vocabulary trainer.
@@ -947,6 +953,33 @@ Remember:
         }
     }
 
+    const handleAiGenerate = async () => {
+        if (!user) return
+        setAiError('')
+        if (!aiNotes.trim()) {
+            setAiError('Paste some notes or source text first.')
+            return
+        }
+
+        saveAiSettings(aiSettings)
+        setAiGenerating(true)
+        try {
+            const { words, questions } = await generateQuizFromNotes(aiNotes.trim(), aiSettings)
+            if (questions.length) {
+                await createCustomQuiz(user.id, name, description, [], isPublic, authorName || undefined, questions)
+            } else {
+                if (!words.length) throw new Error('No quiz content was generated.')
+                await createCustomQuiz(user.id, name, description, words, isPublic, authorName || undefined)
+            }
+            onCreated()
+            onClose()
+        } catch (err: any) {
+            setAiError(err.message || 'Failed to generate quiz')
+        } finally {
+            setAiGenerating(false)
+        }
+    }
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <motion.div
@@ -1059,6 +1092,19 @@ Remember:
                         </button>
 
                         <button
+                            onClick={() => setStep('ai')}
+                            className="w-full p-5 rounded-2xl border-2 border-neutral-200 dark:border-neutral-700 hover:border-primary hover:bg-primary/5 transition-all text-left"
+                        >
+                            <div className="font-bold text-lg text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
+                                <Sparkles className="w-5 h-5 text-primary" />
+                                AI Generate (bring your own key)
+                            </div>
+                            <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-1">
+                                Paste your notes and generate a quiz right here using your own AI API key.
+                            </p>
+                        </button>
+
+                        <button
                             onClick={() => {
                                 setQuestions(questions.length ? questions : [])
                                 setStep('builder')
@@ -1141,6 +1187,92 @@ Remember:
                                 className="btn-primary flex-1 disabled:opacity-50"
                             >
                                 {loading ? 'Creating...' : 'Create Quiz'}
+                            </button>
+                        </div>
+                    </div>
+                ) : step === 'ai' ? (
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-2">
+                                Notes / Source Text
+                            </label>
+                            <textarea
+                                value={aiNotes}
+                                onChange={(e) => setAiNotes(e.target.value)}
+                                className="input-field min-h-[160px]"
+                                placeholder="Paste your notes, a word list, or any source text to turn into a quiz..."
+                            />
+                        </div>
+
+                        <div className="border-2 border-neutral-200 dark:border-neutral-700 rounded-xl overflow-hidden">
+                            <button
+                                onClick={() => setShowAiSettings(v => !v)}
+                                className="w-full flex items-center justify-between px-4 py-3 text-sm font-bold text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+                            >
+                                <span>AI Settings</span>
+                                <ChevronDown className={`w-4 h-4 transition-transform ${showAiSettings ? 'rotate-180' : ''}`} />
+                            </button>
+                            {showAiSettings && (
+                                <div className="p-4 space-y-4 border-t border-neutral-200 dark:border-neutral-700">
+                                    <div>
+                                        <label className="block text-xs font-bold text-neutral-600 dark:text-neutral-400 mb-1">
+                                            API Key
+                                        </label>
+                                        <input
+                                            type="password"
+                                            value={aiSettings.apiKey}
+                                            onChange={(e) => setAiSettings({ ...aiSettings, apiKey: e.target.value })}
+                                            className="input-field"
+                                            placeholder="sk-..."
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-neutral-600 dark:text-neutral-400 mb-1">
+                                            Base URL
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={aiSettings.baseUrl}
+                                            onChange={(e) => setAiSettings({ ...aiSettings, baseUrl: e.target.value })}
+                                            className="input-field"
+                                            placeholder="https://api.openai.com/v1"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-neutral-600 dark:text-neutral-400 mb-1">
+                                            Model
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={aiSettings.model}
+                                            onChange={(e) => setAiSettings({ ...aiSettings, model: e.target.value })}
+                                            className="input-field"
+                                            placeholder="gpt-4o-mini"
+                                        />
+                                    </div>
+                                    <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                                        Your key is sent directly from your browser and stored locally on this device.
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+
+                        {aiError && (
+                            <div className="bg-error/10 border-2 border-error text-error-dark dark:text-error-light px-4 py-3 rounded-xl text-sm whitespace-pre-wrap">
+                                {aiError}
+                            </div>
+                        )}
+
+                        <div className="flex gap-3">
+                            <button onClick={() => setStep('method')} className="btn-outline flex-1">
+                                Back
+                            </button>
+                            <button
+                                onClick={handleAiGenerate}
+                                disabled={!aiNotes.trim() || aiGenerating}
+                                className="btn-primary flex-1 disabled:opacity-50"
+                            >
+                                {aiGenerating ? 'Generating...' : 'Generate'}
                             </button>
                         </div>
                     </div>
