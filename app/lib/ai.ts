@@ -1,7 +1,6 @@
 import { normalizeImportedQuizItems } from './db'
 import { Word, QuizQuestion } from './satTypes'
 import { readAccountData, writeAccountData } from './storage'
-import { getDriveToken } from './drive'
 
 export type AiProvider = 'openai' | 'gemini'
 
@@ -25,6 +24,7 @@ const DEFAULT_SETTINGS: AiSettings = {
 }
 
 const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models'
+const GEMINI_MAX_ATTEMPTS = 3
 
 function readJson<T>(key: string, fallback: T): T {
     if (typeof window === 'undefined') return fallback
@@ -134,41 +134,44 @@ async function generateWithOpenAI(notes: string, s: AiSettings): Promise<{ words
 }
 
 async function generateWithGemini(notes: string, s: AiSettings): Promise<{ words: Word[]; questions: QuizQuestion[] }> {
-    const token = await getDriveToken()
-    if (!token) {
-        throw new Error('Sign in with Google to use Gemini AI.')
+    if (!s.apiKey.trim()) {
+        throw new Error('Add a Gemini API key in the AI settings first.')
     }
 
     const model = s.model || DEFAULT_GEMINI_MODEL
-    const projectId = process.env.NEXT_PUBLIC_GOOGLE_PROJECT_ID || ''
     const headers: Record<string, string> = {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        'x-goog-api-key': s.apiKey.trim()
     }
-    if (projectId) headers['x-goog-user-project'] = projectId
 
     let res: Response
     try {
-        res = await fetch(`${GEMINI_ENDPOINT}/${model}:generateContent`, {
+        res = await fetchWithRetry(() => fetch(`${GEMINI_ENDPOINT}/${encodeURIComponent(model)}:generateContent`, {
             signal: AbortSignal.timeout(60000),
             method: 'POST',
             headers,
             body: JSON.stringify({
                 systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-                contents: [{ role: 'user', parts: [{ text: notes }] }]
+                contents: [{ role: 'user', parts: [{ text: notes }] }],
+                generationConfig: { responseMimeType: 'application/json' }
             })
-        })
+        }), GEMINI_MAX_ATTEMPTS)
     } catch {
         throw new Error('Could not reach Google Gemini. Check your connection.')
     }
 
     if (!res.ok) {
-        // 401/403 usually means the signed-in session predates the Gemini
-        // scope — re-signing in grants the AI permission.
+        const detail = await readApiError(res)
         if (res.status === 401 || res.status === 403) {
-            throw new Error('Sign in with Google again to grant Gemini AI access.')
+            throw new Error(`Gemini rejected the API key or its permissions. Check the key in Google AI Studio.${detail ? ` ${detail}` : ''}`)
         }
-        throw new Error(`Gemini request failed (status ${res.status}). Try again.`)
+        if (res.status === 429) {
+            throw new Error(`Gemini rate limit reached. Wait a moment and try again.${detail ? ` ${detail}` : ''}`)
+        }
+        if (res.status >= 500) {
+            throw new Error(`Gemini is temporarily unavailable after ${GEMINI_MAX_ATTEMPTS} attempts. Try again shortly.${detail ? ` ${detail}` : ''}`)
+        }
+        throw new Error(`Gemini request failed (status ${res.status}).${detail ? ` ${detail}` : ' Check the model and API key settings.'}`)
     }
 
     let data: any
@@ -186,6 +189,39 @@ async function generateWithGemini(notes: string, s: AiSettings): Promise<{ words
     }
 
     return parseGeneratedContent(content)
+}
+
+async function fetchWithRetry(request: () => Promise<Response>, maxAttempts: number): Promise<Response> {
+    let response: Response | null = null
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+        response = await request()
+        if (response.ok || !isTransientStatus(response.status) || attempt === maxAttempts - 1) return response
+        await waitForRetry(response, attempt)
+    }
+    return response!
+}
+
+function isTransientStatus(status: number): boolean {
+    return status === 408 || status === 429 || status >= 500
+}
+
+async function waitForRetry(response: Response, attempt: number): Promise<void> {
+    const retryAfter = Number(response.headers.get('retry-after'))
+    const delay = Number.isFinite(retryAfter) && retryAfter > 0
+        ? Math.min(retryAfter * 1000, 10_000)
+        : 250 * 2 ** attempt + Math.floor(Math.random() * 100)
+    await new Promise<void>(resolve => setTimeout(resolve, delay))
+}
+
+async function readApiError(response: Response): Promise<string> {
+    try {
+        const body = await response.json()
+        const message = body?.error?.message
+        if (typeof message === 'string' && message.trim()) return message.trim().slice(0, 300)
+    } catch {
+        // The status remains useful even when the provider sends no JSON error body.
+    }
+    return ''
 }
 
 function parseGeneratedContent(content: string): { words: Word[]; questions: QuizQuestion[] } {
