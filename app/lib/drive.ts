@@ -22,7 +22,7 @@ declare global {
 const CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ''
 const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_API_KEY || ''
 
-const SCOPE = 'openid email profile https://www.googleapis.com/auth/drive.file'
+const SCOPE = 'openid email profile https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/generative-language.retriever'
 const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'
 const FOLDER_NAME = 'OpenQuiz'
 
