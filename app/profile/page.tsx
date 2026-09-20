@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { LogOut, Mail, Calendar, History, Trophy, BarChart3, Download } from 'lucide-react'
 import BottomNav from '../components/BottomNav'
 import { useAuth } from '../contexts/AuthContext'
@@ -258,6 +259,18 @@ export default function ProfilePage() {
                     <LogOut className="w-5 h-5" />
                     Sign Out
                 </button>
+
+                <div className="mt-8 pt-6 border-t border-neutral-200 dark:border-neutral-800 text-center">
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-3">
+                        © 2024-present OpenQuiz contributors · AGPL-3.0-or-later
+                    </p>
+                    <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs font-semibold">
+                        <Link href="/terms" className="text-neutral-500 dark:text-neutral-400 hover:text-primary dark:hover:text-primary-light">Terms</Link>
+                        <Link href="/privacy" className="text-neutral-500 dark:text-neutral-400 hover:text-primary dark:hover:text-primary-light">Privacy</Link>
+                        <a href="https://github.com/stoptalkingishh/openquiz/blob/main/LICENSE" target="_blank" rel="noopener noreferrer" className="text-neutral-500 dark:text-neutral-400 hover:text-primary dark:hover:text-primary-light">License</a>
+                        <a href="https://github.com/stoptalkingishh/openquiz/blob/main/THIRD-PARTY-NOTICES.md" target="_blank" rel="noopener noreferrer" className="text-neutral-500 dark:text-neutral-400 hover:text-primary dark:hover:text-primary-light">Third-Party Notices</a>
+                    </nav>
+                </div>
             </div>
             <BottomNav />
         </div>
