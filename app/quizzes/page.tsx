@@ -2,13 +2,13 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Sparkles, BookOpen, Check, Users, Play, Globe, Lock, Share2, Copy, Twitter, Facebook, MessageCircle, X, Folder, FolderPlus, FolderOpen, Gamepad2, ClipboardList, Trash2, ChevronDown, Search, Pencil } from 'lucide-react'
+import { Plus, Sparkles, BookOpen, Check, Users, Play, Globe, Lock, Share2, Copy, Twitter, Facebook, MessageCircle, X, Folder, FolderPlus, FolderOpen, Gamepad2, ClipboardList, Trash2, ChevronDown, Search, Pencil, Layers } from 'lucide-react'
 import BottomNav from '../components/BottomNav'
 import { useAuth } from '../contexts/AuthContext'
-import { getQuizSets, getCustomQuizzes, getPublicQuizzes, createCustomQuiz, getFolders, createFolder, normalizeImportedQuizItems, validateQuizJSON, deleteCustomQuiz, csvToWords, delimitedToWords } from '../lib/db'
+import { combineCustomQuizQuestions, getQuizSets, getCustomQuizzes, getPublicQuizzes, createCustomQuiz, getFolders, createFolder, normalizeImportedQuizItems, validateQuizJSON, deleteCustomQuiz, csvToWords, delimitedToWords } from '../lib/db'
 import { buildShareData } from '../lib/share'
 import { useQuizStore } from '../lib/quizStore'
-import { generateQuizFromNotes, getAiSettings, saveAiSettings, AiSettings, AiProvider, DEFAULT_OPENAI_MODEL, DEFAULT_GEMINI_MODEL } from '../lib/ai'
+import { buildPlannedQuizPrompt, generateQuizFromNotes, getAiSettings, planQuizzesFromMaterial, saveAiSettings, AiSettings, AiProvider, DEFAULT_OPENAI_MODEL, DEFAULT_GEMINI_MODEL, PlannedQuiz } from '../lib/ai'
 import { assetPath, BASE_PATH } from '../lib/paths'
 import { motion, AnimatePresence } from 'framer-motion'
 import QuizBuilder from '../components/QuizBuilder'
@@ -31,6 +31,7 @@ export default function QuizzesPage() {
     const [folders, setFolders] = useState<any[]>([])
     const [activeFolderId, setActiveFolderId] = useState<string | null>(null)
     const [showCreateModal, setShowCreateModal] = useState(false)
+    const [showCombineModal, setShowCombineModal] = useState(false)
     const [showFolderModal, setShowFolderModal] = useState(false)
     const [showShareModal, setShowShareModal] = useState(false)
     const [shareQuiz, setShareQuiz] = useState<any>(null)
@@ -462,9 +463,12 @@ export default function QuizzesPage() {
 
                 {/* Custom Quizzes */}
                 <div>
-                    <h2 className="text-lg font-bold text-neutral-900 dark:text-neutral-100 mb-4">
-                        {activeFolder ? `${activeFolder.name} · ` : ''}My Custom Quizzes
-                    </h2>
+                    <div className="flex items-center justify-between gap-3 mb-4">
+                        <h2 className="text-lg font-bold text-neutral-900 dark:text-neutral-100">
+                            {activeFolder ? `${activeFolder.name} · ` : ''}My Custom Quizzes
+                        </h2>
+                        {customQuizzes.length >= 2 && <button onClick={() => setShowCombineModal(true)} className="text-sm font-semibold text-primary flex items-center gap-1 px-3 py-2 rounded-lg hover:bg-primary/10"><Layers className="w-4 h-4" /> Build combined test</button>}
+                    </div>
                     {visibleCustomQuizzes.length === 0 ? (
                         <div className="card text-center py-8">
                             <Sparkles className="w-12 h-12 text-neutral-300 dark:text-neutral-600 mx-auto mb-3" />
@@ -603,6 +607,9 @@ export default function QuizzesPage() {
                         onCreated={loadQuizzes}
                     />
                 )}
+                {showCombineModal && user && (
+                    <CombineQuizModal quizzes={customQuizzes} userId={user.id} onClose={() => setShowCombineModal(false)} onCreated={async () => { setShowCombineModal(false); await loadQuizzes() }} />
+                )}
                 {showShareModal && shareQuiz && (
                     <ShareQuizModal
                         quiz={shareQuiz}
@@ -739,6 +746,49 @@ function CreateFolderModal({ onClose, onCreated }: { onClose: () => void; onCrea
     )
 }
 
+function CombineQuizModal({ quizzes, userId, onClose, onCreated }: { quizzes: any[], userId: string, onClose: () => void, onCreated: () => Promise<void> }) {
+    const [selectedIds, setSelectedIds] = useState<string[]>(quizzes.map(quiz => quiz.id))
+    const [name, setName] = useState('Combined unit test')
+    const [description, setDescription] = useState('A test built from selected custom quizzes.')
+    const [tags, setTags] = useState('combined, unit-test')
+    const [questionLimit, setQuestionLimit] = useState(0)
+    const [saving, setSaving] = useState(false)
+    const [error, setError] = useState('')
+    const selected = quizzes.filter(quiz => selectedIds.includes(quiz.id))
+    const available = combineCustomQuizQuestions(selected).length
+
+    const create = async () => {
+        setError('')
+        if (!name.trim()) return setError('Give the combined test a name.')
+        if (selected.length < 2) return setError('Select at least two quizzes to combine.')
+        const questions = combineCustomQuizQuestions(selected, questionLimit)
+        if (!questions.length) return setError('The selected quizzes do not contain usable questions or vocabulary.')
+        setSaving(true)
+        try {
+            const source = `Combined from: ${selected.map(quiz => quiz.name).join(', ')}`
+            await createCustomQuiz(userId, name.trim(), description.trim(), [], false, undefined, questions, tags.split(',').map(tag => tag.trim()).filter(Boolean), source)
+            await onCreated()
+        } catch (err: any) {
+            setError(err.message || 'Could not create the combined test.')
+        } finally {
+            setSaving(false)
+        }
+    }
+
+    return <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+        <div className="bg-white dark:bg-surface-dark w-full max-w-2xl rounded-3xl p-6 shadow-2xl relative z-10 max-h-[90vh] overflow-y-auto space-y-4">
+            <div className="flex items-start justify-between gap-3"><div><h2 className="text-2xl font-bold">Build a combined test</h2><p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">Your original quizzes stay unchanged. Vocabulary becomes flashcards in the new test.</p></div><button type="button" onClick={onClose} className="p-2 rounded-lg text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800" aria-label="Close"><X className="w-5 h-5" /></button></div>
+            <div className="grid gap-3 sm:grid-cols-2"><label className="text-sm font-semibold">Test name<input value={name} onChange={e => setName(e.target.value)} className="input-field mt-1" /></label><label className="text-sm font-semibold">Questions <span className="font-normal text-neutral-500">(0 = all)</span><input type="number" min="0" max={available} value={questionLimit} onChange={e => setQuestionLimit(Math.min(available, Math.max(0, Number(e.target.value) || 0)))} className="input-field mt-1" /></label></div>
+            <label className="block text-sm font-semibold">Description<textarea value={description} onChange={e => setDescription(e.target.value)} className="input-field mt-1 min-h-20" /></label>
+            <label className="block text-sm font-semibold">Tags<input value={tags} onChange={e => setTags(e.target.value)} className="input-field mt-1" /></label>
+            <section className="space-y-2"><div className="flex items-center justify-between"><h3 className="font-bold">Source quizzes</h3><span className="text-sm text-neutral-500">{available} available items</span></div>{quizzes.map(quiz => <label key={quiz.id} className="flex gap-3 rounded-xl border border-neutral-200 dark:border-neutral-700 p-3 cursor-pointer"><input type="checkbox" checked={selectedIds.includes(quiz.id)} onChange={e => setSelectedIds(ids => e.target.checked ? [...ids, quiz.id] : ids.filter(id => id !== quiz.id))} /><span><span className="block font-semibold">{quiz.name}</span><span className="block text-sm text-neutral-500">{quizItemCount(quiz)} {quizItemLabel(quiz)}</span></span></label>)}</section>
+            {error && <p className="text-sm text-error-dark dark:text-error-light">{error}</p>}
+            <div className="flex gap-3"><button type="button" onClick={onClose} className="btn-outline flex-1">Cancel</button><button type="button" onClick={create} disabled={saving} className="btn-primary flex-1 disabled:opacity-50"><Layers className="w-4 h-4 inline mr-2" />{saving ? 'Creating…' : `Create ${Math.min(questionLimit || available, available)}-question test`}</button></div>
+        </div>
+    </div>
+}
+
 function CreateQuizModal({ onClose, onCreated }: { onClose: () => void, onCreated: () => void }) {
     const [step, setStep] = useState<'info' | 'method' | 'json-mode' | 'builder' | 'ai'>('info')
     const [name, setName] = useState('')
@@ -755,6 +805,9 @@ function CreateQuizModal({ onClose, onCreated }: { onClose: () => void, onCreate
     const [showAiSettings, setShowAiSettings] = useState(false)
     const [aiError, setAiError] = useState('')
     const [aiGenerating, setAiGenerating] = useState(false)
+    const [aiPreparing, setAiPreparing] = useState(false)
+    const [aiPlan, setAiPlan] = useState<{ overview: string, quizzes: Array<PlannedQuiz & { selected: boolean, instructions: string }> } | null>(null)
+    const [sourceFileName, setSourceFileName] = useState('')
     const { user, signInWithGoogle } = useAuth()
 
     const setAiProvider = (provider: AiProvider) => {
@@ -763,6 +816,34 @@ function CreateQuizModal({ onClose, onCreated }: { onClose: () => void, onCreate
             provider,
             model: provider === 'gemini' ? DEFAULT_GEMINI_MODEL : DEFAULT_OPENAI_MODEL
         }))
+    }
+
+    const handleSourceFile = async (file: File | undefined) => {
+        if (!file) return
+        setAiError('')
+        setSourceFileName(file.name)
+        try {
+            if (file.size > 15 * 1024 * 1024) throw new Error('Choose a PDF or text file smaller than 15 MB.')
+            if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+                const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs')
+                const document = await pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise
+                const pages: string[] = []
+                for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) {
+                    const page = await document.getPage(pageNumber)
+                    const content = await page.getTextContent()
+                    pages.push(content.items.map((item: any) => typeof item.str === 'string' ? item.str : '').join(' '))
+                }
+                const extracted = pages.join('\n\n').trim()
+                if (!extracted) throw new Error('This PDF has no selectable text. Use a text-based PDF or paste an OCR transcript.')
+                setAiNotes(extracted.slice(0, 150000))
+                if (extracted.length > 150000) setAiError('The first 150,000 characters were extracted. For complete coverage, upload one chapter at a time.')
+            } else {
+                setAiNotes((await file.text()).slice(0, 150000))
+            }
+            setAiPlan(null)
+        } catch (err: any) {
+            setAiError(err.message || 'Could not read this file.')
+        }
     }
 
     const promptText = `You are building an SAT vocabulary trainer.
@@ -1004,23 +1085,43 @@ Remember:
         }
     }
 
-    const handleAiGenerate = async () => {
+    const handleAiPrepare = async () => {
         if (!user) return
         setAiError('')
         if (!aiNotes.trim()) {
-            setAiError('Paste some notes or source text first.')
+            setAiError('Paste or upload source material first.')
             return
         }
+        setAiPreparing(true)
+        try {
+            saveAiSettings(aiSettings)
+            const plan = await planQuizzesFromMaterial(aiNotes.trim(), aiSettings)
+            setAiPlan({ overview: plan.overview, quizzes: plan.quizzes.map(quiz => ({ ...quiz, selected: true, instructions: '' })) })
+        } catch (err: any) {
+            setAiError(err.message || 'Failed to prepare study material')
+        } finally {
+            setAiPreparing(false)
+        }
+    }
 
+    const handleAiGenerate = async () => {
+        if (!user || !aiPlan) return
+        const selected = aiPlan.quizzes.filter(quiz => quiz.selected)
+        if (!selected.length) return setAiError('Select at least one planned quiz.')
+        setAiError('')
         setAiGenerating(true)
         try {
             saveAiSettings(aiSettings)
-            const { words, questions } = await generateQuizFromNotes(aiNotes.trim(), aiSettings)
-            if (questions.length) {
-                await createCustomQuiz(user.id, name, description, [], isPublic, authorName || undefined, questions)
-            } else {
-                if (!words.length) throw new Error('No quiz content was generated.')
-                await createCustomQuiz(user.id, name, description, words, isPublic, authorName || undefined)
+            for (const planned of selected) {
+                const source = buildPlannedQuizPrompt(aiNotes.trim(), planned, planned.instructions)
+                const { words, questions } = await generateQuizFromNotes(source, aiSettings)
+                const tags = planned.tags.length ? planned.tags : tagsText.split(',').map(tag => tag.trim()).filter(Boolean)
+                if (questions.length) {
+                    await createCustomQuiz(user.id, planned.title, planned.description, [], isPublic, authorName || undefined, questions, tags, source)
+                } else {
+                    if (!words.length) throw new Error(`No quiz content was generated for ${planned.title}.`)
+                    await createCustomQuiz(user.id, planned.title, planned.description, words, isPublic, authorName || undefined, undefined, tags, source)
+                }
             }
             onCreated()
             onClose()
@@ -1273,15 +1374,34 @@ Remember:
                     <div className="space-y-4">
                         <div>
                             <label className="block text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-2">
-                                Notes / Source Text
+                                Notes, course material, or PDF
                             </label>
                             <textarea
                                 value={aiNotes}
-                                onChange={(e) => setAiNotes(e.target.value)}
+                                onChange={(e) => { setAiNotes(e.target.value); setAiPlan(null) }}
                                 className="input-field min-h-[160px]"
-                                placeholder="Paste your notes, a word list, or any source text to turn into a quiz..."
+                                placeholder="Paste a chapter, course outline, notes, or a transcript. You will review a study plan before quizzes are generated."
                             />
+                            <label className="mt-2 inline-flex items-center gap-2 text-sm font-semibold text-primary cursor-pointer">
+                                <input type="file" accept=".pdf,.txt,.md,text/plain,application/pdf" className="sr-only" onChange={e => handleSourceFile(e.target.files?.[0])} />
+                                Upload PDF or text file
+                            </label>
+                            {sourceFileName && <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">Loaded from {sourceFileName}</p>}
                         </div>
+
+                        {aiPlan && <section className="rounded-xl border-2 border-primary/30 bg-primary/5 p-4 space-y-3">
+                            <div><h3 className="font-bold">Review the study plan</h3><p className="text-sm text-neutral-600 dark:text-neutral-400 mt-1">{aiPlan.overview || 'Select the sections you want to generate. Each becomes its own editable custom quiz.'}</p></div>
+                            <div className="space-y-3">
+                                {aiPlan.quizzes.map((planned, index) => <div key={index} className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-3 space-y-2">
+                                    <label className="flex items-start gap-2 text-sm font-semibold"><input type="checkbox" className="mt-1" checked={planned.selected} onChange={e => setAiPlan(plan => plan ? { ...plan, quizzes: plan.quizzes.map((item, i) => i === index ? { ...item, selected: e.target.checked } : item) } : plan)} /><span>{planned.title}</span></label>
+                                    <input value={planned.title} onChange={e => setAiPlan(plan => plan ? { ...plan, quizzes: plan.quizzes.map((item, i) => i === index ? { ...item, title: e.target.value } : item) } : plan)} className="input-field text-sm" aria-label={`Quiz ${index + 1} title`} />
+                                    <textarea value={planned.description} onChange={e => setAiPlan(plan => plan ? { ...plan, quizzes: plan.quizzes.map((item, i) => i === index ? { ...item, description: e.target.value } : item) } : plan)} className="input-field text-sm min-h-16" aria-label={`Quiz ${index + 1} description`} />
+                                    <div className="grid grid-cols-2 gap-2"><input value={planned.tags.join(', ')} onChange={e => setAiPlan(plan => plan ? { ...plan, quizzes: plan.quizzes.map((item, i) => i === index ? { ...item, tags: e.target.value.split(',').map(tag => tag.trim()).filter(Boolean) } : item) } : plan)} className="input-field text-sm" placeholder="Tags" /><input type="number" min="8" max="25" value={planned.questionCount} onChange={e => setAiPlan(plan => plan ? { ...plan, quizzes: plan.quizzes.map((item, i) => i === index ? { ...item, questionCount: Math.min(25, Math.max(8, Number(e.target.value) || 8)) } : item) } : plan)} className="input-field text-sm" aria-label={`Quiz ${index + 1} question count`} /></div>
+                                    <textarea value={planned.instructions} onChange={e => setAiPlan(plan => plan ? { ...plan, quizzes: plan.quizzes.map((item, i) => i === index ? { ...item, instructions: e.target.value } : item) } : plan)} className="input-field text-sm min-h-16" placeholder="Optional changes, e.g. use scenario questions" />
+                                    <p className="text-xs text-neutral-500 dark:text-neutral-400">Scope: {planned.scope}</p>
+                                </div>)}
+                            </div>
+                        </section>}
 
                         <div className="border-2 border-neutral-200 dark:border-neutral-700 rounded-xl overflow-hidden">
                             <button
@@ -1409,11 +1529,11 @@ Remember:
                                 Back
                             </button>
                             <button
-                                onClick={handleAiGenerate}
-                                disabled={!aiNotes.trim() || aiGenerating}
+                                onClick={aiPlan ? handleAiGenerate : handleAiPrepare}
+                                disabled={!aiNotes.trim() || aiGenerating || aiPreparing}
                                 className="btn-primary flex-1 disabled:opacity-50"
                             >
-                                {aiGenerating ? 'Generating...' : 'Generate'}
+                                {aiPreparing ? 'Preparing…' : aiGenerating ? 'Generating…' : aiPlan ? `Generate selected quizzes (${aiPlan.quizzes.filter(quiz => quiz.selected).length})` : 'Prepare material'}
                             </button>
                         </div>
                     </div>

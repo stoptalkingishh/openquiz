@@ -676,6 +676,42 @@ export function validateQuizJSON(jsonText: string): { ok: boolean; errors: strin
     return { ok: true, errors: [], count: words.length + questions.length }
 }
 
+/**
+ * Builds a standalone test from existing custom quizzes without modifying the
+ * originals. Vocabulary items become flashcards so mixed quiz types can live
+ * together in one assessment.
+ */
+export function combineCustomQuizQuestions(quizzes: CustomQuiz[], limit = 0): QuizQuestion[] {
+    const groups = quizzes.map((quiz, quizIndex) => {
+        const questionItems = (quiz.questions || []).map((question, itemIndex) => ({
+            ...question,
+            id: `combined-${quiz.id}-${quizIndex}-q-${itemIndex}`
+        }))
+        const vocabularyItems = (quiz.words || []).filter(word => word.word?.trim() && word.ru?.trim()).map((word, itemIndex): QuizQuestion => ({
+            id: `combined-${quiz.id}-${quizIndex}-w-${itemIndex}`,
+            kind: 'flashcard',
+            prompt: word.word.trim(),
+            answer: word.ru.trim(),
+            word: word.word.trim()
+        }))
+        return [...questionItems, ...vocabularyItems]
+    })
+    const combined = groups.flat()
+    if (!limit || limit >= combined.length) return combined
+    // Round-robin selection keeps a shorter unit test representative of every
+    // selected source instead of taking all of its first questions from one quiz.
+    const result: QuizQuestion[] = []
+    for (let itemIndex = 0; result.length < limit; itemIndex += 1) {
+        let added = false
+        for (const group of groups) {
+            if (result.length >= limit) break
+            if (group[itemIndex]) { result.push(group[itemIndex]); added = true }
+        }
+        if (!added) break
+    }
+    return result
+}
+
 export async function createCustomQuiz(
     userId: string,
     name: string,
@@ -684,7 +720,8 @@ export async function createCustomQuiz(
     isPublic: boolean = false,
     authorName?: string,
     questions?: QuizQuestion[],
-    tags: string[] = []
+    tags: string[] = [],
+    aiSourcePrompt?: string
 ) {
     return queueLocalWrite('createCustomQuiz', async () => {
         assertAccount(userId)
@@ -700,6 +737,7 @@ export async function createCustomQuiz(
             tags: Array.isArray(tags) ? tags : [],
             words: Array.isArray(words) ? words : [],
             questions: Array.isArray(questions) && questions.length ? questions : undefined,
+            ai_source_prompt: aiSourcePrompt?.trim() || undefined,
             is_public: isPublic,
             author_name: authorName || null,
             created_at: new Date().toISOString()
@@ -723,7 +761,7 @@ export async function createCustomQuiz(
 
 export async function updateCustomQuiz(
     quizId: string,
-    changes: Pick<CustomQuiz, 'name' | 'description' | 'tags' | 'words' | 'questions' | 'is_public'>
+    changes: Pick<CustomQuiz, 'name' | 'description' | 'tags' | 'words' | 'questions' | 'is_public' | 'ai_source_prompt'>
 ): Promise<CustomQuiz> {
     return queueLocalWrite('updateCustomQuiz', async () => {
         const all = readJson<CustomQuiz[]>(CUSTOM_QUIZZES_KEY, [])
@@ -740,6 +778,7 @@ export async function updateCustomQuiz(
             tags: Array.from(new Set((changes.tags || []).map(tag => String(tag).trim()).filter(Boolean))),
             words: Array.isArray(changes.words) ? changes.words : [],
             questions: Array.isArray(changes.questions) && changes.questions.length ? changes.questions : undefined,
+            ai_source_prompt: String(changes.ai_source_prompt || '').trim() || undefined,
             is_public: Boolean(changes.is_public)
         }
         all[index] = updated

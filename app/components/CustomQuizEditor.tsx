@@ -1,11 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import { Check, Plus, Trash2, X } from 'lucide-react'
+import { Check, Plus, Sparkles, Trash2, X } from 'lucide-react'
 import QuizBuilder from './QuizBuilder'
 import { CustomQuiz, QuizQuestion, Word } from '../lib/satTypes'
+import { buildQuizRevisionPrompt, generateQuizFromNotes, getAiSettings } from '../lib/ai'
 
-type EditableQuiz = Pick<CustomQuiz, 'name' | 'description' | 'tags' | 'words' | 'questions' | 'is_public'>
+type EditableQuiz = Pick<CustomQuiz, 'name' | 'description' | 'tags' | 'words' | 'questions' | 'is_public' | 'ai_source_prompt'>
 
 function blankWord(): Word {
     return { word: '', ru: '', synonyms: [], simple_examples: [], advanced_example: '', confusions: [] }
@@ -23,8 +24,45 @@ export default function CustomQuizEditor({ quiz, saving, onCancel, onSave }: {
     const [isPublic, setIsPublic] = useState(Boolean(quiz.is_public))
     const [questions, setQuestions] = useState<QuizQuestion[]>(quiz.questions || [])
     const [words, setWords] = useState<Word[]>(quiz.words || [])
+    const [contentKind, setContentKind] = useState<'questions' | 'words'>(quiz.questions?.length ? 'questions' : 'words')
+    const [builderVersion, setBuilderVersion] = useState(0)
+    const [sourcePrompt, setSourcePrompt] = useState(quiz.ai_source_prompt || '')
+    const [revisionInstructions, setRevisionInstructions] = useState('')
+    const [aiRevising, setAiRevising] = useState(false)
+    const [aiError, setAiError] = useState('')
     const [error, setError] = useState('')
-    const hasQuestions = questions.length > 0 || Boolean(quiz.questions?.length)
+    const hasQuestions = contentKind === 'questions'
+
+    const reviseWithAi = async () => {
+        setAiError('')
+        if (!sourcePrompt.trim()) {
+            setAiError('Add the notes or prompt that describe this quiz first.')
+            return
+        }
+        setAiRevising(true)
+        try {
+            const generated = await generateQuizFromNotes(
+                buildQuizRevisionPrompt(sourcePrompt, { words, questions }, revisionInstructions),
+                getAiSettings()
+            )
+            if (generated.questions.length) {
+                setQuestions(generated.questions)
+                setWords([])
+                setContentKind('questions')
+                setBuilderVersion(version => version + 1)
+            } else if (generated.words.length) {
+                setWords(generated.words)
+                setQuestions([])
+                setContentKind('words')
+            } else {
+                throw new Error('The AI returned no quiz content.')
+            }
+        } catch (err: any) {
+            setAiError(err.message || 'Could not revise this quiz with AI.')
+        } finally {
+            setAiRevising(false)
+        }
+    }
 
     const submit = async () => {
         setError('')
@@ -39,7 +77,8 @@ export default function CustomQuizEditor({ quiz, saving, onCancel, onSave }: {
             tags: tags.split(',').map(tag => tag.trim()).filter(Boolean),
             is_public: isPublic,
             questions: hasQuestions ? questions : [],
-            words: hasQuestions ? [] : words
+            words: hasQuestions ? [] : words,
+            ai_source_prompt: sourcePrompt
         })
     }
 
@@ -62,7 +101,15 @@ export default function CustomQuizEditor({ quiz, saving, onCancel, onSave }: {
             <label className="block text-sm font-semibold">Description<textarea value={description} onChange={e => setDescription(e.target.value)} className="input-field mt-1 min-h-24" /></label>
             <label className="flex items-center gap-3 text-sm font-semibold"><input type="checkbox" checked={isPublic} onChange={e => setIsPublic(e.target.checked)} className="w-4 h-4" /> Make this quiz public</label>
 
-            {hasQuestions ? <QuizBuilder initialQuestions={questions} onChange={setQuestions} /> : (
+            <section className="rounded-xl border border-neutral-200 dark:border-neutral-700 p-4 space-y-3">
+                <div><h3 className="font-bold flex items-center gap-2"><Sparkles className="w-4 h-4 text-primary" /> AI revision</h3><p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">Revise the draft below with AI. Review the result, then save changes to keep it.</p></div>
+                <label className="block text-sm font-semibold">Original notes or generation prompt<textarea value={sourcePrompt} onChange={e => setSourcePrompt(e.target.value)} className="input-field mt-1 min-h-28" placeholder="Paste the notes used to create this quiz" /></label>
+                <label className="block text-sm font-semibold">What should change? <span className="font-normal text-neutral-500">(optional)</span><textarea value={revisionInstructions} onChange={e => setRevisionInstructions(e.target.value)} className="input-field mt-1 min-h-20" placeholder="For example: add DNS questions and make distractors more realistic" /></label>
+                {aiError && <p className="text-sm text-error-dark dark:text-error-light">{aiError}</p>}
+                <button type="button" onClick={reviseWithAi} disabled={aiRevising} className="btn-outline w-full disabled:opacity-50"><Sparkles className="w-4 h-4 inline mr-2" />{aiRevising ? 'Generating revision…' : 'Generate revised content'}</button>
+            </section>
+
+            {hasQuestions ? <QuizBuilder key={builderVersion} initialQuestions={questions} onChange={setQuestions} /> : (
                 <div className="space-y-3">
                     <div className="flex items-center justify-between"><h3 className="font-bold">Vocabulary</h3><button type="button" onClick={() => setWords([...words, blankWord()])} className="text-sm text-primary font-semibold flex items-center gap-1"><Plus className="w-4 h-4" /> Add term</button></div>
                     {words.map((word, index) => <div key={index} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center">

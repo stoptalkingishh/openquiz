@@ -85,7 +85,77 @@ export async function generateQuizFromNotes(
     return generateWithOpenAI(notes, s)
 }
 
+const PLANNING_PROMPT = `You are a curriculum designer for a study app. Analyze supplied study material before generating questions.
+Return ONLY valid JSON in this shape: {"overview":"short description","quizzes":[{"title":"...","description":"...","tags":["..."],"scope":"specific chapters, objectives, or headings to cover","questionCount":12}]}
+Split broad material into coherent, independently studyable quizzes by chapter, domain, or objective. Make no more than 12 quizzes. Do not make one enormous quiz for multi-chapter material. Choose questionCount from 8 to 25. Titles, descriptions, and tags must be ready to show users. The scope must clearly name what belongs in that quiz.`
+
+export async function planQuizzesFromMaterial(material: string, s: AiSettings): Promise<QuizPlan> {
+    const content = s.provider === 'gemini'
+        ? await generateRawWithGemini(material, s, PLANNING_PROMPT)
+        : await generateRawWithOpenAI(material, s, PLANNING_PROMPT)
+    let parsed: any
+    try { parsed = JSON.parse(stripMarkdownFences(content)) } catch { throw new Error('The AI planning response was not valid JSON. Try again.') }
+    const quizzes = Array.isArray(parsed?.quizzes) ? parsed.quizzes.map((item: any): PlannedQuiz | null => {
+        const title = typeof item?.title === 'string' ? item.title.trim() : ''
+        const scope = typeof item?.scope === 'string' ? item.scope.trim() : ''
+        if (!title || !scope) return null
+        return {
+            title,
+            description: typeof item.description === 'string' ? item.description.trim() : '',
+            tags: Array.from(new Set(Array.isArray(item.tags) ? item.tags.map(String).map((tag: string) => tag.trim()).filter(Boolean) : [])),
+            scope,
+            questionCount: Math.min(25, Math.max(8, Number.isFinite(Number(item.questionCount)) ? Math.round(Number(item.questionCount)) : 12))
+        }
+    }).filter((item: PlannedQuiz | null): item is PlannedQuiz => Boolean(item)) : []
+    if (!quizzes.length) throw new Error('The AI could not identify any quiz sections. Try adding clearer headings or instructions.')
+    return { overview: typeof parsed.overview === 'string' ? parsed.overview.trim() : '', quizzes }
+}
+
+export function buildPlannedQuizPrompt(material: string, quiz: PlannedQuiz, instructions = '') {
+    return [
+        `Create exactly ${quiz.questionCount} study items for this quiz.`,
+        `Quiz title: ${quiz.title}`,
+        `Required scope: ${quiz.scope}`,
+        instructions.trim() ? `Additional instructions: ${instructions.trim()}` : '',
+        '', 'Source material:', material
+    ].filter(Boolean).join('\n')
+}
+
+export interface PlannedQuiz {
+    title: string
+    description: string
+    tags: string[]
+    scope: string
+    questionCount: number
+}
+
+export interface QuizPlan {
+    overview: string
+    quizzes: PlannedQuiz[]
+}
+
+/** Builds a complete-replacement request while keeping the original source visible to the model. */
+export function buildQuizRevisionPrompt(
+    sourceNotes: string,
+    current: { words?: Word[]; questions?: QuizQuestion[] },
+    instructions: string
+) {
+    const existing = current.questions?.length ? current.questions : (current.words || [])
+    return [
+        'Original source notes:', sourceNotes.trim().slice(0, 12000),
+        '',
+        'Current quiz content. Return a complete replacement, keeping useful material unless the revision request says otherwise:',
+        JSON.stringify(existing).slice(0, 16000),
+        '',
+        'Revision request:', instructions.trim() || 'Improve accuracy, clarity, coverage, and answer choices while preserving the subject.'
+    ].join('\n')
+}
+
 async function generateWithOpenAI(notes: string, s: AiSettings): Promise<{ words: Word[]; questions: QuizQuestion[] }> {
+    return parseGeneratedContent(await generateRawWithOpenAI(notes, s, SYSTEM_PROMPT))
+}
+
+async function generateRawWithOpenAI(notes: string, s: AiSettings, systemPrompt: string): Promise<string> {
     if (!s.apiKey) {
         throw new Error('Add an API key in the AI settings first.')
     }
@@ -106,7 +176,7 @@ async function generateWithOpenAI(notes: string, s: AiSettings): Promise<{ words
             body: JSON.stringify({
                 model: s.model,
                 messages: [
-                    { role: 'system', content: SYSTEM_PROMPT },
+                    { role: 'system', content: systemPrompt },
                     { role: 'user', content: notes }
                 ]
             })
@@ -131,10 +201,14 @@ async function generateWithOpenAI(notes: string, s: AiSettings): Promise<{ words
         throw new Error('The AI returned no content.')
     }
 
-    return parseGeneratedContent(content)
+    return content
 }
 
 async function generateWithGemini(notes: string, s: AiSettings): Promise<{ words: Word[]; questions: QuizQuestion[] }> {
+    return parseGeneratedContent(await generateRawWithGemini(notes, s, SYSTEM_PROMPT))
+}
+
+async function generateRawWithGemini(notes: string, s: AiSettings, systemPrompt: string): Promise<string> {
     const usingGoogleAccount = !s.apiKey.trim()
     const token = usingGoogleAccount ? await getDriveToken() : ''
     if (usingGoogleAccount && !token) throw new Error('Sign in with Google to use Gemini without an API key.')
@@ -156,7 +230,7 @@ async function generateWithGemini(notes: string, s: AiSettings): Promise<{ words
             method: 'POST',
             headers,
             body: JSON.stringify({
-                systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+                systemInstruction: { parts: [{ text: systemPrompt }] },
                 contents: [{ role: 'user', parts: [{ text: notes }] }],
                 generationConfig: { responseMimeType: 'application/json' }
             })
@@ -196,7 +270,7 @@ async function generateWithGemini(notes: string, s: AiSettings): Promise<{ words
         throw new Error('Gemini returned no content.')
     }
 
-    return parseGeneratedContent(content)
+    return content
 }
 
 async function fetchWithRetry(request: () => Promise<Response>, maxAttempts: number): Promise<Response> {

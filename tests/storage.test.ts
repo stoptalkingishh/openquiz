@@ -11,7 +11,7 @@ vi.mock('../app/lib/drive', () => ({
     }),
     writeDriveFile: vi.fn(async (name: string, value: any) => { state.remote[name] = value; return true }),
 }))
-import { createCustomQuiz, updateCustomQuiz, deleteCustomQuiz, createFolder, getCustomQuizzes, getWordProgress, saveWordProgress, recordQuizSession, getRecentActivity, syncLocalToCloud, updateDailyStats, getDailyStats, localDate } from '../app/lib/db'
+import { combineCustomQuizQuestions, createCustomQuiz, updateCustomQuiz, deleteCustomQuiz, createFolder, getCustomQuizzes, getWordProgress, saveWordProgress, recordQuizSession, getRecentActivity, syncLocalToCloud, updateDailyStats, getDailyStats, localDate } from '../app/lib/db'
 import { accountKey } from '../app/lib/storage'
 import { writeDriveFile } from '../app/lib/drive'
 
@@ -29,6 +29,17 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals())
 
 describe('account storage and failed saves', () => {
+    it('combines question and vocabulary quizzes into standalone test questions', () => {
+        const combined = combineCustomQuizQuestions([
+            { id: 'one', questions: [{ id: 'q1', kind: 'flashcard', prompt: 'Question', answer: 'Answer' }], words: [] },
+            { id: 'two', questions: [], words: [{ word: 'Term', ru: 'Definition' }] }
+        ] as any)
+        expect(combined).toMatchObject([
+            { id: 'combined-one-0-q-0', prompt: 'Question', answer: 'Answer' },
+            { id: 'combined-two-1-w-0', kind: 'flashcard', prompt: 'Term', answer: 'Definition' }
+        ])
+        expect(combineCustomQuizQuestions([{ id: 'one', questions: combined, words: [] }] as any, 1)).toHaveLength(1)
+    })
     it('rejects stale account daily writes and shows newer offline stats', async () => {
         await expect(updateDailyStats('bob', { wordsLearned: 1 })).rejects.toThrow('Account changed')
         await updateDailyStats('alice', { wordsLearned: 5 })
@@ -47,15 +58,16 @@ describe('account storage and failed saves', () => {
         expect(state.remote['custom_quizzes.json']).toEqual([])
     })
     it('updates custom quiz metadata and question content locally and in Drive', async () => {
-        const quiz = await createCustomQuiz('alice', 'Old name', 'old details', [], false, undefined, [{ id: 'q1', kind: 'flashcard', prompt: 'Old prompt', answer: 'Old answer' }])
+        const quiz = await createCustomQuiz('alice', 'Old name', 'old details', [], false, undefined, [{ id: 'q1', kind: 'flashcard', prompt: 'Old prompt', answer: 'Old answer' }], [], 'Original source')
         state.cloud = true
         const updated = await updateCustomQuiz(quiz.id, {
             name: 'New name', description: 'New details', tags: ['networking', 'networking', ' DNS '], is_public: true,
-            words: [], questions: [{ id: 'q1', kind: 'flashcard', prompt: 'New prompt', answer: 'New answer' }]
+            words: [], questions: [{ id: 'q1', kind: 'flashcard', prompt: 'New prompt', answer: 'New answer' }], ai_source_prompt: ' Updated source notes '
         })
-        expect(updated).toMatchObject({ name: 'New name', description: 'New details', tags: ['networking', 'DNS'], is_public: true })
+        expect(updated).toMatchObject({ name: 'New name', description: 'New details', tags: ['networking', 'DNS'], is_public: true, ai_source_prompt: 'Updated source notes' })
         expect((await getCustomQuizzes('alice'))[0].questions?.[0].prompt).toBe('New prompt')
         expect(state.remote['custom_quizzes.json'][0].name).toBe('New name')
+        expect(state.remote['custom_quizzes.json'][0].ai_source_prompt).toBe('Updated source notes')
     })
     it('does not overwrite remote folders after a failed listing', async () => {
         state.cloud = true; state.failRead = true

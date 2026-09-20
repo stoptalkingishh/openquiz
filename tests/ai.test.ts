@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 const googleToken = vi.hoisted(() => ({ value: 'google-account-token' as string | null }))
 vi.mock('../app/lib/drive', () => ({ getDriveToken: () => Promise.resolve(googleToken.value) }))
-import { generateQuizFromNotes, type AiSettings } from '../app/lib/ai'
+import { buildQuizRevisionPrompt, generateQuizFromNotes, planQuizzesFromMaterial, type AiSettings } from '../app/lib/ai'
 
 const geminiSettings: AiSettings = {
     provider: 'gemini',
@@ -25,6 +25,22 @@ afterEach(() => {
 })
 
 describe('Gemini quiz generation', () => {
+    it('includes source, existing content, and revision instructions in a revision request', () => {
+        const prompt = buildQuizRevisionPrompt('Network notes', { questions: generatedQuiz as any }, 'Add DNS coverage')
+        expect(prompt).toContain('Network notes')
+        expect(prompt).toContain('Pick the right answer')
+        expect(prompt).toContain('Add DNS coverage')
+        expect(prompt).toContain('complete replacement')
+    })
+
+    it('turns a material-planning response into bounded, usable quiz sections', async () => {
+        vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({
+            candidates: [{ content: { parts: [{ text: JSON.stringify({ overview: 'A course', quizzes: [{ title: 'Chapter 1', description: 'Basics', tags: ['networking'], scope: 'TCP and UDP', questionCount: 99 }] }) }] } }]
+        }), { status: 200 })))
+        await expect(planQuizzesFromMaterial('course text', geminiSettings)).resolves.toEqual({
+            overview: 'A course', quizzes: [{ title: 'Chapter 1', description: 'Basics', tags: ['networking'], scope: 'TCP and UDP', questionCount: 25 }]
+        })
+    })
     it('uses a Gemini API key and requests JSON output', async () => {
         const fetchMock = vi.fn(async () => new Response(JSON.stringify({
             candidates: [{ content: { parts: [{ text: JSON.stringify(generatedQuiz) }] } }]
@@ -34,9 +50,9 @@ describe('Gemini quiz generation', () => {
         await expect(generateQuizFromNotes('notes', geminiSettings)).resolves.toMatchObject({ questions: [expect.objectContaining({ prompt: 'Pick the right answer' })] })
 
         expect(fetchMock).toHaveBeenCalledOnce()
-        const [, init] = fetchMock.mock.calls[0]
+        const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
         expect(init.headers).toMatchObject({ 'x-goog-api-key': 'test-gemini-key' })
-        expect(JSON.parse(init.body).generationConfig).toEqual({ responseMimeType: 'application/json' })
+        expect(JSON.parse(init.body as string).generationConfig).toEqual({ responseMimeType: 'application/json' })
     })
 
     it('retries transient Gemini failures before returning generated content', async () => {
@@ -72,7 +88,8 @@ describe('Gemini quiz generation', () => {
         vi.stubGlobal('fetch', fetchMock)
 
         await expect(generateQuizFromNotes('notes', { ...geminiSettings, apiKey: '  ' })).resolves.toMatchObject({ questions: [expect.anything()] })
-        expect(fetchMock.mock.calls[0][1].headers).toMatchObject({ Authorization: 'Bearer google-account-token' })
+        const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
+        expect(init.headers).toMatchObject({ Authorization: 'Bearer google-account-token' })
     })
 
     it('asks the user to sign in when no API key or Google token is available', async () => {
