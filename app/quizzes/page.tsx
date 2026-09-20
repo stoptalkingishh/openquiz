@@ -754,7 +754,7 @@ function CreateQuizModal({ onClose, onCreated }: { onClose: () => void, onCreate
     const [showAiSettings, setShowAiSettings] = useState(false)
     const [aiError, setAiError] = useState('')
     const [aiGenerating, setAiGenerating] = useState(false)
-    const { user, signInWithGoogle } = useAuth()
+    const { user } = useAuth()
 
     const setAiProvider = (provider: AiProvider) => {
         setAiSettings(prev => ({
@@ -1316,24 +1316,21 @@ Remember:
 
                                     {aiSettings.provider === 'gemini' ? (
                                         <>
-                                            {(!user || user.id === 'guest') ? (
-                                                <div className="p-3 rounded-xl bg-primary/5 border-2 border-primary/20">
-                                                    <p className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-2">
-                                                        Gemini uses your Google account — no API key needed.
-                                                    </p>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => signInWithGoogle().catch(() => {})}
-                                                        className="btn-primary w-full text-sm"
-                                                    >
-                                                        Sign in with Google
-                                                    </button>
-                                                </div>
-                                            ) : (
-                                                <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                                                    Using your Google account ({user.email}) — no API key needed.
+                                            <div>
+                                                <label className="block text-xs font-bold text-neutral-600 dark:text-neutral-400 mb-1">
+                                                    Gemini API Key
+                                                </label>
+                                                <input
+                                                    type="password"
+                                                    value={aiSettings.apiKey}
+                                                    onChange={(e) => setAiSettings({ ...aiSettings, apiKey: e.target.value })}
+                                                    className="input-field"
+                                                    placeholder="AIza..."
+                                                />
+                                                <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+                                                    Create a key in <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="underline">Google AI Studio</a>. It is stored only on this device and sent directly to Google.
                                                 </p>
-                                            )}
+                                            </div>
                                             <div>
                                                 <label className="block text-xs font-bold text-neutral-600 dark:text-neutral-400 mb-1">
                                                     Model
