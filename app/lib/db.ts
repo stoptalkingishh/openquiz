@@ -684,7 +684,8 @@ export async function createCustomQuiz(
     isPublic: boolean = false,
     authorName?: string,
     questions?: QuizQuestion[],
-    tags: string[] = []
+    tags: string[] = [],
+    aiSourcePrompt?: string
 ) {
     return queueLocalWrite('createCustomQuiz', async () => {
         assertAccount(userId)
@@ -700,6 +701,7 @@ export async function createCustomQuiz(
             tags: Array.isArray(tags) ? tags : [],
             words: Array.isArray(words) ? words : [],
             questions: Array.isArray(questions) && questions.length ? questions : undefined,
+            ai_source_prompt: aiSourcePrompt?.trim() || undefined,
             is_public: isPublic,
             author_name: authorName || null,
             created_at: new Date().toISOString()
@@ -723,7 +725,7 @@ export async function createCustomQuiz(
 
 export async function updateCustomQuiz(
     quizId: string,
-    changes: Pick<CustomQuiz, 'name' | 'description' | 'tags' | 'words' | 'questions' | 'is_public'>
+    changes: Pick<CustomQuiz, 'name' | 'description' | 'tags' | 'words' | 'questions' | 'is_public' | 'ai_source_prompt'>
 ): Promise<CustomQuiz> {
     return queueLocalWrite('updateCustomQuiz', async () => {
         const all = readJson<CustomQuiz[]>(CUSTOM_QUIZZES_KEY, [])
@@ -740,6 +742,7 @@ export async function updateCustomQuiz(
             tags: Array.from(new Set((changes.tags || []).map(tag => String(tag).trim()).filter(Boolean))),
             words: Array.isArray(changes.words) ? changes.words : [],
             questions: Array.isArray(changes.questions) && changes.questions.length ? changes.questions : undefined,
+            ai_source_prompt: String(changes.ai_source_prompt || '').trim() || undefined,
             is_public: Boolean(changes.is_public)
         }
         all[index] = updated

@@ -1016,11 +1016,12 @@ Remember:
         try {
             saveAiSettings(aiSettings)
             const { words, questions } = await generateQuizFromNotes(aiNotes.trim(), aiSettings)
+            const tags = tagsText.split(',').map(tag => tag.trim()).filter(Boolean)
             if (questions.length) {
-                await createCustomQuiz(user.id, name, description, [], isPublic, authorName || undefined, questions)
+                await createCustomQuiz(user.id, name, description, [], isPublic, authorName || undefined, questions, tags, aiNotes.trim())
             } else {
                 if (!words.length) throw new Error('No quiz content was generated.')
-                await createCustomQuiz(user.id, name, description, words, isPublic, authorName || undefined)
+                await createCustomQuiz(user.id, name, description, words, isPublic, authorName || undefined, undefined, tags, aiNotes.trim())
             }
             onCreated()
             onClose()

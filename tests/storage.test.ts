@@ -47,15 +47,16 @@ describe('account storage and failed saves', () => {
         expect(state.remote['custom_quizzes.json']).toEqual([])
     })
     it('updates custom quiz metadata and question content locally and in Drive', async () => {
-        const quiz = await createCustomQuiz('alice', 'Old name', 'old details', [], false, undefined, [{ id: 'q1', kind: 'flashcard', prompt: 'Old prompt', answer: 'Old answer' }])
+        const quiz = await createCustomQuiz('alice', 'Old name', 'old details', [], false, undefined, [{ id: 'q1', kind: 'flashcard', prompt: 'Old prompt', answer: 'Old answer' }], [], 'Original source')
         state.cloud = true
         const updated = await updateCustomQuiz(quiz.id, {
             name: 'New name', description: 'New details', tags: ['networking', 'networking', ' DNS '], is_public: true,
-            words: [], questions: [{ id: 'q1', kind: 'flashcard', prompt: 'New prompt', answer: 'New answer' }]
+            words: [], questions: [{ id: 'q1', kind: 'flashcard', prompt: 'New prompt', answer: 'New answer' }], ai_source_prompt: ' Updated source notes '
         })
-        expect(updated).toMatchObject({ name: 'New name', description: 'New details', tags: ['networking', 'DNS'], is_public: true })
+        expect(updated).toMatchObject({ name: 'New name', description: 'New details', tags: ['networking', 'DNS'], is_public: true, ai_source_prompt: 'Updated source notes' })
         expect((await getCustomQuizzes('alice'))[0].questions?.[0].prompt).toBe('New prompt')
         expect(state.remote['custom_quizzes.json'][0].name).toBe('New name')
+        expect(state.remote['custom_quizzes.json'][0].ai_source_prompt).toBe('Updated source notes')
     })
     it('does not overwrite remote folders after a failed listing', async () => {
         state.cloud = true; state.failRead = true

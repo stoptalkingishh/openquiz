@@ -194,6 +194,8 @@ export interface CustomQuiz {
   tags?: string[];
   words?: Word[];
   questions?: QuizQuestion[];
+  /** Original notes used when AI generated this quiz, editable for later revisions. */
+  ai_source_prompt?: string;
   is_public: boolean;
   author_name: string | null;
   created_at: string;

@@ -85,6 +85,23 @@ export async function generateQuizFromNotes(
     return generateWithOpenAI(notes, s)
 }
 
+/** Builds a complete-replacement request while keeping the original source visible to the model. */
+export function buildQuizRevisionPrompt(
+    sourceNotes: string,
+    current: { words?: Word[]; questions?: QuizQuestion[] },
+    instructions: string
+) {
+    const existing = current.questions?.length ? current.questions : (current.words || [])
+    return [
+        'Original source notes:', sourceNotes.trim().slice(0, 12000),
+        '',
+        'Current quiz content. Return a complete replacement, keeping useful material unless the revision request says otherwise:',
+        JSON.stringify(existing).slice(0, 16000),
+        '',
+        'Revision request:', instructions.trim() || 'Improve accuracy, clarity, coverage, and answer choices while preserving the subject.'
+    ].join('\n')
+}
+
 async function generateWithOpenAI(notes: string, s: AiSettings): Promise<{ words: Word[]; questions: QuizQuestion[] }> {
     if (!s.apiKey) {
         throw new Error('Add an API key in the AI settings first.')

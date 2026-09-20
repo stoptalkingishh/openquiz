@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 const googleToken = vi.hoisted(() => ({ value: 'google-account-token' as string | null }))
 vi.mock('../app/lib/drive', () => ({ getDriveToken: () => Promise.resolve(googleToken.value) }))
-import { generateQuizFromNotes, type AiSettings } from '../app/lib/ai'
+import { buildQuizRevisionPrompt, generateQuizFromNotes, type AiSettings } from '../app/lib/ai'
 
 const geminiSettings: AiSettings = {
     provider: 'gemini',
@@ -25,6 +25,13 @@ afterEach(() => {
 })
 
 describe('Gemini quiz generation', () => {
+    it('includes source, existing content, and revision instructions in a revision request', () => {
+        const prompt = buildQuizRevisionPrompt('Network notes', { questions: generatedQuiz }, 'Add DNS coverage')
+        expect(prompt).toContain('Network notes')
+        expect(prompt).toContain('Pick the right answer')
+        expect(prompt).toContain('Add DNS coverage')
+        expect(prompt).toContain('complete replacement')
+    })
     it('uses a Gemini API key and requests JSON output', async () => {
         const fetchMock = vi.fn(async () => new Response(JSON.stringify({
             candidates: [{ content: { parts: [{ text: JSON.stringify(generatedQuiz) }] } }]
