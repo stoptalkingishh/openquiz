@@ -754,7 +754,7 @@ function CreateQuizModal({ onClose, onCreated }: { onClose: () => void, onCreate
     const [showAiSettings, setShowAiSettings] = useState(false)
     const [aiError, setAiError] = useState('')
     const [aiGenerating, setAiGenerating] = useState(false)
-    const { user } = useAuth()
+    const { user, signInWithGoogle } = useAuth()
 
     const promptText = `You are building an SAT vocabulary trainer.
 
@@ -1286,43 +1286,102 @@ Remember:
                                 <div className="p-4 space-y-4 border-t border-neutral-200 dark:border-neutral-700">
                                     <div>
                                         <label className="block text-xs font-bold text-neutral-600 dark:text-neutral-400 mb-1">
-                                            API Key
+                                            AI Provider
                                         </label>
-                                        <input
-                                            type="password"
-                                            value={aiSettings.apiKey}
-                                            onChange={(e) => setAiSettings({ ...aiSettings, apiKey: e.target.value })}
-                                            className="input-field"
-                                            placeholder="sk-..."
-                                        />
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => setAiSettings({ ...aiSettings, provider: 'openai' })}
+                                                className={`px-3 py-2 rounded-xl text-sm font-bold border-2 transition-all ${aiSettings.provider !== 'gemini' ? 'border-primary bg-primary/10 text-primary dark:text-primary-light' : 'border-neutral-200 dark:border-neutral-700 text-neutral-500 dark:text-neutral-400'}`}
+                                            >
+                                                OpenAI-compatible
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setAiSettings({ ...aiSettings, provider: 'gemini' })}
+                                                className={`px-3 py-2 rounded-xl text-sm font-bold border-2 transition-all ${aiSettings.provider === 'gemini' ? 'border-primary bg-primary/10 text-primary dark:text-primary-light' : 'border-neutral-200 dark:border-neutral-700 text-neutral-500 dark:text-neutral-400'}`}
+                                            >
+                                                Google Gemini
+                                            </button>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <label className="block text-xs font-bold text-neutral-600 dark:text-neutral-400 mb-1">
-                                            Base URL
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={aiSettings.baseUrl}
-                                            onChange={(e) => setAiSettings({ ...aiSettings, baseUrl: e.target.value })}
-                                            className="input-field"
-                                            placeholder="https://api.openai.com/v1"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-bold text-neutral-600 dark:text-neutral-400 mb-1">
-                                            Model
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={aiSettings.model}
-                                            onChange={(e) => setAiSettings({ ...aiSettings, model: e.target.value })}
-                                            className="input-field"
-                                            placeholder="gpt-4o-mini"
-                                        />
-                                    </div>
-                                    <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                                        Your key is sent directly from your browser and stored locally on this device.
-                                    </p>
+
+                                    {aiSettings.provider === 'gemini' ? (
+                                        <>
+                                            {(!user || user.id === 'guest') ? (
+                                                <div className="p-3 rounded-xl bg-primary/5 border-2 border-primary/20">
+                                                    <p className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-2">
+                                                        Gemini uses your Google account — no API key needed.
+                                                    </p>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => signInWithGoogle().catch(() => {})}
+                                                        className="btn-primary w-full text-sm"
+                                                    >
+                                                        Sign in with Google
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                                                    Using your Google account ({user.email}) — no API key needed.
+                                                </p>
+                                            )}
+                                            <div>
+                                                <label className="block text-xs font-bold text-neutral-600 dark:text-neutral-400 mb-1">
+                                                    Model
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={aiSettings.model}
+                                                    onChange={(e) => setAiSettings({ ...aiSettings, model: e.target.value })}
+                                                    className="input-field"
+                                                    placeholder="gemini-2.0-flash"
+                                                />
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <div>
+                                                <label className="block text-xs font-bold text-neutral-600 dark:text-neutral-400 mb-1">
+                                                    API Key
+                                                </label>
+                                                <input
+                                                    type="password"
+                                                    value={aiSettings.apiKey}
+                                                    onChange={(e) => setAiSettings({ ...aiSettings, apiKey: e.target.value })}
+                                                    className="input-field"
+                                                    placeholder="sk-..."
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold text-neutral-600 dark:text-neutral-400 mb-1">
+                                                    Base URL
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={aiSettings.baseUrl}
+                                                    onChange={(e) => setAiSettings({ ...aiSettings, baseUrl: e.target.value })}
+                                                    className="input-field"
+                                                    placeholder="https://api.openai.com/v1"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold text-neutral-600 dark:text-neutral-400 mb-1">
+                                                    Model
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={aiSettings.model}
+                                                    onChange={(e) => setAiSettings({ ...aiSettings, model: e.target.value })}
+                                                    className="input-field"
+                                                    placeholder="gpt-4o-mini"
+                                                />
+                                            </div>
+                                            <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                                                Your key is sent directly from your browser and stored locally on this device.
+                                            </p>
+                                        </>
+                                    )}
                                 </div>
                             )}
                         </div>
