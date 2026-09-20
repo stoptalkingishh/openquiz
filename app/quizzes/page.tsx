@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Sparkles, BookOpen, Check, Users, Play, Globe, Lock, Share2, Copy, Twitter, Facebook, MessageCircle, X, Folder, FolderPlus, FolderOpen, Gamepad2, ClipboardList, Trash2, ChevronDown, Search, Pencil } from 'lucide-react'
+import { Plus, Sparkles, BookOpen, Check, Users, Play, Globe, Lock, Share2, Copy, Twitter, Facebook, MessageCircle, X, Folder, FolderPlus, FolderOpen, Gamepad2, ClipboardList, Trash2, ChevronDown, Search, Pencil, Layers } from 'lucide-react'
 import BottomNav from '../components/BottomNav'
 import { useAuth } from '../contexts/AuthContext'
-import { getQuizSets, getCustomQuizzes, getPublicQuizzes, createCustomQuiz, getFolders, createFolder, normalizeImportedQuizItems, validateQuizJSON, deleteCustomQuiz, csvToWords, delimitedToWords } from '../lib/db'
+import { combineCustomQuizQuestions, getQuizSets, getCustomQuizzes, getPublicQuizzes, createCustomQuiz, getFolders, createFolder, normalizeImportedQuizItems, validateQuizJSON, deleteCustomQuiz, csvToWords, delimitedToWords } from '../lib/db'
 import { buildShareData } from '../lib/share'
 import { useQuizStore } from '../lib/quizStore'
 import { buildPlannedQuizPrompt, generateQuizFromNotes, getAiSettings, planQuizzesFromMaterial, saveAiSettings, AiSettings, AiProvider, DEFAULT_OPENAI_MODEL, DEFAULT_GEMINI_MODEL, PlannedQuiz } from '../lib/ai'
@@ -31,6 +31,7 @@ export default function QuizzesPage() {
     const [folders, setFolders] = useState<any[]>([])
     const [activeFolderId, setActiveFolderId] = useState<string | null>(null)
     const [showCreateModal, setShowCreateModal] = useState(false)
+    const [showCombineModal, setShowCombineModal] = useState(false)
     const [showFolderModal, setShowFolderModal] = useState(false)
     const [showShareModal, setShowShareModal] = useState(false)
     const [shareQuiz, setShareQuiz] = useState<any>(null)
@@ -462,9 +463,12 @@ export default function QuizzesPage() {
 
                 {/* Custom Quizzes */}
                 <div>
-                    <h2 className="text-lg font-bold text-neutral-900 dark:text-neutral-100 mb-4">
-                        {activeFolder ? `${activeFolder.name} · ` : ''}My Custom Quizzes
-                    </h2>
+                    <div className="flex items-center justify-between gap-3 mb-4">
+                        <h2 className="text-lg font-bold text-neutral-900 dark:text-neutral-100">
+                            {activeFolder ? `${activeFolder.name} · ` : ''}My Custom Quizzes
+                        </h2>
+                        {customQuizzes.length >= 2 && <button onClick={() => setShowCombineModal(true)} className="text-sm font-semibold text-primary flex items-center gap-1 px-3 py-2 rounded-lg hover:bg-primary/10"><Layers className="w-4 h-4" /> Build combined test</button>}
+                    </div>
                     {visibleCustomQuizzes.length === 0 ? (
                         <div className="card text-center py-8">
                             <Sparkles className="w-12 h-12 text-neutral-300 dark:text-neutral-600 mx-auto mb-3" />
@@ -603,6 +607,9 @@ export default function QuizzesPage() {
                         onCreated={loadQuizzes}
                     />
                 )}
+                {showCombineModal && user && (
+                    <CombineQuizModal quizzes={customQuizzes} userId={user.id} onClose={() => setShowCombineModal(false)} onCreated={async () => { setShowCombineModal(false); await loadQuizzes() }} />
+                )}
                 {showShareModal && shareQuiz && (
                     <ShareQuizModal
                         quiz={shareQuiz}
@@ -737,6 +744,49 @@ function CreateFolderModal({ onClose, onCreated }: { onClose: () => void; onCrea
             </motion.div>
         </div>
     )
+}
+
+function CombineQuizModal({ quizzes, userId, onClose, onCreated }: { quizzes: any[], userId: string, onClose: () => void, onCreated: () => Promise<void> }) {
+    const [selectedIds, setSelectedIds] = useState<string[]>(quizzes.map(quiz => quiz.id))
+    const [name, setName] = useState('Combined unit test')
+    const [description, setDescription] = useState('A test built from selected custom quizzes.')
+    const [tags, setTags] = useState('combined, unit-test')
+    const [questionLimit, setQuestionLimit] = useState(0)
+    const [saving, setSaving] = useState(false)
+    const [error, setError] = useState('')
+    const selected = quizzes.filter(quiz => selectedIds.includes(quiz.id))
+    const available = combineCustomQuizQuestions(selected).length
+
+    const create = async () => {
+        setError('')
+        if (!name.trim()) return setError('Give the combined test a name.')
+        if (selected.length < 2) return setError('Select at least two quizzes to combine.')
+        const questions = combineCustomQuizQuestions(selected, questionLimit)
+        if (!questions.length) return setError('The selected quizzes do not contain usable questions or vocabulary.')
+        setSaving(true)
+        try {
+            const source = `Combined from: ${selected.map(quiz => quiz.name).join(', ')}`
+            await createCustomQuiz(userId, name.trim(), description.trim(), [], false, undefined, questions, tags.split(',').map(tag => tag.trim()).filter(Boolean), source)
+            await onCreated()
+        } catch (err: any) {
+            setError(err.message || 'Could not create the combined test.')
+        } finally {
+            setSaving(false)
+        }
+    }
+
+    return <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+        <div className="bg-white dark:bg-surface-dark w-full max-w-2xl rounded-3xl p-6 shadow-2xl relative z-10 max-h-[90vh] overflow-y-auto space-y-4">
+            <div className="flex items-start justify-between gap-3"><div><h2 className="text-2xl font-bold">Build a combined test</h2><p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">Your original quizzes stay unchanged. Vocabulary becomes flashcards in the new test.</p></div><button type="button" onClick={onClose} className="p-2 rounded-lg text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800" aria-label="Close"><X className="w-5 h-5" /></button></div>
+            <div className="grid gap-3 sm:grid-cols-2"><label className="text-sm font-semibold">Test name<input value={name} onChange={e => setName(e.target.value)} className="input-field mt-1" /></label><label className="text-sm font-semibold">Questions <span className="font-normal text-neutral-500">(0 = all)</span><input type="number" min="0" max={available} value={questionLimit} onChange={e => setQuestionLimit(Math.min(available, Math.max(0, Number(e.target.value) || 0)))} className="input-field mt-1" /></label></div>
+            <label className="block text-sm font-semibold">Description<textarea value={description} onChange={e => setDescription(e.target.value)} className="input-field mt-1 min-h-20" /></label>
+            <label className="block text-sm font-semibold">Tags<input value={tags} onChange={e => setTags(e.target.value)} className="input-field mt-1" /></label>
+            <section className="space-y-2"><div className="flex items-center justify-between"><h3 className="font-bold">Source quizzes</h3><span className="text-sm text-neutral-500">{available} available items</span></div>{quizzes.map(quiz => <label key={quiz.id} className="flex gap-3 rounded-xl border border-neutral-200 dark:border-neutral-700 p-3 cursor-pointer"><input type="checkbox" checked={selectedIds.includes(quiz.id)} onChange={e => setSelectedIds(ids => e.target.checked ? [...ids, quiz.id] : ids.filter(id => id !== quiz.id))} /><span><span className="block font-semibold">{quiz.name}</span><span className="block text-sm text-neutral-500">{quizItemCount(quiz)} {quizItemLabel(quiz)}</span></span></label>)}</section>
+            {error && <p className="text-sm text-error-dark dark:text-error-light">{error}</p>}
+            <div className="flex gap-3"><button type="button" onClick={onClose} className="btn-outline flex-1">Cancel</button><button type="button" onClick={create} disabled={saving} className="btn-primary flex-1 disabled:opacity-50"><Layers className="w-4 h-4 inline mr-2" />{saving ? 'Creating…' : `Create ${questionLimit || available}-question test`}</button></div>
+        </div>
+    </div>
 }
 
 function CreateQuizModal({ onClose, onCreated }: { onClose: () => void, onCreated: () => void }) {

@@ -11,7 +11,7 @@ vi.mock('../app/lib/drive', () => ({
     }),
     writeDriveFile: vi.fn(async (name: string, value: any) => { state.remote[name] = value; return true }),
 }))
-import { createCustomQuiz, updateCustomQuiz, deleteCustomQuiz, createFolder, getCustomQuizzes, getWordProgress, saveWordProgress, recordQuizSession, getRecentActivity, syncLocalToCloud, updateDailyStats, getDailyStats, localDate } from '../app/lib/db'
+import { combineCustomQuizQuestions, createCustomQuiz, updateCustomQuiz, deleteCustomQuiz, createFolder, getCustomQuizzes, getWordProgress, saveWordProgress, recordQuizSession, getRecentActivity, syncLocalToCloud, updateDailyStats, getDailyStats, localDate } from '../app/lib/db'
 import { accountKey } from '../app/lib/storage'
 import { writeDriveFile } from '../app/lib/drive'
 
@@ -29,6 +29,17 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals())
 
 describe('account storage and failed saves', () => {
+    it('combines question and vocabulary quizzes into standalone test questions', () => {
+        const combined = combineCustomQuizQuestions([
+            { id: 'one', questions: [{ id: 'q1', kind: 'flashcard', prompt: 'Question', answer: 'Answer' }], words: [] },
+            { id: 'two', questions: [], words: [{ word: 'Term', ru: 'Definition' }] }
+        ] as any)
+        expect(combined).toMatchObject([
+            { id: 'combined-one-0-q-0', prompt: 'Question', answer: 'Answer' },
+            { id: 'combined-two-1-w-0', kind: 'flashcard', prompt: 'Term', answer: 'Definition' }
+        ])
+        expect(combineCustomQuizQuestions([{ id: 'one', questions: combined, words: [] }] as any, 1)).toHaveLength(1)
+    })
     it('rejects stale account daily writes and shows newer offline stats', async () => {
         await expect(updateDailyStats('bob', { wordsLearned: 1 })).rejects.toThrow('Account changed')
         await updateDailyStats('alice', { wordsLearned: 5 })
