@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Sparkles, BookOpen, Check, Users, Play, Globe, Lock, Share2, Copy, Twitter, Facebook, MessageCircle, X, Folder, FolderPlus, FolderOpen, Gamepad2, ClipboardList, Trash2, ChevronDown, Search } from 'lucide-react'
+import { Plus, Sparkles, BookOpen, Check, Users, Play, Globe, Lock, Share2, Copy, Twitter, Facebook, MessageCircle, X, Folder, FolderPlus, FolderOpen, Gamepad2, ClipboardList, Trash2, ChevronDown, Search, Pencil } from 'lucide-react'
 import BottomNav from '../components/BottomNav'
 import { useAuth } from '../contexts/AuthContext'
 import { getQuizSets, getCustomQuizzes, getPublicQuizzes, createCustomQuiz, getFolders, createFolder, normalizeImportedQuizItems, validateQuizJSON, deleteCustomQuiz, csvToWords, delimitedToWords } from '../lib/db'
@@ -380,7 +380,7 @@ export default function QuizzesPage() {
                                             }`}
                                     >
                                         {isSelected && (
-                                            <div className="absolute top-4 right-4 w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+                                            <div className="absolute top-4 right-14 w-6 h-6 bg-primary rounded-full flex items-center justify-center" aria-label="Selected quiz">
                                                 <Check className="w-4 h-4 text-white" />
                                             </div>
                                         )}
@@ -410,13 +410,14 @@ export default function QuizzesPage() {
                                             </div>
                                         </div>
                                         
-                                        <div className="flex gap-2">
+                                        <div className="grid grid-cols-3 gap-2">
                                             <button
                                                 onClick={() => router.push(`/quiz-detail/?id=${quiz.id}`)}
-                                                className="px-4 py-2 bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 rounded-xl hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
-                                                title="View details"
+                                                className="py-2 px-3 bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 rounded-xl hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors flex items-center justify-center gap-2 text-sm font-semibold"
+                                                title="Edit quiz details and content"
                                             >
-                                                <BookOpen className="w-4 h-4" />
+                                                <Pencil className="w-4 h-4" />
+                                                Edit
                                             </button>
                                             <button
                                                 onClick={() => handleQuizSelect(quizPath)}
