@@ -2,12 +2,13 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Play, BookOpen, Globe, Lock, Share2, Copy, Users, Check, Gamepad2, ClipboardList, Folder, FolderPlus, Trophy, Trash2 } from 'lucide-react'
-import { getCustomQuizById, getQuizSetByPath, getFolders, setQuizInFolder, createFolder, getQuizStats, loadOfficialQuiz, deleteCustomQuiz } from '../lib/db'
+import { ArrowLeft, Play, BookOpen, Globe, Lock, Share2, Copy, Users, Check, Gamepad2, ClipboardList, Folder, FolderPlus, Trophy, Trash2, Pencil } from 'lucide-react'
+import { getCustomQuizById, getQuizSetByPath, getFolders, setQuizInFolder, createFolder, getQuizStats, loadOfficialQuiz, deleteCustomQuiz, updateCustomQuiz } from '../lib/db'
 import { buildShareData } from '../lib/share'
 import { useQuizStore } from '../lib/quizStore'
 import { useAuth } from '../contexts/AuthContext'
 import Logo from '../components/Logo'
+import CustomQuizEditor from '../components/CustomQuizEditor'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export default function QuizDetailClient() {
@@ -25,6 +26,8 @@ export default function QuizDetailClient() {
     const [stats, setStats] = useState<any>(null)
     const [showFolderPicker, setShowFolderPicker] = useState(false)
     const [newFolderName, setNewFolderName] = useState('')
+    const [editing, setEditing] = useState(false)
+    const [savingEdit, setSavingEdit] = useState(false)
 
     const loadQuiz = useCallback(async () => {
         try {
@@ -109,6 +112,21 @@ export default function QuizDetailClient() {
             setSelectedQuizPath('')
         }
         router.push('/quizzes')
+    }
+
+    const handleSaveQuiz = async (changes: any) => {
+        if (!quiz?.isCustom || !quizId) return
+        setSavingEdit(true)
+        try {
+            const updated = await updateCustomQuiz(quizId, changes)
+            setQuiz({ ...updated, isCustom: true })
+            setEditing(false)
+        } catch (error) {
+            console.error('Failed to update quiz:', error)
+            alert(error instanceof Error ? error.message : 'Could not save quiz changes.')
+        } finally {
+            setSavingEdit(false)
+        }
     }
 
     // `quiz` starts as null on the first render, so every dereference here
@@ -249,6 +267,16 @@ function kindLabel(kind: string): string {
                                             </>
                                         )}
                                     </div>
+                                    {quiz.isCustom && (
+                                        <button
+                                            onClick={() => setEditing(true)}
+                                            className="p-2 rounded-lg text-neutral-500 hover:text-primary hover:bg-primary/10 transition-colors"
+                                            title="Edit quiz"
+                                            aria-label="Edit quiz"
+                                        >
+                                            <Pencil className="w-5 h-5" />
+                                        </button>
+                                    )}
                                     {quiz.isCustom && (
                                         <button
                                             onClick={handleDeleteQuiz}
@@ -398,6 +426,15 @@ function kindLabel(kind: string): string {
                             </div>
                         )}
                     </div>
+
+                    {editing && quiz.isCustom && (
+                        <CustomQuizEditor
+                            quiz={quiz}
+                            saving={savingEdit}
+                            onCancel={() => setEditing(false)}
+                            onSave={handleSaveQuiz}
+                        />
+                    )}
 
                     {/* Content List */}
                     <div className="card">

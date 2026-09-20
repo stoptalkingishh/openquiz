@@ -270,7 +270,7 @@ export default function QuizBuilder({ onChange, initialQuestions }: QuizBuilderP
                                 <div key={oi} className="flex items-center gap-2">
                                     <button
                                         onClick={() => update(idx, { correctIndex: oi })}
-                                        className={`w-8 h-8 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${oi === q.correctIndex
+                                        className={`w-9 h-9 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${oi === q.correctIndex
                                                 ? 'border-secondary bg-secondary/15 text-secondary dark:border-secondary-light dark:text-secondary-light'
                                                 : 'border-neutral-300 dark:border-neutral-600 text-neutral-400 hover:border-neutral-500'
                                             }`}
@@ -289,7 +289,7 @@ export default function QuizBuilder({ onChange, initialQuestions }: QuizBuilderP
                                     {(q.options || []).length > 2 && (
                                         <button
                                             onClick={() => removeOption(idx, oi)}
-                                            className="p-2 rounded-lg text-neutral-400 hover:text-error hover:bg-error/10 transition-colors"
+                                            className="w-9 h-9 shrink-0 flex items-center justify-center rounded-lg text-neutral-400 hover:text-error hover:bg-error/10 transition-colors"
                                             aria-label="Remove option"
                                         >
                                             <X className="w-4 h-4" />
@@ -538,7 +538,7 @@ function SimulationStepEditor({ steps, onChange }: {
                                 <div key={oi} className="flex items-center gap-2">
                                     <button
                                         onClick={() => patchStep(activeIdx as number, { correctIndex: oi })}
-                                        className={`w-8 h-8 rounded-full border-2 flex items-center justify-center shrink-0 ${oi === active.correctIndex ? 'border-secondary bg-secondary/15 text-secondary' : 'border-neutral-300 text-neutral-400'}`}
+                                        className={`w-9 h-9 rounded-full border-2 flex items-center justify-center shrink-0 ${oi === active.correctIndex ? 'border-secondary bg-secondary/15 text-secondary' : 'border-neutral-300 text-neutral-400'}`}
                                         title="Mark as correct"
                                     >
                                         <Check className="w-4 h-4" />
@@ -560,7 +560,7 @@ function SimulationStepEditor({ steps, onChange }: {
                                                 const options = (active.options || []).filter((_, i) => i !== oi)
                                                 patchStep(activeIdx as number, { options })
                                             }}
-                                            className="p-1 text-neutral-400 hover:text-error"
+                                            className="w-9 h-9 shrink-0 flex items-center justify-center rounded-lg text-neutral-400 hover:text-error hover:bg-error/10"
                                         >
                                             <X className="w-4 h-4" />
                                         </button>
@@ -626,7 +626,7 @@ function ChecklistItemsEditor({ items, onChange }: {
                             next[i] = { ...next[i], correct: !next[i].correct }
                             onChange(next)
                         }}
-                        className={`w-8 h-8 rounded border-2 flex items-center justify-center shrink-0 ${it.correct ? 'border-secondary bg-secondary/15 text-secondary' : 'border-neutral-300 text-neutral-400'}`}
+                        className={`w-9 h-9 rounded border-2 flex items-center justify-center shrink-0 ${it.correct ? 'border-secondary bg-secondary/15 text-secondary' : 'border-neutral-300 text-neutral-400'}`}
                         title="Toggle correct-on"
                     >
                         <Check className="w-4 h-4" />
@@ -644,7 +644,7 @@ function ChecklistItemsEditor({ items, onChange }: {
                     />
                     <button
                         onClick={() => onChange(items.filter((_, ix) => ix !== i))}
-                        className="p-1 text-neutral-400 hover:text-error"
+                        className="w-9 h-9 shrink-0 flex items-center justify-center rounded-lg text-neutral-400 hover:text-error hover:bg-error/10"
                     >
                         <Trash2 className="w-4 h-4" />
                     </button>

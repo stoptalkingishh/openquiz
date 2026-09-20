@@ -721,6 +721,43 @@ export async function createCustomQuiz(
     })
 }
 
+export async function updateCustomQuiz(
+    quizId: string,
+    changes: Pick<CustomQuiz, 'name' | 'description' | 'tags' | 'words' | 'questions' | 'is_public'>
+): Promise<CustomQuiz> {
+    return queueLocalWrite('updateCustomQuiz', async () => {
+        const all = readJson<CustomQuiz[]>(CUSTOM_QUIZZES_KEY, [])
+        const index = all.findIndex(quiz => quiz.id === quizId)
+        if (index < 0) throw new Error('Quiz not found')
+        if (all[index].user_id !== currentAccountId()) throw new Error('You can only edit your own quizzes')
+
+        const name = String(changes.name || '').trim()
+        if (!name) throw new Error('Quiz name is required')
+        const updated: CustomQuiz = {
+            ...all[index],
+            name,
+            description: String(changes.description || '').trim(),
+            tags: Array.from(new Set((changes.tags || []).map(tag => String(tag).trim()).filter(Boolean))),
+            words: Array.isArray(changes.words) ? changes.words : [],
+            questions: Array.isArray(changes.questions) && changes.questions.length ? changes.questions : undefined,
+            is_public: Boolean(changes.is_public)
+        }
+        all[index] = updated
+        writeJson(CUSTOM_QUIZZES_KEY, all)
+
+        if (isCloudActive()) {
+            try {
+                const remote = (await readDriveFile<CustomQuiz[]>(CUSTOM_QUIZZES_FILE)) || []
+                const remoteIndex = remote.findIndex(quiz => quiz.id === quizId)
+                if (remoteIndex >= 0) remote[remoteIndex] = updated
+                else remote.unshift(updated)
+                await writeDriveFile(CUSTOM_QUIZZES_FILE, remote)
+            } catch { /* Local save succeeded; SyncNotice provides cloud retry. */ }
+        }
+        return updated
+    })
+}
+
 export async function deleteCustomQuiz(quizId: string) {
     return queueLocalWrite('deleteCustomQuiz', async () => {
         markDeleted('quizzes', quizId)
