@@ -1,8 +1,12 @@
 import { normalizeImportedQuizItems } from './db'
 import { Word, QuizQuestion } from './satTypes'
 import { readAccountData, writeAccountData } from './storage'
+import { getDriveToken } from './drive'
+
+export type AiProvider = 'openai' | 'gemini'
 
 export interface AiSettings {
+    provider: AiProvider
     apiKey: string
     baseUrl: string
     model: string
@@ -11,10 +15,14 @@ export interface AiSettings {
 const AI_SETTINGS_KEY = 'oquiz:ai_settings'
 
 const DEFAULT_SETTINGS: AiSettings = {
+    provider: 'openai',
     apiKey: '',
     baseUrl: 'https://api.openai.com/v1',
     model: 'gpt-4o-mini'
 }
+
+const DEFAULT_GEMINI_MODEL = 'gemini-2.0-flash'
+const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models'
 
 function readJson<T>(key: string, fallback: T): T {
     if (typeof window === 'undefined') return fallback
@@ -33,17 +41,19 @@ function writeJson(key: string, value: unknown) {
 export function getAiSettings(): AiSettings {
     const stored = readJson<Partial<AiSettings>>(AI_SETTINGS_KEY, {})
     return {
+        provider: stored.provider === 'gemini' ? 'gemini' : 'openai',
         apiKey: stored.apiKey || DEFAULT_SETTINGS.apiKey,
         baseUrl: stored.baseUrl || DEFAULT_SETTINGS.baseUrl,
-        model: stored.model || DEFAULT_SETTINGS.model
+        model: stored.model || (stored.provider === 'gemini' ? DEFAULT_GEMINI_MODEL : DEFAULT_SETTINGS.model)
     }
 }
 
 export function saveAiSettings(s: AiSettings) {
     writeJson(AI_SETTINGS_KEY, {
+        provider: s.provider === 'gemini' ? 'gemini' : 'openai',
         apiKey: s.apiKey,
         baseUrl: s.baseUrl || DEFAULT_SETTINGS.baseUrl,
-        model: s.model || DEFAULT_SETTINGS.model
+        model: s.model || (s.provider === 'gemini' ? DEFAULT_GEMINI_MODEL : DEFAULT_SETTINGS.model)
     })
 }
 
@@ -68,6 +78,11 @@ export async function generateQuizFromNotes(
     notes: string,
     s: AiSettings
 ): Promise<{ words: Word[]; questions: QuizQuestion[] }> {
+    if (s.provider === 'gemini') return generateWithGemini(notes, s)
+    return generateWithOpenAI(notes, s)
+}
+
+async function generateWithOpenAI(notes: string, s: AiSettings): Promise<{ words: Word[]; questions: QuizQuestion[] }> {
     if (!s.apiKey) {
         throw new Error('Add an API key in the AI settings first.')
     }
@@ -113,6 +128,61 @@ export async function generateQuizFromNotes(
         throw new Error('The AI returned no content.')
     }
 
+    return parseGeneratedContent(content)
+}
+
+async function generateWithGemini(notes: string, s: AiSettings): Promise<{ words: Word[]; questions: QuizQuestion[] }> {
+    const token = await getDriveToken()
+    if (!token) {
+        throw new Error('Sign in with Google to use Gemini AI.')
+    }
+
+    const model = s.model || DEFAULT_GEMINI_MODEL
+    let res: Response
+    try {
+        res = await fetch(`${GEMINI_ENDPOINT}/${model}:generateContent`, {
+            signal: AbortSignal.timeout(60000),
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+                contents: [{ role: 'user', parts: [{ text: notes }] }]
+            })
+        })
+    } catch {
+        throw new Error('Could not reach Google Gemini. Check your connection.')
+    }
+
+    if (!res.ok) {
+        // 401/403 usually means the signed-in session predates the Gemini
+        // scope — re-signing in grants the AI permission.
+        if (res.status === 401 || res.status === 403) {
+            throw new Error('Sign in with Google again to grant Gemini AI access.')
+        }
+        throw new Error(`Gemini request failed (status ${res.status}). Try again.`)
+    }
+
+    let data: any
+    try {
+        data = await res.json()
+    } catch {
+        throw new Error('Gemini returned an unreadable response.')
+    }
+
+    const content = (data?.candidates?.[0]?.content?.parts || [])
+        .map((part: any) => (typeof part?.text === 'string' ? part.text : ''))
+        .join('')
+    if (!content.trim()) {
+        throw new Error('Gemini returned no content.')
+    }
+
+    return parseGeneratedContent(content)
+}
+
+function parseGeneratedContent(content: string): { words: Word[]; questions: QuizQuestion[] } {
     let parsed: any
     try {
         parsed = JSON.parse(stripMarkdownFences(content))
