@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { X, AlertCircle, Menu, Volume2, VolumeX } from 'lucide-react'
 import { buildSession, updateProgress, buildQuestionSession, buildTestSession, buildWriteSession } from '../../lib/session'
 import { Word, Question, SessionMode, QuizQuestion } from '../../lib/satTypes'
+import { buildGoogleResearchQuery } from '../../lib/research'
 import QuestionCard from '../../components/QuestionCard'
 import SessionMenu, { ReviewRecord } from '../../components/SessionMenu'
 import { useAuth } from '../../contexts/AuthContext'
@@ -290,20 +291,7 @@ export default function SessionModePage() {
 
     const googleSearch = () => {
         const q = questions[index]
-        const payload = q?.payload || {}
-        let query = q?.word || String(payload.prompt || payload.sentence || '') || ''
-        let answer = ''
-        const options = Array.isArray(payload.options) ? payload.options : []
-        if (options.length) {
-            answer = String(options[payload.correctIndex ?? 0] ?? '')
-        } else if (typeof payload.correctAnswer === 'boolean') {
-            answer = payload.correctAnswer ? 'True' : 'False'
-        } else if (payload.answer) {
-            answer = String(payload.answer)
-        } else if (q?.type === 'recall' && payload.ru) {
-            answer = String(payload.ru)
-        }
-        const search = `${query} ${answer}`.trim()
+        const search = q ? buildGoogleResearchQuery(q) : ''
         if (search) {
             window.open(`https://www.google.com/search?q=${encodeURIComponent(search)}`, '_blank', 'noopener,noreferrer')
         }

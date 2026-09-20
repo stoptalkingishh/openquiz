@@ -11,7 +11,7 @@ vi.mock('../app/lib/drive', () => ({
     }),
     writeDriveFile: vi.fn(async (name: string, value: any) => { state.remote[name] = value; return true }),
 }))
-import { createCustomQuiz, deleteCustomQuiz, createFolder, getCustomQuizzes, getWordProgress, saveWordProgress, recordQuizSession, getRecentActivity, syncLocalToCloud, updateDailyStats, getDailyStats, localDate } from '../app/lib/db'
+import { createCustomQuiz, updateCustomQuiz, deleteCustomQuiz, createFolder, getCustomQuizzes, getWordProgress, saveWordProgress, recordQuizSession, getRecentActivity, syncLocalToCloud, updateDailyStats, getDailyStats, localDate } from '../app/lib/db'
 import { accountKey } from '../app/lib/storage'
 import { writeDriveFile } from '../app/lib/drive'
 
@@ -45,6 +45,17 @@ describe('account storage and failed saves', () => {
         expect(await getCustomQuizzes('alice')).toEqual([])
         expect(await syncLocalToCloud()).toBe(true)
         expect(state.remote['custom_quizzes.json']).toEqual([])
+    })
+    it('updates custom quiz metadata and question content locally and in Drive', async () => {
+        const quiz = await createCustomQuiz('alice', 'Old name', 'old details', [], false, undefined, [{ id: 'q1', kind: 'flashcard', prompt: 'Old prompt', answer: 'Old answer' }])
+        state.cloud = true
+        const updated = await updateCustomQuiz(quiz.id, {
+            name: 'New name', description: 'New details', tags: ['networking', 'networking', ' DNS '], is_public: true,
+            words: [], questions: [{ id: 'q1', kind: 'flashcard', prompt: 'New prompt', answer: 'New answer' }]
+        })
+        expect(updated).toMatchObject({ name: 'New name', description: 'New details', tags: ['networking', 'DNS'], is_public: true })
+        expect((await getCustomQuizzes('alice'))[0].questions?.[0].prompt).toBe('New prompt')
+        expect(state.remote['custom_quizzes.json'][0].name).toBe('New name')
     })
     it('does not overwrite remote folders after a failed listing', async () => {
         state.cloud = true; state.failRead = true
