@@ -14,14 +14,16 @@ export interface AiSettings {
 
 const AI_SETTINGS_KEY = 'oquiz:ai_settings'
 
+export const DEFAULT_OPENAI_MODEL = 'gpt-4o-mini'
+export const DEFAULT_GEMINI_MODEL = 'gemini-2.0-flash'
+
 const DEFAULT_SETTINGS: AiSettings = {
     provider: 'openai',
     apiKey: '',
     baseUrl: 'https://api.openai.com/v1',
-    model: 'gpt-4o-mini'
+    model: DEFAULT_OPENAI_MODEL
 }
 
-const DEFAULT_GEMINI_MODEL = 'gemini-2.0-flash'
 const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models'
 
 function readJson<T>(key: string, fallback: T): T {

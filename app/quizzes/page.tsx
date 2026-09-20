@@ -8,7 +8,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { getQuizSets, getCustomQuizzes, getPublicQuizzes, createCustomQuiz, getFolders, createFolder, normalizeImportedQuizItems, validateQuizJSON, deleteCustomQuiz, csvToWords, delimitedToWords } from '../lib/db'
 import { buildShareData } from '../lib/share'
 import { useQuizStore } from '../lib/quizStore'
-import { generateQuizFromNotes, getAiSettings, saveAiSettings, AiSettings } from '../lib/ai'
+import { generateQuizFromNotes, getAiSettings, saveAiSettings, AiSettings, AiProvider, DEFAULT_OPENAI_MODEL, DEFAULT_GEMINI_MODEL } from '../lib/ai'
 import { assetPath, BASE_PATH } from '../lib/paths'
 import { motion, AnimatePresence } from 'framer-motion'
 import QuizBuilder from '../components/QuizBuilder'
@@ -756,6 +756,14 @@ function CreateQuizModal({ onClose, onCreated }: { onClose: () => void, onCreate
     const [aiGenerating, setAiGenerating] = useState(false)
     const { user, signInWithGoogle } = useAuth()
 
+    const setAiProvider = (provider: AiProvider) => {
+        setAiSettings(prev => ({
+            ...prev,
+            provider,
+            model: provider === 'gemini' ? DEFAULT_GEMINI_MODEL : DEFAULT_OPENAI_MODEL
+        }))
+    }
+
     const promptText = `You are building an SAT vocabulary trainer.
 
 Your job:
@@ -1152,10 +1160,10 @@ Remember:
                         >
                             <div className="font-bold text-lg text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
                                 <Sparkles className="w-5 h-5 text-primary" />
-                                AI Generate (bring your own key)
+                                AI Generate
                             </div>
                             <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-1">
-                                Paste your notes and generate a quiz right here using your own AI API key.
+                                Paste your notes and generate a quiz using Google Gemini (sign in) or your own AI API key.
                             </p>
                         </button>
 
@@ -1291,14 +1299,14 @@ Remember:
                                         <div className="grid grid-cols-2 gap-2">
                                             <button
                                                 type="button"
-                                                onClick={() => setAiSettings({ ...aiSettings, provider: 'openai' })}
+                                                onClick={() => setAiProvider('openai')}
                                                 className={`px-3 py-2 rounded-xl text-sm font-bold border-2 transition-all ${aiSettings.provider !== 'gemini' ? 'border-primary bg-primary/10 text-primary dark:text-primary-light' : 'border-neutral-200 dark:border-neutral-700 text-neutral-500 dark:text-neutral-400'}`}
                                             >
                                                 OpenAI-compatible
                                             </button>
                                             <button
                                                 type="button"
-                                                onClick={() => setAiSettings({ ...aiSettings, provider: 'gemini' })}
+                                                onClick={() => setAiProvider('gemini')}
                                                 className={`px-3 py-2 rounded-xl text-sm font-bold border-2 transition-all ${aiSettings.provider === 'gemini' ? 'border-primary bg-primary/10 text-primary dark:text-primary-light' : 'border-neutral-200 dark:border-neutral-700 text-neutral-500 dark:text-neutral-400'}`}
                                             >
                                                 Google Gemini
