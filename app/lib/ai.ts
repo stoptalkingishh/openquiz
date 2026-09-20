@@ -138,15 +138,19 @@ async function generateWithGemini(notes: string, s: AiSettings): Promise<{ words
     }
 
     const model = s.model || DEFAULT_GEMINI_MODEL
+    const projectId = process.env.NEXT_PUBLIC_GOOGLE_PROJECT_ID || ''
+    const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+    }
+    if (projectId) headers['x-goog-user-project'] = projectId
+
     let res: Response
     try {
         res = await fetch(`${GEMINI_ENDPOINT}/${model}:generateContent`, {
             signal: AbortSignal.timeout(60000),
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
+            headers,
             body: JSON.stringify({
                 systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
                 contents: [{ role: 'user', parts: [{ text: notes }] }]
