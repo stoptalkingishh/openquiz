@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 const googleToken = vi.hoisted(() => ({ value: 'google-account-token' as string | null }))
 vi.mock('../app/lib/drive', () => ({ getDriveToken: () => Promise.resolve(googleToken.value) }))
-import { buildQuizRevisionPrompt, generateQuizFromNotes, planQuizzesFromMaterial, type AiSettings } from '../app/lib/ai'
+import { buildPlannedQuizPrompt, buildQuizRevisionPrompt, detectExistingQuizItems, generateQuizFromNotes, mergeGeneratedQuizItems, planQuizzesFromMaterial, type AiSettings } from '../app/lib/ai'
 
 const geminiSettings: AiSettings = {
     provider: 'gemini',
@@ -31,6 +31,21 @@ describe('Gemini quiz generation', () => {
         expect(prompt).toContain('Pick the right answer')
         expect(prompt).toContain('Add DNS coverage')
         expect(prompt).toContain('complete replacement')
+    })
+
+    it('recognizes a JSON question bank and asks for new non-duplicate coverage', () => {
+        const source = JSON.stringify(generatedQuiz)
+        expect(detectExistingQuizItems(source)?.questions).toHaveLength(1)
+        const prompt = buildPlannedQuizPrompt(source, { title: 'Networking', description: '', tags: [], scope: 'Networking', questionCount: 8 })
+        expect(prompt).toContain('NEW, non-duplicate')
+    })
+
+    it('keeps existing questions and drops duplicate AI additions when augmenting', () => {
+        const merged = mergeGeneratedQuizItems({ questions: generatedQuiz as any }, {
+            words: [],
+            questions: [generatedQuiz[0] as any, { id: 'new', kind: 'multiple_choice', prompt: 'New coverage', options: ['A', 'B'], correctIndex: 0 }]
+        })
+        expect(merged.questions.map(question => question.prompt)).toEqual(['Pick the right answer', 'New coverage'])
     })
 
     it('turns a material-planning response into bounded, usable quiz sections', async () => {

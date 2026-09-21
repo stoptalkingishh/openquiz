@@ -8,7 +8,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { combineCustomQuizQuestions, getQuizSets, getCustomQuizById, getCustomQuizzes, getPublicQuizzes, createCustomQuiz, getFolders, createFolder, normalizeImportedQuizItems, validateQuizJSON, deleteCustomQuiz, csvToWords, delimitedToWords } from '../lib/db'
 import { buildShareData, downloadSharedQuiz } from '../lib/share'
 import { useQuizStore } from '../lib/quizStore'
-import { buildPlannedQuizPrompt, generateQuizFromNotes, getAiSettings, planQuizzesFromMaterial, saveAiSettings, AiSettings, AiProvider, DEFAULT_OPENAI_MODEL, DEFAULT_GEMINI_MODEL, PlannedQuiz } from '../lib/ai'
+import { buildPlannedQuizPrompt, detectExistingQuizItems, generateQuizFromNotes, getAiSettings, mergeGeneratedQuizItems, planQuizzesFromMaterial, saveAiSettings, AiSettings, AiProvider, DEFAULT_OPENAI_MODEL, DEFAULT_GEMINI_MODEL, PlannedQuiz } from '../lib/ai'
 import { assetPath, BASE_PATH } from '../lib/paths'
 import { motion, AnimatePresence } from 'framer-motion'
 import QuizBuilder from '../components/QuizBuilder'
@@ -1125,12 +1125,14 @@ Remember:
             for (const planned of selected) {
                 const source = buildPlannedQuizPrompt(aiNotes.trim(), planned, planned.instructions)
                 const { words, questions } = await generateQuizFromNotes(source, aiSettings)
+                const existing = detectExistingQuizItems(aiNotes)
+                const merged = existing ? mergeGeneratedQuizItems(existing, { words, questions }) : { words, questions }
                 const tags = planned.tags.length ? planned.tags : tagsText.split(',').map(tag => tag.trim()).filter(Boolean)
-                if (questions.length) {
-                    await createCustomQuiz(user.id, planned.title, planned.description, [], isPublic, authorName || undefined, questions, tags, source)
+                if (merged.questions.length) {
+                    await createCustomQuiz(user.id, planned.title, planned.description, [], isPublic, authorName || undefined, merged.questions, tags, source)
                 } else {
-                    if (!words.length) throw new Error(`No quiz content was generated for ${planned.title}.`)
-                    await createCustomQuiz(user.id, planned.title, planned.description, words, isPublic, authorName || undefined, undefined, tags, source)
+                    if (!merged.words.length) throw new Error(`No quiz content was generated for ${planned.title}.`)
+                    await createCustomQuiz(user.id, planned.title, planned.description, merged.words, isPublic, authorName || undefined, undefined, tags, source)
                 }
             }
             onCreated()
@@ -1390,11 +1392,11 @@ Remember:
                                 value={aiNotes}
                                 onChange={(e) => { setAiNotes(e.target.value); setAiPlan(null) }}
                                 className="input-field min-h-[160px]"
-                                placeholder="Paste a chapter, course outline, notes, or a transcript. You will review a study plan before quizzes are generated."
+                                placeholder="Paste notes, a chapter, a transcript, or an existing JSON question bank. OpenQuiz will review the material before generating or adding questions."
                             />
                             <label className="mt-2 inline-flex items-center gap-2 text-sm font-semibold text-primary cursor-pointer">
-                                <input type="file" accept=".pdf,.txt,.md,text/plain,application/pdf" className="sr-only" onChange={e => handleSourceFile(e.target.files?.[0])} />
-                                Upload PDF or text file
+                                <input type="file" accept=".pdf,.txt,.md,.json,text/plain,application/pdf,application/json" className="sr-only" onChange={e => handleSourceFile(e.target.files?.[0])} />
+                                Upload PDF, text, or quiz JSON
                             </label>
                             {sourceFileName && <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">Loaded from {sourceFileName}</p>}
                         </div>

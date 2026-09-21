@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Check, Plus, Sparkles, Trash2, X } from 'lucide-react'
 import QuizBuilder from './QuizBuilder'
 import { CustomQuiz, QuizQuestion, Word } from '../lib/satTypes'
-import { buildQuizRevisionPrompt, generateQuizFromNotes, getAiSettings } from '../lib/ai'
+import { buildQuizRevisionPrompt, generateQuizFromNotes, getAiSettings, mergeGeneratedQuizItems } from '../lib/ai'
 
 type EditableQuiz = Pick<CustomQuiz, 'name' | 'description' | 'tags' | 'words' | 'questions' | 'is_public' | 'ai_source_prompt'>
 
@@ -28,6 +28,7 @@ export default function CustomQuizEditor({ quiz, saving, onCancel, onSave }: {
     const [builderVersion, setBuilderVersion] = useState(0)
     const [sourcePrompt, setSourcePrompt] = useState(quiz.ai_source_prompt || '')
     const [revisionInstructions, setRevisionInstructions] = useState('')
+    const [revisionMode, setRevisionMode] = useState<'replace' | 'augment'>('replace')
     const [aiRevising, setAiRevising] = useState(false)
     const [aiError, setAiError] = useState('')
     const [error, setError] = useState('')
@@ -42,16 +43,19 @@ export default function CustomQuizEditor({ quiz, saving, onCancel, onSave }: {
         setAiRevising(true)
         try {
             const generated = await generateQuizFromNotes(
-                buildQuizRevisionPrompt(sourcePrompt, { words, questions }, revisionInstructions),
+                buildQuizRevisionPrompt(sourcePrompt, { words, questions }, revisionInstructions, revisionMode),
                 getAiSettings()
             )
-            if (generated.questions.length) {
-                setQuestions(generated.questions)
+            const result = revisionMode === 'augment'
+                ? mergeGeneratedQuizItems({ words, questions }, generated)
+                : generated
+            if (result.questions.length) {
+                setQuestions(result.questions)
                 setWords([])
                 setContentKind('questions')
                 setBuilderVersion(version => version + 1)
-            } else if (generated.words.length) {
-                setWords(generated.words)
+            } else if (result.words.length) {
+                setWords(result.words)
                 setQuestions([])
                 setContentKind('words')
             } else {
@@ -103,11 +107,12 @@ export default function CustomQuizEditor({ quiz, saving, onCancel, onSave }: {
             <p className="text-sm text-neutral-500">Find it under Community → My sharing list, then send its Share link or JSON file. This does not publish it to a public directory.</p>
 
             <section className="rounded-xl border border-neutral-200 dark:border-neutral-700 p-4 space-y-3">
-                <div><h3 className="font-bold flex items-center gap-2"><Sparkles className="w-4 h-4 text-primary" /> AI revision</h3><p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">Revise the draft below with AI. Review the result, then save changes to keep it.</p></div>
+                <div><h3 className="font-bold flex items-center gap-2"><Sparkles className="w-4 h-4 text-primary" /> AI revision</h3><p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">Ask AI to replace the draft or add new, non-duplicate coverage. Review the result, then save changes to keep it.</p></div>
                 <label className="block text-sm font-semibold">Original notes or generation prompt<textarea value={sourcePrompt} onChange={e => setSourcePrompt(e.target.value)} className="input-field mt-1 min-h-28" placeholder="Paste the notes used to create this quiz" /></label>
                 <label className="block text-sm font-semibold">What should change? <span className="font-normal text-neutral-500">(optional)</span><textarea value={revisionInstructions} onChange={e => setRevisionInstructions(e.target.value)} className="input-field mt-1 min-h-20" placeholder="For example: add DNS questions and make distractors more realistic" /></label>
+                <div className="grid grid-cols-2 gap-2"><button type="button" onClick={() => setRevisionMode('replace')} className={`rounded-xl border-2 px-3 py-2 text-sm font-semibold ${revisionMode === 'replace' ? 'border-primary bg-primary/10 text-primary' : 'border-neutral-200 dark:border-neutral-700'}`}>Replace draft</button><button type="button" onClick={() => setRevisionMode('augment')} className={`rounded-xl border-2 px-3 py-2 text-sm font-semibold ${revisionMode === 'augment' ? 'border-primary bg-primary/10 text-primary' : 'border-neutral-200 dark:border-neutral-700'}`}>Add new items</button></div>
                 {aiError && <p className="text-sm text-error-dark dark:text-error-light">{aiError}</p>}
-                <button type="button" onClick={reviseWithAi} disabled={aiRevising} className="btn-outline w-full disabled:opacity-50"><Sparkles className="w-4 h-4 inline mr-2" />{aiRevising ? 'Generating revision…' : 'Generate revised content'}</button>
+                <button type="button" onClick={reviseWithAi} disabled={aiRevising} className="btn-outline w-full disabled:opacity-50"><Sparkles className="w-4 h-4 inline mr-2" />{aiRevising ? 'Generating revision…' : revisionMode === 'augment' ? 'Add AI-generated items' : 'Generate revised content'}</button>
             </section>
 
             {hasQuestions ? <QuizBuilder key={builderVersion} initialQuestions={questions} onChange={setQuestions} /> : (
