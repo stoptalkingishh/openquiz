@@ -10,6 +10,7 @@ import { useAuth } from '../contexts/AuthContext'
 import Logo from '../components/Logo'
 import CustomQuizEditor from '../components/CustomQuizEditor'
 import DriveQuizShare from '../components/DriveQuizShare'
+import QuizPublicationRequest from '../components/QuizPublicationRequest'
 import { buildQuizFeedbackUrl } from '../lib/githubFeedback'
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -708,6 +709,7 @@ function kindLabel(kind: string): string {
                                 </p>
 
                                 {quiz.isCustom && <DriveQuizShare quiz={quiz} />}
+                                {quiz.isCustom && <QuizPublicationRequest quiz={quiz} />}
                                 {quiz.isCustom && <div className="text-sm mb-4 space-y-3">
                                     <p>Send a snapshot of this quiz by link or file. Anyone with a copy can import it. It is not listed publicly; future edits do not update copies already sent. Images and private AI source notes are excluded.</p>
                                     <button className="btn-outline" onClick={() => downloadSharedQuiz(quiz)}>Download quiz JSON</button>

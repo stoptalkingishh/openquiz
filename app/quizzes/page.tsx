@@ -13,6 +13,7 @@ import { assetPath, BASE_PATH } from '../lib/paths'
 import { motion, AnimatePresence } from 'framer-motion'
 import QuizBuilder from '../components/QuizBuilder'
 import DriveQuizShare from '../components/DriveQuizShare'
+import QuizPublicationRequest from '../components/QuizPublicationRequest'
 import { QuizQuestion } from '../lib/satTypes'
 
 const loadItemCount = async (filePath: string): Promise<number> => {
@@ -1646,6 +1647,7 @@ function ShareQuizModal({
                     </p>
 
                     {quiz.isCustom && <DriveQuizShare quiz={quiz} />}
+                    {quiz.isCustom && <QuizPublicationRequest quiz={quiz} />}
                     {quiz.isCustom && <div className="text-sm mb-4 space-y-3">
                         <p>Send a snapshot by link or JSON file. Copies do not receive future edits and are not listed publicly. Images and private AI source notes are excluded.</p>
                         <button className="btn-outline" onClick={() => downloadSharedQuiz(quiz)}>Download quiz JSON</button>
