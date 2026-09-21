@@ -27,9 +27,11 @@ export default function PrivacyPage() {
             <h2 className="text-xl font-bold mb-2">1. Overview</h2>
             <p>
               OpenQuiz is a fully client-side, static web application. It has <strong>no
-              backend server and collects no personal data</strong>. There is no account
-              system, no analytics tracking, and no advertising. Everything you study stays on
-              your device unless you explicitly choose to sync it to your own Google Drive.
+              backend server</strong>. The site uses Google Analytics to measure aggregate
+              traffic and feature usage; Google may process technical information such as
+              your browser, device, approximate location, and pages viewed. Everything you
+              study stays on your device unless you explicitly choose to sync it to your own
+              Google Drive.
             </p>
           </section>
 
@@ -76,9 +78,10 @@ export default function PrivacyPage() {
           <section>
             <h2 className="text-xl font-bold mb-2">6. Cookies and tracking</h2>
             <p>
-              OpenQuiz does not use cookies for tracking and does not set any third-party
-              trackers. The service worker caches static assets (HTML, CSS, JavaScript, and
-              bundled study data) locally so the app works offline.
+              Google Analytics may use cookies or similar storage for measurement. The service
+              worker caches static assets (HTML, CSS, JavaScript, and bundled study data)
+              locally so the app works offline. You can limit cookies through your browser
+              settings or browser privacy tools.
             </p>
           </section>
 
