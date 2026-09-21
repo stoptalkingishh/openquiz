@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Play, BookOpen, Globe, Lock, Share2, Copy, Users, Check, Gamepad2, ClipboardList, Folder, FolderPlus, Trophy, Trash2, Pencil } from 'lucide-react'
+import { ArrowLeft, Play, BookOpen, Globe, Lock, Share2, Copy, Users, Check, Gamepad2, ClipboardList, Folder, FolderPlus, Trophy, Trash2, Pencil, MessageSquare } from 'lucide-react'
 import { getCustomQuizById, getQuizSetByPath, getFolders, setQuizInFolder, createFolder, getQuizStats, loadOfficialQuiz, deleteCustomQuiz, updateCustomQuiz } from '../lib/db'
 import { buildShareData, downloadSharedQuiz } from '../lib/share'
 import { useQuizStore } from '../lib/quizStore'
@@ -10,6 +10,7 @@ import { useAuth } from '../contexts/AuthContext'
 import Logo from '../components/Logo'
 import CustomQuizEditor from '../components/CustomQuizEditor'
 import DriveQuizShare from '../components/DriveQuizShare'
+import { buildQuizFeedbackUrl } from '../lib/githubFeedback'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export default function QuizDetailClient() {
@@ -224,6 +225,14 @@ export default function QuizDetailClient() {
 const questions = Array.isArray(quiz.questions) ? quiz.questions : []
 const itemLabel = questions.length ? 'questions' : 'words'
 const itemCount = questions.length || words.length
+const feedbackUrl = buildQuizFeedbackUrl({
+    quizName: String(quiz.name || 'OpenQuiz quiz'),
+    // Keep custom quiz locations out of a public GitHub Issue. Published quizzes
+    // can safely include their stable page reference for faster triage.
+    quizUrl: quiz.isCustom || !quiz.file_path
+        ? undefined
+        : `/openquiz/quiz-detail/?path=${encodeURIComponent(quiz.file_path)}`
+})
 
 function kindLabel(kind: string): string {
     switch (kind) {
@@ -353,6 +362,16 @@ function kindLabel(kind: string): string {
                                 Learn
                             </button>
                         </div>
+                        <a
+                            href={feedbackUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-3 py-3 px-4 rounded-xl border-2 border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:border-primary hover:text-primary transition-colors flex items-center justify-center gap-2 font-semibold"
+                        >
+                            <MessageSquare className="w-5 h-5" />
+                            Give feedback on this quiz
+                        </a>
+                        <p className="mt-2 text-xs text-neutral-500 dark:text-neutral-400 text-center">Opens a GitHub Issue where you and the maintainers can follow up. Do not post private study material.</p>
 
                         {/* Folder picker (custom quizzes only) */}
                         {quiz.isCustom && (
