@@ -1,6 +1,6 @@
 import { WordProgress, QuizQuestion, SimulationStep, Word, Folder, QuizStats, CustomQuiz } from './satTypes'
 import { assetPath } from './paths'
-import { isDriveConfigured, readDriveFile as readRemoteFile, writeDriveFile as writeRemoteFile, getDriveUser } from './drive'
+import { isDriveConfigured, readDriveFile as readRemoteFile, writeDriveFile as writeRemoteFile, getDriveUser, readSharedDriveQuiz } from './drive'
 import { readAccountData, writeAccountData, currentAccountId, assertAccount, setSyncMessage } from './storage'
 
 /**
@@ -329,6 +329,7 @@ export async function getQuizzesReadyToShare(userId: string) {
 }
 
 export async function getCustomQuizById(quizId: string) {
+    const owner = currentAccountId()
     if (!withoutDeleted('quizzes', [{ id: quizId }]).length) return null
     const local = readJson<any[]>(CUSTOM_QUIZZES_KEY, [])
         .find(q => q.id === quizId) || null
@@ -336,10 +337,31 @@ export async function getCustomQuizById(quizId: string) {
     if (isCloudActive()) {
         const remote = await readForDisplay<any[]>(CUSTOM_QUIZZES_FILE)
         const remoteQuiz = (remote || []).find(q => q.id === quizId)
-        if (remoteQuiz) return repairQuizShape(remoteQuiz)
+        if (remoteQuiz) return resolveLinkedQuiz(remoteQuiz, owner)
     }
 
-    return repairQuizShape(local)
+    return resolveLinkedQuiz(local, owner)
+}
+
+async function resolveLinkedQuiz(quiz: CustomQuiz | null, owner: string) {
+    if (!quiz?.drive_source) return repairQuizShape(quiz)
+    assertAccount(owner)
+    if (quiz.user_id !== owner) throw new Error('This quiz bookmark belongs to another account.')
+    const loaded = await readSharedDriveQuiz(quiz.drive_source.file_id, quiz.drive_source.resource_key)
+    const { parseSharedQuiz } = await import('./share')
+    const content = parseSharedQuiz(loaded.content)
+    assertAccount(owner)
+    return { ...quiz, ...content }
+}
+
+export async function linkDriveQuiz(userId: string, fileId: string, resourceKey?: string) {
+    assertAccount(userId)
+    const loaded = await readSharedDriveQuiz(fileId, resourceKey)
+    const { parseSharedQuiz } = await import('./share')
+    const quiz = parseSharedQuiz(loaded.content)
+    assertAccount(userId)
+    return createCustomQuiz(userId, quiz.name, quiz.description, [], false, quiz.author_name || undefined, undefined, quiz.tags || [], undefined,
+        { file_id: fileId, resource_key: loaded.file.resourceKey || resourceKey, item_count: quiz.questions.length || quiz.words.length })
 }
 
 /**
@@ -726,7 +748,8 @@ export async function createCustomQuiz(
     authorName?: string,
     questions?: QuizQuestion[],
     tags: string[] = [],
-    aiSourcePrompt?: string
+    aiSourcePrompt?: string,
+    driveSource?: CustomQuiz['drive_source']
 ) {
     return queueLocalWrite('createCustomQuiz', async () => {
         assertAccount(userId)
@@ -743,12 +766,17 @@ export async function createCustomQuiz(
             words: Array.isArray(words) ? words : [],
             questions: Array.isArray(questions) && questions.length ? questions : undefined,
             ai_source_prompt: aiSourcePrompt?.trim() || undefined,
+            drive_source: driveSource,
             is_public: isPublic,
             author_name: authorName || null,
             created_at: new Date().toISOString()
         }
 
         const all = readJson<any[]>(CUSTOM_QUIZZES_KEY, [])
+        if (driveSource) {
+            const existing = all.find(q => q.user_id === userId && q.drive_source?.file_id === driveSource.file_id)
+            if (existing) return existing
+        }
         all.unshift(quiz)
         writeJson(CUSTOM_QUIZZES_KEY, all)
 
@@ -773,6 +801,7 @@ export async function updateCustomQuiz(
         const index = all.findIndex(quiz => quiz.id === quizId)
         if (index < 0) throw new Error('Quiz not found')
         if (all[index].user_id !== currentAccountId()) throw new Error('You can only edit your own quizzes')
+        if (all[index].drive_source) throw new Error('This quiz is linked to Drive. Only its owner can update the shared version.')
 
         const name = String(changes.name || '').trim()
         if (!name) throw new Error('Quiz name is required')

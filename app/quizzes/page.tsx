@@ -5,13 +5,14 @@ import { useRouter } from 'next/navigation'
 import { Plus, Sparkles, BookOpen, Check, Users, Play, Globe, Lock, Share2, Copy, Twitter, Facebook, MessageCircle, X, Folder, FolderPlus, FolderOpen, Gamepad2, ClipboardList, Trash2, ChevronDown, Search, Pencil, Layers } from 'lucide-react'
 import BottomNav from '../components/BottomNav'
 import { useAuth } from '../contexts/AuthContext'
-import { combineCustomQuizQuestions, getQuizSets, getCustomQuizzes, getPublicQuizzes, createCustomQuiz, getFolders, createFolder, normalizeImportedQuizItems, validateQuizJSON, deleteCustomQuiz, csvToWords, delimitedToWords } from '../lib/db'
+import { combineCustomQuizQuestions, getQuizSets, getCustomQuizById, getCustomQuizzes, getPublicQuizzes, createCustomQuiz, getFolders, createFolder, normalizeImportedQuizItems, validateQuizJSON, deleteCustomQuiz, csvToWords, delimitedToWords } from '../lib/db'
 import { buildShareData, downloadSharedQuiz } from '../lib/share'
 import { useQuizStore } from '../lib/quizStore'
 import { buildPlannedQuizPrompt, generateQuizFromNotes, getAiSettings, planQuizzesFromMaterial, saveAiSettings, AiSettings, AiProvider, DEFAULT_OPENAI_MODEL, DEFAULT_GEMINI_MODEL, PlannedQuiz } from '../lib/ai'
 import { assetPath, BASE_PATH } from '../lib/paths'
 import { motion, AnimatePresence } from 'framer-motion'
 import QuizBuilder from '../components/QuizBuilder'
+import DriveQuizShare from '../components/DriveQuizShare'
 import { QuizQuestion } from '../lib/satTypes'
 
 const loadItemCount = async (filePath: string): Promise<number> => {
@@ -676,11 +677,13 @@ export default function QuizzesPage() {
 
 // Number of "things" a quiz contains (words for vocab quizzes, questions otherwise).
 function quizItemCount(quiz: any): number {
+    if (quiz.drive_source) return quiz.drive_source.item_count || 0
     if (Array.isArray(quiz.questions) && quiz.questions.length) return quiz.questions.length
     return Array.isArray(quiz.words) ? quiz.words.length : 0
 }
 
 function quizItemLabel(quiz: any): string {
+    if (quiz.drive_source) return 'items · linked to Drive'
     return Array.isArray(quiz.questions) && quiz.questions.length ? 'questions' : 'words'
 }
 
@@ -755,16 +758,17 @@ function CombineQuizModal({ quizzes, userId, onClose, onCreated }: { quizzes: an
     const [saving, setSaving] = useState(false)
     const [error, setError] = useState('')
     const selected = quizzes.filter(quiz => selectedIds.includes(quiz.id))
-    const available = combineCustomQuizQuestions(selected).length
+    const available = selected.reduce((sum, quiz) => sum + quizItemCount(quiz), 0)
 
     const create = async () => {
         setError('')
         if (!name.trim()) return setError('Give the combined test a name.')
         if (selected.length < 2) return setError('Select at least two quizzes to combine.')
-        const questions = combineCustomQuizQuestions(selected, questionLimit)
-        if (!questions.length) return setError('The selected quizzes do not contain usable questions or vocabulary.')
         setSaving(true)
         try {
+            const fresh = await Promise.all(selected.map(quiz => quiz.drive_source ? getCustomQuizById(quiz.id) : quiz))
+            const questions = combineCustomQuizQuestions(fresh.filter(Boolean), questionLimit)
+            if (!questions.length) throw new Error('The selected quizzes do not contain usable questions or vocabulary.')
             const source = `Combined from: ${selected.map(quiz => quiz.name).join(', ')}`
             await createCustomQuiz(userId, name.trim(), description.trim(), [], false, undefined, questions, tags.split(',').map(tag => tag.trim()).filter(Boolean), source)
             await onCreated()
@@ -1616,7 +1620,7 @@ function ShareQuizModal({
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
-                className="bg-white dark:bg-surface-dark rounded-3xl p-6 shadow-2xl relative z-10 max-w-md w-full"
+                className="bg-white dark:bg-surface-dark rounded-3xl p-6 shadow-2xl relative z-10 max-w-md w-full max-h-[90vh] overflow-y-auto"
                 onClick={(e) => e.stopPropagation()}
             >
                 <div className="flex items-center justify-between mb-4">
@@ -1639,6 +1643,7 @@ function ShareQuizModal({
                         {quiz.description}
                     </p>
 
+                    {quiz.isCustom && <DriveQuizShare quiz={quiz} />}
                     {quiz.isCustom && <div className="text-sm mb-4 space-y-3">
                         <p>Send a snapshot by link or JSON file. Copies do not receive future edits and are not listed publicly. Images and private AI source notes are excluded.</p>
                         <button className="btn-outline" onClick={() => downloadSharedQuiz(quiz)}>Download quiz JSON</button>
@@ -1656,7 +1661,7 @@ function ShareQuizModal({
                                 <div className="flex items-center gap-2 mb-2">
                                     <Share2 className="w-4 h-4 text-neutral-500" />
                                     <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase">
-                                        Share Link
+                                        Snapshot link (independent copy)
                                     </span>
                                 </div>
                                 <div className="flex items-center gap-2">

@@ -9,6 +9,7 @@ import { useQuizStore } from '../lib/quizStore'
 import { useAuth } from '../contexts/AuthContext'
 import Logo from '../components/Logo'
 import CustomQuizEditor from '../components/CustomQuizEditor'
+import DriveQuizShare from '../components/DriveQuizShare'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export default function QuizDetailClient() {
@@ -20,6 +21,7 @@ export default function QuizDetailClient() {
     const { user } = useAuth()
     const [quiz, setQuiz] = useState<any>(null)
     const [loading, setLoading] = useState(true)
+    const [loadError, setLoadError] = useState('')
     const [showShareModal, setShowShareModal] = useState(searchParams.get('share') === '1')
     const [expandedWord, setExpandedWord] = useState<string | null>(null)
     const [folders, setFolders] = useState<any[]>([])
@@ -58,7 +60,8 @@ export default function QuizDetailClient() {
             router.push('/quizzes')
         } catch (error) {
             console.error('Error loading quiz:', error)
-            router.push('/quizzes')
+            setLoadError(error instanceof Error ? error.message : 'Could not open quiz.')
+            setLoading(false)
         }
     }, [quizId, pathParam, router])
 
@@ -204,7 +207,8 @@ export default function QuizDetailClient() {
         return (
             <div className="min-h-screen flex items-center justify-center bg-background-light dark:bg-background-dark">
                 <div className="text-center">
-                    <p className="text-lg text-neutral-600 dark:text-neutral-400 mb-4">Quiz not found</p>
+                    <p className="text-lg text-neutral-600 dark:text-neutral-400 mb-4">{loadError || 'Quiz not found'}</p>
+                    {loadError && <button className="btn-outline mb-4" onClick={() => router.push('/quiz/share/?drive=pick')}>Open shared file with Google Picker</button>}
                     <button
                         onClick={() => router.push('/quizzes')}
                         className="btn-primary"
@@ -267,7 +271,7 @@ function kindLabel(kind: string): string {
                                             </>
                                         )}
                                     </div>
-                                    {quiz.isCustom && (
+                                    {quiz.isCustom && !quiz.drive_source && (
                                         <button
                                             onClick={() => setEditing(true)}
                                             className="p-2 rounded-lg text-neutral-500 hover:text-primary hover:bg-primary/10 transition-colors"
@@ -658,7 +662,7 @@ function kindLabel(kind: string): string {
                             initial={{ scale: 0.9, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.9, opacity: 0 }}
-                            className="bg-white dark:bg-surface-dark rounded-3xl p-6 shadow-2xl relative z-10 max-w-md w-full"
+                            className="bg-white dark:bg-surface-dark rounded-3xl p-6 shadow-2xl relative z-10 max-w-md w-full max-h-[90vh] overflow-y-auto"
                             onClick={(e) => e.stopPropagation()}
                         >
                             <div className="flex items-center justify-between mb-4">
@@ -684,6 +688,7 @@ function kindLabel(kind: string): string {
                                     {quiz.description}
                                 </p>
 
+                                {quiz.isCustom && <DriveQuizShare quiz={quiz} />}
                                 {quiz.isCustom && <div className="text-sm mb-4 space-y-3">
                                     <p>Send a snapshot of this quiz by link or file. Anyone with a copy can import it. It is not listed publicly; future edits do not update copies already sent. Images and private AI source notes are excluded.</p>
                                     <button className="btn-outline" onClick={() => downloadSharedQuiz(quiz)}>Download quiz JSON</button>
@@ -700,7 +705,7 @@ function kindLabel(kind: string): string {
                                     <div className="flex items-center gap-2 mb-2">
                                         <Share2 className="w-4 h-4 text-neutral-500" />
                                         <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase">
-                                            Share Link
+                                            Snapshot link (independent copy)
                                         </span>
                                     </div>
                                     <div className="flex items-center gap-2">

@@ -196,6 +196,8 @@ export interface CustomQuiz {
   questions?: QuizQuestion[];
   /** Original notes used when AI generated this quiz, editable for later revisions. */
   ai_source_prompt?: string;
+  /** A bookmark; content and permission are rechecked in Drive whenever it is opened. */
+  drive_source?: { file_id: string; resource_key?: string; item_count: number };
   is_public: boolean;
   author_name: string | null;
   created_at: string;

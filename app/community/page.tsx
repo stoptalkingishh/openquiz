@@ -145,6 +145,7 @@ export default function CommunityPage() {
                 <div className="card text-sm space-y-3">
                     <p>Custom quizzes are stored privately. Marking a quiz for sharing adds it to your list here; it does not publish it for other accounts to discover. Use Share to send a copy by link or JSON file.</p>
                     <button className="btn-outline" onClick={() => router.push('/quiz/share/')}>Open a shared quiz file</button>
+                    <button className="btn-outline ml-2" onClick={() => router.push('/quiz/share/?drive=pick')}>Open from Google Drive</button>
                 </div>
 
                 <div className="relative">

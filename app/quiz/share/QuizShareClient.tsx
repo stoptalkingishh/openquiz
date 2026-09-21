@@ -8,6 +8,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { createCustomQuiz, getQuizSetByPath, loadOfficialQuiz } from '../../lib/db'
 import { parseSharedQuiz, SharedQuiz, SHARE_FILE_MAX_BYTES } from '../../lib/share'
 import Logo from '../../components/Logo'
+import DriveQuizReader from '../../components/DriveQuizReader'
 
 function textValue(value: unknown, fallback = ''): string {
     return typeof value === 'string' ? value.trim() : fallback
@@ -24,6 +25,7 @@ export default function QuizShareClient() {
     const router = useRouter()
     const pathParam = searchParams.get('path')
     const dataParam = searchParams.get('data')
+    const driveParam = searchParams.get('drive')
     const { setSelectedQuizPath } = useQuizStore()
     const { user, signInWithGoogle } = useAuth()
     const [words, setWords] = useState<any[]>([])
@@ -177,6 +179,8 @@ export default function QuizShareClient() {
             setStarting(false)
         }
     }
+
+    if (driveParam) return <DriveQuizReader key={`${driveParam}:${searchParams.get('key') || ''}`} fileId={driveParam === 'pick' ? undefined : driveParam} resourceKey={searchParams.get('key') || ''} />
 
     if (loading) {
         return (

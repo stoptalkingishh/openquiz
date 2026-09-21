@@ -652,3 +652,126 @@ export function writeDriveFile(fileName: string, data: unknown): Promise<boolean
         }
     })
 }
+
+// A publication is a separate JSON file, never the private account database.
+export interface DriveQuizFile { id: string; name?: string; resourceKey?: string; modifiedTime?: string }
+const sharedQuizWrites = new Map<string, Promise<DriveQuizFile>>()
+const SHARED_QUIZ_LIMIT = 5_000_000
+
+export function validateDriveReference(fileId: string, resourceKey = '') {
+    if (!/^[a-zA-Z0-9_-]{1,200}$/.test(fileId) || (resourceKey && !/^[a-zA-Z0-9_-]{1,200}$/.test(resourceKey))) {
+        throw new DriveError('Invalid Google Drive file link')
+    }
+}
+
+export function driveQuizFileUrl(fileId: string, resourceKey = ''): string {
+    validateDriveReference(fileId, resourceKey)
+    return `https://drive.google.com/file/d/${fileId}/view${resourceKey ? `?resourcekey=${resourceKey}` : ''}`
+}
+
+export function publishDriveQuiz(quizId: string, name: string, content: string): Promise<DriveQuizFile> {
+    validateDriveReference(quizId)
+    if (!currentUser || !isDriveConfigured()) return Promise.reject(new DriveError('Sign in with Google to share through Drive.'))
+    if (new TextEncoder().encode(content).length > SHARED_QUIZ_LIMIT) return Promise.reject(new DriveError('Quiz exceeds the 5 MB sharing limit.'))
+    const context = captureAuthContext()
+    const key = `${context.generation}:${context.userId}:${quizId}`
+    const task = (sharedQuizWrites.get(key) || Promise.resolve()).catch(() => undefined).then(async () => {
+        assertAuthContextCurrent(context)
+        const found: any = await driveRequest(context, () => window.gapi.client.drive.files.list({
+            q: `'me' in owners and trashed = false and appProperties has { key='openquizPublication' and value='${quizId}' }`,
+            fields: 'files(id)', pageSize: 2
+        }))
+        assertAuthContextCurrent(context)
+        if (!Array.isArray(found?.result?.files)) throw new DriveError('Invalid Drive publication lookup')
+        if (found.result.files.length > 1) throw new DriveError('Multiple Drive publications found. Remove the duplicate in Drive before updating.')
+        let fileId = found.result.files[0]?.id
+        if (!fileId) {
+            // No parent: do not inherit permissions from the private sync folder.
+            const created: any = await driveRequest(context, () => window.gapi.client.drive.files.create({
+                resource: { name: `${name}.openquiz.json`, mimeType: 'application/json', appProperties: { openquizPublication: quizId } },
+                fields: 'id'
+            }))
+            assertAuthContextCurrent(context)
+            fileId = created?.result?.id
+            if (!fileId) throw new DriveError('Drive did not return a publication file ID')
+        }
+        validateDriveReference(fileId)
+        await driveRequest(context, () => window.gapi.client.request({
+            path: `/upload/drive/v3/files/${fileId}`, method: 'PATCH', params: { uploadType: 'media' },
+            headers: { 'Content-Type': 'application/json; charset=UTF-8' }, body: content
+        }))
+        assertAuthContextCurrent(context)
+        const updated: any = await driveRequest(context, () => window.gapi.client.request({
+            path: `/drive/v3/files/${fileId}`, method: 'PATCH',
+            params: { fields: 'id,name,resourceKey,modifiedTime' }, body: { name: `${name}.openquiz.json` }
+        }))
+        assertAuthContextCurrent(context)
+        return { ...updated.result, id: fileId } as DriveQuizFile
+    })
+    sharedQuizWrites.set(key, task)
+    void task.finally(() => { if (sharedQuizWrites.get(key) === task) sharedQuizWrites.delete(key) }).catch(() => {})
+    return task
+}
+
+/** Always recheck Drive access. Do not fall back to a cached copy after revocation. */
+export async function readSharedDriveQuiz(fileId: string, resourceKey = ''): Promise<{ content: string; file: DriveQuizFile }> {
+    validateDriveReference(fileId, resourceKey)
+    if (!currentUser) throw new DriveError('Sign in with Google to open this Drive quiz. You may need access from its owner.')
+    const context = captureAuthContext()
+    const headers = resourceKey ? { 'X-Goog-Drive-Resource-Keys': `${fileId}/${resourceKey}` } : {}
+    try {
+        const metadata: any = await driveRequest(context, () => window.gapi.client.request({
+            path: `/drive/v3/files/${fileId}`, method: 'GET', headers,
+            params: { fields: 'id,name,mimeType,size,trashed,resourceKey,modifiedTime', supportsAllDrives: true }
+        }))
+        assertAuthContextCurrent(context)
+        const file = metadata.result
+        if (!file || file.trashed || file.mimeType !== 'application/json') throw new DriveError('This Drive file is not an OpenQuiz JSON publication.')
+        if (!Number.isFinite(Number(file.size)) || Number(file.size) > SHARED_QUIZ_LIMIT) throw new DriveError('This Drive quiz exceeds the 5 MB sharing limit.')
+        const response: any = await driveRequest(context, () => window.gapi.client.request({
+            path: `/drive/v3/files/${fileId}`, method: 'GET', headers,
+            params: { alt: 'media', supportsAllDrives: true }
+        }))
+        assertAuthContextCurrent(context)
+        const content = typeof response.body === 'string' ? response.body : JSON.stringify(response.result)
+        if (typeof content !== 'string' || new TextEncoder().encode(content).length > SHARED_QUIZ_LIMIT) throw new DriveError('Invalid or oversized Drive quiz.')
+        return { content, file }
+    } catch (err) {
+        if ([403, 404].includes(errorStatus(err) || 0)) throw new DriveError('Drive access is unavailable. Ask the owner for access, then choose this file in Google Picker to allow OpenQuiz to read it.', err)
+        throw err
+    }
+}
+
+/** Picker grants per-file app access while retaining the existing drive.file scope. */
+export async function pickSharedDriveQuiz(expectedFileId?: string): Promise<{ id: string; resourceKey?: string } | null> {
+    if (expectedFileId) validateDriveReference(expectedFileId)
+    if (!currentUser) throw new DriveError('Sign in with Google first.')
+    const context = captureAuthContext()
+    const token = await getDriveTokenForContext(context)
+    const appId = process.env.NEXT_PUBLIC_GOOGLE_APP_ID || CLIENT_ID.split('-')[0]
+    if (!/^\d+$/.test(appId)) throw new DriveError('Google Picker needs the Google Cloud project number (NEXT_PUBLIC_GOOGLE_APP_ID).')
+    await withTimeoutOrThrow(new Promise<void>((resolve, reject) => window.gapi.load('picker', {
+        callback: resolve, onerror: () => reject(new DriveError('Enable Google Picker API in the Google Cloud project.'))
+    })), 8000, 'Google Picker loading')
+    assertAuthContextCurrent(context)
+    return new Promise((resolve, reject) => {
+        const api = window.google.picker
+        const view = new api.DocsView().setMimeTypes('application/json')
+        if (expectedFileId) view.setFileIds(expectedFileId)
+        const picker = new api.PickerBuilder().setDeveloperKey(API_KEY).setAppId(appId)
+            .setOAuthToken(token).setOrigin(window.location.origin).addView(view)
+            .setCallback((result: any) => {
+                if (result.action !== api.Action.PICKED && result.action !== api.Action.CANCEL) return
+                picker.setVisible(false)
+                try {
+                    assertAuthContextCurrent(context)
+                    if (result.action === api.Action.CANCEL) { resolve(null); return }
+                    const file = result.docs?.[0]
+                    validateDriveReference(file?.id || '', file?.resourceKey || '')
+                    if (expectedFileId && file.id !== expectedFileId) throw new DriveError('Choose the quiz file linked by its owner.')
+                    resolve({ id: file.id, resourceKey: file.resourceKey })
+                } catch (err) { reject(err) }
+            }).build()
+        picker.setVisible(true)
+    })
+}
