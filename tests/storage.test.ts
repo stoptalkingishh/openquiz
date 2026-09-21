@@ -10,10 +10,16 @@ vi.mock('../app/lib/drive', () => ({
         return state.remote[name] ?? null
     }),
     writeDriveFile: vi.fn(async (name: string, value: any) => { state.remote[name] = value; return true }),
+    readSharedDriveQuiz: vi.fn(async () => {
+        if (state.failRead) throw new Error('Drive access revoked')
+        return { content: JSON.stringify(state.remote.shared), file: { id: 'publication' } }
+    }),
 }))
 import { combineCustomQuizQuestions, createCustomQuiz, updateCustomQuiz, deleteCustomQuiz, createFolder, getCustomQuizzes, getWordProgress, saveWordProgress, recordQuizSession, getRecentActivity, syncLocalToCloud, updateDailyStats, getDailyStats, localDate } from '../app/lib/db'
 import { accountKey } from '../app/lib/storage'
 import { writeDriveFile } from '../app/lib/drive'
+import { getQuizzesReadyToShare } from '../app/lib/db'
+import { linkDriveQuiz, getCustomQuizById } from '../app/lib/db'
 
 let data: Map<string, string>
 let failWrites = false
@@ -29,6 +35,35 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals())
 
 describe('account storage and failed saves', () => {
+    it('stores only a linked bookmark, loads new published versions, and never falls back after revoked access', async () => {
+        state.remote.shared = { name: 'Shared v1', words: [], questions: [{ prompt: 'Version one?', answer: 'Yes' }] }
+        const linked = await linkDriveQuiz('alice', 'publication')
+        expect(linked.words).toEqual([])
+        expect(linked.questions).toBeUndefined()
+        expect(linked.drive_source?.file_id).toBe('publication')
+        expect((await linkDriveQuiz('alice', 'publication')).id).toBe(linked.id)
+        expect((await getCustomQuizById(linked.id))?.name).toBe('Shared v1')
+        state.remote.shared.name = 'Shared v2'
+        expect((await getCustomQuizById(linked.id))?.name).toBe('Shared v2')
+        await expect(updateCustomQuiz(linked.id, { name: 'Edit', description: '', words: [], is_public: false })).rejects.toThrow('linked to Drive')
+        state.failRead = true
+        await expect(getCustomQuizById(linked.id)).rejects.toThrow('revoked')
+        state.owner = 'bob'
+        expect(await getCustomQuizById(linked.id)).toBeNull()
+    })
+    it('shows the owners sharing list from Drive without leaking other accounts or private quizzes', async () => {
+        const local = await createCustomQuiz('alice', 'Share me', '', [], true)
+        await createCustomQuiz('alice', 'Keep private', '', [], false)
+        state.remote['custom_quizzes.json'] = [
+            { ...local, id: 'cloud', name: 'Cloud sharing item' },
+            { ...local, id: 'other', user_id: 'bob' }
+        ]
+        state.cloud = true
+        expect((await getQuizzesReadyToShare('alice')).map(q => q.id)).toEqual([local.id, 'cloud'])
+        expect(await getQuizzesReadyToShare('bob')).toEqual([])
+        state.owner = 'bob'; state.cloud = false
+        expect(await getQuizzesReadyToShare('bob')).toEqual([])
+    })
     it('combines question and vocabulary quizzes into standalone test questions', () => {
         const combined = combineCustomQuizQuestions([
             { id: 'one', questions: [{ id: 'q1', kind: 'flashcard', prompt: 'Question', answer: 'Answer' }], words: [] },

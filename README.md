@@ -154,6 +154,20 @@ When `NEXT_PUBLIC_GOOGLE_CLIENT_ID` and `NEXT_PUBLIC_GOOGLE_API_KEY` are baked i
 
 Without the keys the same code runs in guest mode — nothing breaks, nothing is uploaded.
 
+### Share a quiz through Google Drive
+
+In a custom quiz's **Share** dialog, choose **Create / update shared version**. OpenQuiz writes a separate `.openquiz.json` file in your Drive. It never shares the private `OpenQuiz` sync folder or `custom_quizzes.json`. The published file contains quiz metadata and questions, excluding original AI source notes, account IDs, and images.
+
+Use **Open Drive → Share / manage access**, then Google's **Share** button to add people (Viewer recommended) or enable **Anyone with the link** if allowed by your organization. OpenQuiz itself does not change permissions, invite recipients, or send notification emails. Send the **OpenQuiz link** from the dialog after granting access. Future **Create / update shared version** actions update the same Drive file and keep the link valid; edits to the private quiz are not automatically published.
+
+Recipients sign in with Google and open that link. If the app lacks access under `drive.file`, they select the file in **Google Picker**. Community also offers **Open from Google Drive**. **Add linked quiz & start learning** stores only a bookmark and display metadata; each later study session reads the latest publication and checks Drive access again. Study progress is private. An already-running session keeps its loaded questions. Revoking access blocks future loads, but cannot retract downloaded copies. Deleting a bookmark or private quiz does not delete the publication; owners can revoke access or trash it directly in Drive.
+
+Drive sharing requires an internet connection and a Google account, including for link-public files in this implementation. JSON exports and snapshot links remain independent-copy fallbacks. A shared file is not automatically discoverable by every OpenQuiz user: Drive permissions and a sent link/Picker selection control access.
+
+**Additional Google Cloud setup for Picker:** enable **Google Picker API** in the same project as the existing OAuth client and Drive API. Allow both APIs in the public API key's restrictions, with your site's allowed referrers and `https://docs.google.com/*` as required by [Google's Picker setup instructions](https://developers.google.com/workspace/drive/picker/guides/web-picker-sample). Set optional repository variable `NEXT_PUBLIC_GOOGLE_APP_ID` to the Google Cloud **project number** (not its project ID); otherwise the app derives the number from the OAuth client ID prefix. No new OAuth scopes are requested. Confirm setup with two separate Google accounts before relying on restricted sharing in production.
+
+The implementation follows Google's [per-file scope guidance](https://developers.google.com/workspace/drive/api/guides/api-specific-auth) and [resource-key requirements](https://developers.google.com/workspace/drive/api/guides/resource-keys). The Google Cloud configuration and real-account cross-user access cannot be validated by unit tests alone.
+
 ---
 
 ## ⚡ Static Build & Quickstart

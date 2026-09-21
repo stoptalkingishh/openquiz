@@ -5,18 +5,10 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import { ArrowLeft, Play, BookOpen } from 'lucide-react'
 import { useQuizStore } from '../../lib/quizStore'
 import { useAuth } from '../../contexts/AuthContext'
-import { createCustomQuiz, getQuizSetByPath, loadOfficialQuiz, normalizeImportedQuizItems } from '../../lib/db'
+import { createCustomQuiz, getQuizSetByPath, loadOfficialQuiz } from '../../lib/db'
+import { parseSharedQuiz, SharedQuiz, SHARE_FILE_MAX_BYTES } from '../../lib/share'
 import Logo from '../../components/Logo'
-
-interface SharedQuiz {
-    name: string
-    description: string
-    words: any[]
-    questions: any[]
-    author_name?: string | null
-}
-
-const MAX_SHARED_PAYLOAD_CHARS = 100_000
+import DriveQuizReader from '../../components/DriveQuizReader'
 
 function textValue(value: unknown, fallback = ''): string {
     return typeof value === 'string' ? value.trim() : fallback
@@ -28,56 +20,14 @@ function normalizeOfficialPath(value: string): string {
     return normalized.replace(new RegExp('/{2,}', 'g'), '/')
 }
 
-function parseSharedQuiz(dataParam: string): SharedQuiz {
-    if (dataParam.length > MAX_SHARED_PAYLOAD_CHARS) {
-        throw new Error('This shared quiz link is too large to load.')
-    }
-
-    let raw: any
-    try {
-        raw = JSON.parse(dataParam)
-    } catch {
-        throw new Error('The shared quiz link contains invalid data.')
-    }
-    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
-        throw new Error('The shared quiz payload must be an object.')
-    }
-
-    const hasWords = Array.isArray(raw.words)
-    const hasQuestions = Array.isArray(raw.questions)
-    if (!hasWords && !hasQuestions) {
-        throw new Error('The shared quiz does not contain any quiz items.')
-    }
-
-    // Normalize the complete payload together so mixed vocabulary/question
-    // links preserve every item instead of silently dropping one category.
-    const normalized = normalizeImportedQuizItems([
-        ...(hasWords ? raw.words : []),
-        ...(hasQuestions ? raw.questions : [])
-    ])
-    if (normalized.errors.length) {
-        throw new Error(`The shared quiz is invalid: ${normalized.errors.slice(0, 3).join(' ')}`)
-    }
-    if (!normalized.words.length && !normalized.questions.length) {
-        throw new Error('The shared quiz does not contain any valid items.')
-    }
-
-    return {
-        name: textValue(raw.name, 'Shared Vocabulary Quiz'),
-        description: textValue(raw.description),
-        author_name: textValue(raw.author_name) || null,
-        words: normalized.words,
-        questions: normalized.questions
-    }
-}
-
 export default function QuizShareClient() {
     const searchParams = useSearchParams()
     const router = useRouter()
     const pathParam = searchParams.get('path')
     const dataParam = searchParams.get('data')
+    const driveParam = searchParams.get('drive')
     const { setSelectedQuizPath } = useQuizStore()
-    const { user } = useAuth()
+    const { user, signInWithGoogle } = useAuth()
     const [words, setWords] = useState<any[]>([])
     const [questions, setQuestions] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
@@ -95,8 +45,9 @@ export default function QuizShareClient() {
         setQuestions([])
         setEmbeddedQuiz(null)
         try {
-            if (dataParam) {
-                const data = parseSharedQuiz(dataParam)
+            const sharedData = new URLSearchParams(window.location.hash.slice(1)).get('data') || dataParam
+            if (sharedData) {
+                const data = parseSharedQuiz(sharedData)
                 setWords(data.words)
                 setQuestions(data.questions)
                 setQuizName(data.name)
@@ -130,7 +81,7 @@ export default function QuizShareClient() {
                 return
             }
 
-            throw new Error('This share link is missing a quiz.')
+            setLoading(false)
         } catch (loadError) {
             console.error('Error loading quiz:', loadError)
             setError(loadError instanceof Error ? loadError.message : 'Could not load this quiz.')
@@ -140,7 +91,34 @@ export default function QuizShareClient() {
 
     useEffect(() => {
         loadQuiz()
+        window.addEventListener('hashchange', loadQuiz)
+        return () => window.removeEventListener('hashchange', loadQuiz)
     }, [loadQuiz])
+
+    const openFile = async (file?: File) => {
+        if (!file) return
+        setError(null)
+        setEmbeddedQuiz(null)
+        setWords([])
+        setQuestions([])
+        try {
+            if (file.size > SHARE_FILE_MAX_BYTES) throw new Error('This quiz is too large to import (maximum 5 MB).')
+            const data = parseSharedQuiz(await file.text())
+            setEmbeddedQuiz(data)
+            setWords(data.words)
+            setQuestions(data.questions)
+            setQuizName(data.name)
+            setDescription(data.description)
+            setAuthorName(data.author_name || null)
+        } catch (err) { setError(err instanceof Error ? err.message : 'Could not open this file.') }
+    }
+
+    const signInHere = async () => {
+        setStarting(true)
+        try { await signInWithGoogle() }
+        catch (err) { setError(err instanceof Error ? err.message : 'Could not sign in.') }
+        finally { setStarting(false) }
+    }
 
     useEffect(() => {
         if (quizName) {
@@ -160,7 +138,7 @@ export default function QuizShareClient() {
     const handleStart = async () => {
         if (starting) return
         if (!user) {
-            router.push('/auth')
+            await signInHere()
             return
         }
 
@@ -177,7 +155,8 @@ export default function QuizShareClient() {
                     embeddedQuiz.words,
                     false,
                     authorName || user.name || 'Guest',
-                    embeddedQuiz.questions.length ? embeddedQuiz.questions : undefined
+                    embeddedQuiz.questions.length ? embeddedQuiz.questions : undefined,
+                    embeddedQuiz.tags || []
                 )
                 setSelectedQuizPath(`/custom-quiz/${created.id}`)
                 router.push('/session/learn')
@@ -201,6 +180,8 @@ export default function QuizShareClient() {
         }
     }
 
+    if (driveParam) return <DriveQuizReader key={`${driveParam}:${searchParams.get('key') || ''}`} fileId={driveParam === 'pick' ? undefined : driveParam} resourceKey={searchParams.get('key') || ''} />
+
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-background-light dark:bg-background-dark">
@@ -221,6 +202,13 @@ export default function QuizShareClient() {
                 </button>
 
                 <div className="max-w-2xl mx-auto">
+                    <div className="card mb-6">
+                        <h1 className="text-xl font-bold mb-2">Open a shared quiz</h1>
+                        <p className="text-sm mb-4">Open a link someone sent you, or upload their OpenQuiz JSON export. Importing saves a private copy in your quizzes.</p>
+                        <label className="block text-sm font-semibold">OpenQuiz JSON file
+                            <input type="file" accept=".json,application/json" className="block mt-2 w-full" disabled={starting} onChange={e => { void openFile(e.target.files?.[0]); e.target.value = '' }} />
+                        </label>
+                    </div>
                     {error && (
                         <div role="alert" className="card mb-6 border-2 border-red-400 bg-red-50 dark:bg-red-950/30 p-4 text-red-800 dark:text-red-200">
                             {error}
@@ -261,7 +249,8 @@ export default function QuizShareClient() {
                                         Sign in to start practicing this quiz
                                     </p>
                                     <button
-                                        onClick={() => router.push('/auth')}
+                                        onClick={signInHere}
+                                        disabled={starting}
                                         className="btn-primary w-full"
                                     >
                                         Sign In to Start
@@ -274,7 +263,7 @@ export default function QuizShareClient() {
                                     className="w-full btn-primary py-4 flex items-center justify-center gap-2 text-lg disabled:opacity-60 disabled:cursor-not-allowed"
                                 >
                                     <Play className="w-5 h-5" />
-                                    {starting ? 'Starting...' : 'Start Learning'}
+                                    {starting ? 'Starting...' : embeddedQuiz ? 'Import & start learning' : 'Start Learning'}
                                 </button>
                             )}
                         </div>

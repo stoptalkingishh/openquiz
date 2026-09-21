@@ -160,7 +160,7 @@ export default function SessionModePage() {
             clearTimeout(timeout)
             if (cancelled) return
             console.error('Error loading quiz:', err)
-            setLoadError('Something went wrong while loading this quiz. Please try again.')
+            setLoadError(err instanceof Error ? err.message : 'Something went wrong while loading this quiz. Please try again.')
             setLoading(false)
         })
 
