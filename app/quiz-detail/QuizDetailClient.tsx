@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { ArrowLeft, Play, BookOpen, Globe, Lock, Share2, Copy, Users, Check, Gamepad2, ClipboardList, Folder, FolderPlus, Trophy, Trash2, Pencil } from 'lucide-react'
 import { getCustomQuizById, getQuizSetByPath, getFolders, setQuizInFolder, createFolder, getQuizStats, loadOfficialQuiz, deleteCustomQuiz, updateCustomQuiz } from '../lib/db'
-import { buildShareData } from '../lib/share'
+import { buildShareData, downloadSharedQuiz } from '../lib/share'
 import { useQuizStore } from '../lib/quizStore'
 import { useAuth } from '../contexts/AuthContext'
 import Logo from '../components/Logo'
@@ -20,7 +20,7 @@ export default function QuizDetailClient() {
     const { user } = useAuth()
     const [quiz, setQuiz] = useState<any>(null)
     const [loading, setLoading] = useState(true)
-    const [showShareModal, setShowShareModal] = useState(false)
+    const [showShareModal, setShowShareModal] = useState(searchParams.get('share') === '1')
     const [expandedWord, setExpandedWord] = useState<string | null>(null)
     const [folders, setFolders] = useState<any[]>([])
     const [stats, setStats] = useState<any>(null)
@@ -155,9 +155,9 @@ export default function QuizDetailClient() {
         if (quiz.isCustom) {
             // Embed the whole quiz in the URL so the link works on any static host
             if (shareData === null) return ''
-            return `${typeof window !== 'undefined' ? window.location.origin : ''}${process.env.NEXT_PUBLIC_BASE_PATH || ''}/quiz/share?data=${shareData}`
+            return `${typeof window !== 'undefined' ? window.location.origin : ''}${process.env.NEXT_PUBLIC_BASE_PATH || ''}/quiz/share/#data=${shareData}`
         }
-        return `${typeof window !== 'undefined' ? window.location.origin : ''}${process.env.NEXT_PUBLIC_BASE_PATH || ''}/quiz/share?path=${encodeURIComponent(quiz.file_path || '')}`
+        return `${typeof window !== 'undefined' ? window.location.origin : ''}${process.env.NEXT_PUBLIC_BASE_PATH || ''}/quiz/share/?path=${encodeURIComponent(quiz.file_path || '')}`
     }
 
     const copyShareLink = async () => {
@@ -258,7 +258,7 @@ function kindLabel(kind: string): string {
                                         {quiz.is_public ? (
                                             <>
                                                 <Globe className="w-3 h-3" />
-                                                Public
+                                                Ready to share
                                             </>
                                         ) : (
                                             <>
@@ -684,6 +684,10 @@ function kindLabel(kind: string): string {
                                     {quiz.description}
                                 </p>
 
+                                {quiz.isCustom && <div className="text-sm mb-4 space-y-3">
+                                    <p>Send a snapshot of this quiz by link or file. Anyone with a copy can import it. It is not listed publicly; future edits do not update copies already sent. Images and private AI source notes are excluded.</p>
+                                    <button className="btn-outline" onClick={() => downloadSharedQuiz(quiz)}>Download quiz JSON</button>
+                                </div>}
                                 {/* Share Link */}
                                 {shareTooLarge ? (
                                     <div className="bg-warning/10 border-2 border-warning rounded-xl p-4 mb-4">

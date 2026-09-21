@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Search, Globe, Users, BookOpen, Play, Download, Sparkles } from 'lucide-react'
 import BottomNav from '../components/BottomNav'
 import { useAuth } from '../contexts/AuthContext'
-import { getQuizSets, getPublicQuizzes, createCustomQuiz } from '../lib/db'
+import { getQuizSets, getQuizzesReadyToShare } from '../lib/db'
 import { useQuizStore } from '../lib/quizStore'
 import { assetPath } from '../lib/paths'
 
@@ -47,7 +47,6 @@ export default function CommunityPage() {
     const [loading, setLoading] = useState(true)
     const [search, setSearch] = useState('')
     const [category, setCategory] = useState<string>('All')
-    const [importingId, setImportingId] = useState<string | null>(null)
     const { user, loading: authLoading } = useAuth()
     const router = useRouter()
     const { setSelectedQuizPath } = useQuizStore()
@@ -64,7 +63,7 @@ export default function CommunityPage() {
             try {
                 const [sets, publicQuizzes] = await Promise.all([
                     getQuizSets(),
-                    getPublicQuizzes(user.id)
+                    getQuizzesReadyToShare(user.id)
                 ])
 
                 const counts: Record<string, number> = {}
@@ -91,7 +90,7 @@ export default function CommunityPage() {
                         name: quiz.name,
                         description: quiz.description,
                         author: quiz.author_name || null,
-                        category: 'Community',
+                        category: 'My sharing list',
                         itemCount: quizItemCount(quiz),
                         itemLabel: quizItemLabel(quiz),
                         words: Array.isArray(quiz.words) ? quiz.words : [],
@@ -109,7 +108,7 @@ export default function CommunityPage() {
         load()
     }, [user, authLoading, router])
 
-    const categories = ['All', ...Array.from(new Set(items.filter(i => i.kind === 'official').map(i => i.category))), 'Community']
+    const categories = ['All', ...Array.from(new Set(items.filter(i => i.kind === 'official').map(i => i.category))), 'My sharing list']
 
     const filtered = items.filter(item => {
         const q = search.trim().toLowerCase()
@@ -129,27 +128,6 @@ export default function CommunityPage() {
         router.push('/session/learn')
     }
 
-    const handleImport = async (item: CommunityItem) => {
-        if (!user || importingId) return
-        setImportingId(item.id)
-        try {
-            const forked = await createCustomQuiz(
-                user.id,
-                item.name,
-                item.description,
-                item.words,
-                true,
-                item.author || undefined,
-                item.questions
-            )
-            router.push(`/quiz-detail/?id=${forked.id}`)
-        } catch (err) {
-            console.error('Failed to import quiz:', err)
-            alert('Could not import the quiz. Please try again.')
-            setImportingId(null)
-        }
-    }
-
     if (authLoading) return null
 
     return (
@@ -160,8 +138,13 @@ export default function CommunityPage() {
                         Community
                     </h1>
                     <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
-                        Browse official sets and quizzes shared by others
+                        Browse official sets and manage your sharing list
                     </p>
+                </div>
+
+                <div className="card text-sm space-y-3">
+                    <p>Custom quizzes are stored privately. Marking a quiz for sharing adds it to your list here; it does not publish it for other accounts to discover. Use Share to send a copy by link or JSON file.</p>
+                    <button className="btn-outline" onClick={() => router.push('/quiz/share/')}>Open a shared quiz file</button>
                 </div>
 
                 <div className="relative">
@@ -198,7 +181,7 @@ export default function CommunityPage() {
                     <div className="card text-center py-12">
                         <Sparkles className="w-12 h-12 text-neutral-300 dark:text-neutral-600 mx-auto mb-3" />
                         <p className="text-neutral-500 dark:text-neutral-400">
-                            {items.length === 0 ? 'No community content yet' : 'Nothing matches your search'}
+                            {category === 'My sharing list' && !search ? 'Your sharing list is empty. Edit a custom quiz and select “Add to my sharing list”, or share directly from its details.' : 'Nothing matches your search'}
                         </p>
                     </div>
                 ) : (
@@ -215,7 +198,7 @@ export default function CommunityPage() {
                                         ) : (
                                             <div className="badge-secondary flex items-center gap-1">
                                                 <Globe className="w-3 h-3" />
-                                                Public
+                                                Ready to share
                                             </div>
                                         )}
                                     </div>
@@ -244,12 +227,11 @@ export default function CommunityPage() {
                                     </button>
                                 ) : (
                                     <button
-                                        onClick={() => handleImport(item)}
-                                        disabled={importingId === item.id}
+                                        onClick={() => router.push(`/quiz-detail/?id=${encodeURIComponent(item.id)}&share=1`)}
                                         className="w-full btn-primary py-2 px-4 flex items-center justify-center gap-2 text-sm disabled:opacity-50"
                                     >
                                         <Download className="w-4 h-4" />
-                                        {importingId === item.id ? 'Importing...' : 'Import'}
+                                        Share
                                     </button>
                                 )}
                             </div>

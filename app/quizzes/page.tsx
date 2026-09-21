@@ -6,7 +6,7 @@ import { Plus, Sparkles, BookOpen, Check, Users, Play, Globe, Lock, Share2, Copy
 import BottomNav from '../components/BottomNav'
 import { useAuth } from '../contexts/AuthContext'
 import { combineCustomQuizQuestions, getQuizSets, getCustomQuizzes, getPublicQuizzes, createCustomQuiz, getFolders, createFolder, normalizeImportedQuizItems, validateQuizJSON, deleteCustomQuiz, csvToWords, delimitedToWords } from '../lib/db'
-import { buildShareData } from '../lib/share'
+import { buildShareData, downloadSharedQuiz } from '../lib/share'
 import { useQuizStore } from '../lib/quizStore'
 import { buildPlannedQuizPrompt, generateQuizFromNotes, getAiSettings, planQuizzesFromMaterial, saveAiSettings, AiSettings, AiProvider, DEFAULT_OPENAI_MODEL, DEFAULT_GEMINI_MODEL, PlannedQuiz } from '../lib/ai'
 import { assetPath, BASE_PATH } from '../lib/paths'
@@ -139,13 +139,13 @@ export default function QuizzesPage() {
             // Embed the whole quiz in the URL so the link works on any static host
             const data = buildShareData(quiz)
             if (data === null) return ''
-            return `${origin}${BASE_PATH}/quiz/share?data=${data}`
+            return `${origin}${BASE_PATH}/quiz/share/#data=${data}`
         } else {
             // For official quizzes, create a shareable link
             // Normalize file_path: remove leading slash if present, ensure it starts with /
             const filePath = (quiz.file_path || selectedQuizPath || '').trim()
             const normalizedPath = filePath.startsWith('/') ? filePath : `/${filePath}`
-            return `${origin}${BASE_PATH}/quiz/share?path=${encodeURIComponent(normalizedPath)}`
+            return `${origin}${BASE_PATH}/quiz/share/?path=${encodeURIComponent(normalizedPath)}`
         }
     }
 
@@ -393,7 +393,7 @@ export default function QuizzesPage() {
                                                 </h3>
                                                 <div className="badge-secondary flex items-center gap-1">
                                                     <Globe className="w-3 h-3" />
-                                                    Public
+                                                    Ready to share
                                                 </div>
                                             </div>
                                             <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-3">{quiz.description}</p>
@@ -509,7 +509,7 @@ export default function QuizzesPage() {
                                                     {quiz.is_public ? (
                                                         <>
                                                             <Globe className="w-3 h-3" />
-                                                            Public
+                                                            Ready to share
                                                         </>
                                                     ) : (
                                                         <>
@@ -1219,10 +1219,10 @@ Remember:
                             />
                             <label htmlFor="isPublic" className="flex-1 cursor-pointer">
                                 <div className="font-semibold text-neutral-900 dark:text-neutral-100">
-                                    Make this quiz public
+                                    Add to my sharing list
                                 </div>
                                 <div className="text-xs text-neutral-600 dark:text-neutral-400">
-                                    Other users will be able to see and use your quiz
+                                    Find it in Community → My sharing list, then send a link or file. It is not published automatically.
                                 </div>
                             </label>
                             {isPublic && (
@@ -1591,12 +1591,12 @@ function ShareQuizModal({
         if (quiz.isCustom) {
             const data = buildShareData(quiz)
             if (data === null) return ''
-            return `${origin}${BASE_PATH}/quiz/share?data=${data}`
+            return `${origin}${BASE_PATH}/quiz/share/#data=${data}`
         } else {
             // Normalize file_path: ensure it starts with /
             const filePath = (quiz.file_path || '').trim()
             const normalizedPath = filePath.startsWith('/') ? filePath : `/${filePath}`
-            return `${origin}${BASE_PATH}/quiz/share?path=${encodeURIComponent(normalizedPath)}`
+            return `${origin}${BASE_PATH}/quiz/share/?path=${encodeURIComponent(normalizedPath)}`
         }
     }
     const shareUrl = getShareUrl()
@@ -1639,6 +1639,10 @@ function ShareQuizModal({
                         {quiz.description}
                     </p>
 
+                    {quiz.isCustom && <div className="text-sm mb-4 space-y-3">
+                        <p>Send a snapshot by link or JSON file. Copies do not receive future edits and are not listed publicly. Images and private AI source notes are excluded.</p>
+                        <button className="btn-outline" onClick={() => downloadSharedQuiz(quiz)}>Download quiz JSON</button>
+                    </div>}
                     {/* Share Link */}
                     {shareTooLarge ? (
                         <div className="bg-warning/10 border-2 border-warning rounded-xl p-4 mb-4">

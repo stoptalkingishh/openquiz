@@ -323,6 +323,11 @@ export async function getPublicQuizzes(excludeUserId?: string) {
     return all.filter(q => q.is_public && q.user_id !== excludeUserId)
 }
 
+/** Legacy is_public flags identify the owner's sharing shortlist, not a public directory. */
+export async function getQuizzesReadyToShare(userId: string) {
+    return (await getCustomQuizzes(userId)).filter(quiz => quiz.user_id === userId && quiz.is_public)
+}
+
 export async function getCustomQuizById(quizId: string) {
     if (!withoutDeleted('quizzes', [{ id: quizId }]).length) return null
     const local = readJson<any[]>(CUSTOM_QUIZZES_KEY, [])

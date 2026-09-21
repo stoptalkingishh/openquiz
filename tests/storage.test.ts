@@ -14,6 +14,7 @@ vi.mock('../app/lib/drive', () => ({
 import { combineCustomQuizQuestions, createCustomQuiz, updateCustomQuiz, deleteCustomQuiz, createFolder, getCustomQuizzes, getWordProgress, saveWordProgress, recordQuizSession, getRecentActivity, syncLocalToCloud, updateDailyStats, getDailyStats, localDate } from '../app/lib/db'
 import { accountKey } from '../app/lib/storage'
 import { writeDriveFile } from '../app/lib/drive'
+import { getQuizzesReadyToShare } from '../app/lib/db'
 
 let data: Map<string, string>
 let failWrites = false
@@ -29,6 +30,19 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals())
 
 describe('account storage and failed saves', () => {
+    it('shows the owners sharing list from Drive without leaking other accounts or private quizzes', async () => {
+        const local = await createCustomQuiz('alice', 'Share me', '', [], true)
+        await createCustomQuiz('alice', 'Keep private', '', [], false)
+        state.remote['custom_quizzes.json'] = [
+            { ...local, id: 'cloud', name: 'Cloud sharing item' },
+            { ...local, id: 'other', user_id: 'bob' }
+        ]
+        state.cloud = true
+        expect((await getQuizzesReadyToShare('alice')).map(q => q.id)).toEqual([local.id, 'cloud'])
+        expect(await getQuizzesReadyToShare('bob')).toEqual([])
+        state.owner = 'bob'; state.cloud = false
+        expect(await getQuizzesReadyToShare('bob')).toEqual([])
+    })
     it('combines question and vocabulary quizzes into standalone test questions', () => {
         const combined = combineCustomQuizQuestions([
             { id: 'one', questions: [{ id: 'q1', kind: 'flashcard', prompt: 'Question', answer: 'Answer' }], words: [] },

@@ -99,7 +99,8 @@ export default function CustomQuizEditor({ quiz, saving, onCancel, onSave }: {
                 <label className="block text-sm font-semibold">Tags (comma-separated)<input value={tags} onChange={e => setTags(e.target.value)} className="input-field mt-1" placeholder="networking, DNS" /></label>
             </div>
             <label className="block text-sm font-semibold">Description<textarea value={description} onChange={e => setDescription(e.target.value)} className="input-field mt-1 min-h-24" /></label>
-            <label className="flex items-center gap-3 text-sm font-semibold"><input type="checkbox" checked={isPublic} onChange={e => setIsPublic(e.target.checked)} className="w-4 h-4" /> Make this quiz public</label>
+            <label className="flex items-center gap-3 text-sm font-semibold"><input type="checkbox" checked={isPublic} onChange={e => setIsPublic(e.target.checked)} className="w-4 h-4" /> Add to my sharing list</label>
+            <p className="text-sm text-neutral-500">Find it under Community → My sharing list, then send its Share link or JSON file. This does not publish it to a public directory.</p>
 
             <section className="rounded-xl border border-neutral-200 dark:border-neutral-700 p-4 space-y-3">
                 <div><h3 className="font-bold flex items-center gap-2"><Sparkles className="w-4 h-4 text-primary" /> AI revision</h3><p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">Revise the draft below with AI. Review the result, then save changes to keep it.</p></div>
