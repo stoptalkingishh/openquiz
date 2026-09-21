@@ -826,6 +826,12 @@ function CreateQuizModal({ onClose, onCreated }: { onClose: () => void, onCreate
             if (file.size > 15 * 1024 * 1024) throw new Error('Choose a PDF or text file smaller than 15 MB.')
             if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
                 const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs')
+                // Next bundles this worker with the client chunk. PDF.js cannot
+                // extract text until it knows where that worker is served from.
+                pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+                    'pdfjs-dist/legacy/build/pdf.worker.min.mjs',
+                    import.meta.url
+                ).toString()
                 const document = await pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise
                 const pages: string[] = []
                 for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) {
