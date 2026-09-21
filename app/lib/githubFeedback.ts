@@ -5,6 +5,13 @@ export interface QuizFeedbackContext {
     quizUrl?: string
 }
 
+export interface QuizPublicationRequest {
+    quizName: string
+    contactEmail: string
+    shareUrl: string
+    sourceAttribution: string
+}
+
 /** Builds a GitHub Issue draft without sending quiz content or personal data to a third party. */
 export function buildQuizFeedbackUrl({ quizName, quizUrl }: QuizFeedbackContext): string {
     const params = new URLSearchParams({
@@ -24,6 +31,34 @@ export function buildQuizFeedbackUrl({ quizName, quizUrl }: QuizFeedbackContext)
             '## What happened instead?',
             ''
         ].filter(Boolean).join('\n')
+    })
+    return `${REPOSITORY_ISSUES_URL}?${params.toString()}`
+}
+
+/** Builds a public catalog-review request. The contributor chooses the link and attribution to disclose. */
+export function buildQuizPublicationRequestUrl({ quizName, contactEmail, shareUrl, sourceAttribution }: QuizPublicationRequest): string {
+    const params = new URLSearchParams({
+        template: 'quiz-publication.md',
+        labels: 'quiz-submission',
+        title: `Quiz submission: ${quizName}`,
+        body: [
+            '## Contact email',
+            contactEmail,
+            '',
+            '## Quiz link',
+            shareUrl,
+            '',
+            '## Source, license, or attribution',
+            sourceAttribution,
+            '',
+            '## Rights confirmation',
+            'I created this quiz or have the right to share every part of it for free public use in OpenQuiz.',
+            '',
+            '## Requested catalog',
+            '- [ ] Official OpenQuiz library',
+            '- [ ] Community catalog',
+            '- [x] Either, after review'
+        ].join('\n')
     })
     return `${REPOSITORY_ISSUES_URL}?${params.toString()}`
 }
