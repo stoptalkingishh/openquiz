@@ -35,49 +35,49 @@
   {
     "id": "secplus-test1",
     "name": "Security+ Practice Test 1",
-    "description": "100-question Security+ SY0-701 practice test (free, MIT-licensed study content).",
+    "description": "100-question Security+ SY0-701 practice test for educational use; not official exam material.",
     "file_path": "/securityplus/test1.json",
     "category": "securityplus",
     "category_label": "CompTIA Security+ SY0-701",
     "is_public": true,
     "created_at": "2024-01-01T00:00:00.000Z",
-    "author_name": "OpenQuiz (CC/Source: Satender Kumar)",
+    "author_name": "OpenQuiz (source attribution: Satender Kumar)",
     "item_type": "questions"
   },
   {
     "id": "secplus-test2",
     "name": "Security+ Practice Test 2",
-    "description": "100-question Security+ SY0-701 practice test (free, MIT-licensed).",
+    "description": "100-question Security+ SY0-701 practice test for educational use; not official exam material.",
     "file_path": "/securityplus/test2.json",
     "category": "securityplus",
     "category_label": "CompTIA Security+ SY0-701",
     "is_public": true,
     "created_at": "2024-01-01T00:00:00.000Z",
-    "author_name": "OpenQuiz (MIT source)",
+    "author_name": "OpenQuiz",
     "item_type": "questions"
   },
   {
     "id": "secplus-test3",
     "name": "Security+ Practice Test 3",
-    "description": "100-question Security+ SY0-701 practice test (free, MIT-licensed).",
+    "description": "100-question Security+ SY0-701 practice test for educational use; not official exam material.",
     "file_path": "/securityplus/test3.json",
     "category": "securityplus",
     "category_label": "CompTIA Security+ SY0-701",
     "is_public": true,
     "created_at": "2024-01-01T00:00:00.000Z",
-    "author_name": "OpenQuiz (MIT source)",
+    "author_name": "OpenQuiz",
     "item_type": "questions"
   },
   {
     "id": "secplus-final",
     "name": "Security+ Final Exam",
-    "description": "100-question comprehensive Security+ (SY0-701) final exam (free, MIT).",
+    "description": "100-question comprehensive Security+ (SY0-701) practice exam for educational use; not official exam material.",
     "file_path": "/securityplus/final.json",
     "category": "securityplus",
     "category_label": "CompTIA Security+ SY0-701",
     "is_public": true,
     "created_at": "2024-01-01T00:00:00.000Z",
-    "author_name": "OpenQuiz (MIT source)",
+    "author_name": "OpenQuiz",
     "item_type": "questions"
   },
   {
@@ -89,7 +89,7 @@
     "category_label": "CompTIA Security+ SY0-701",
     "is_public": true,
     "created_at": "2024-01-01T00:00:00.000Z",
-    "author_name": "OpenQuiz (MIT source)",
+    "author_name": "OpenQuiz",
     "item_type": "flashcards"
   },
   {
@@ -101,7 +101,7 @@
     "category_label": "CompTIA Security+ SY0-701",
     "is_public": true,
     "created_at": "2024-01-01T00:00:00.000Z",
-    "author_name": "OpenQuiz (MIT source)",
+    "author_name": "OpenQuiz",
     "item_type": "flashcards"
   },
   {
@@ -113,7 +113,7 @@
     "category_label": "CompTIA Security+ SY0-701",
     "is_public": true,
     "created_at": "2024-01-01T00:00:00.000Z",
-    "author_name": "OpenQuiz (MIT source)",
+    "author_name": "OpenQuiz",
     "item_type": "flashcards"
   },
   {
@@ -125,7 +125,7 @@
     "category_label": "CompTIA Security+ SY0-701",
     "is_public": true,
     "created_at": "2024-01-01T00:00:00.000Z",
-    "author_name": "OpenQuiz (MIT source)",
+    "author_name": "OpenQuiz",
     "item_type": "flashcards"
   },
   {
@@ -137,7 +137,7 @@
     "category_label": "CompTIA Security+ SY0-701",
     "is_public": true,
     "created_at": "2024-01-01T00:00:00.000Z",
-    "author_name": "OpenQuiz (MIT source)",
+    "author_name": "OpenQuiz",
     "item_type": "flashcards"
   },
   {

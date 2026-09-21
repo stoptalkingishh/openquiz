@@ -33,13 +33,13 @@ Preparing for the SAT or language exams is hard enough. Existing tools are often
 - **🔁 SM-2-lite Spaced Repetition** — self-rate every card **Again / Hard / Good / Easy**; the scheduler decides when each word comes back.
 - **📊 Analytics & Streaks** — day streak, daily answer goal, session count, accuracy, weakest words, and a 90-day activity heatmap.
 - **🗂 Organization** — folders for your custom quizzes, taggable quizzes, and a searchable word library.
-- **🌍 Community Hub** — official sets and public quizzes with category filters and search.
+- **🌍 Community Hub** — browse official sets and keep a personal list of quizzes you are ready to share.
 - **🧩 Cloze Deletion** — Anki-style `{{c1::word}}` cards become written-answer questions.
 - **📥 Import / 📤 Export** — create quizzes from **JSON or CSV**, back up quizzes + progress as JSON, export vocabulary as CSV.
-- **🤖 AI Quiz Generation** — paste your notes and generate a quiz with your *own* AI API key.
+- **🤖 AI Quiz Generation** — turn notes, existing questions, text files, or PDFs into reviewable quiz plans with Google Gemini or an OpenAI-compatible provider.
 - **📱 PWA + Offline** — installable app with a service worker that keeps the whole app usable offline.
 - **☁️ Optional Google Drive Sync** — guest-first localStorage; sign in with Google and your data syncs to a private Drive folder.
-- **🔗 Share Links** — official sets share via `?path=`, custom quizzes embed right in the URL.
+- **🔗 Sharing & Review** — share directly by snapshot or Google Drive, then submit an optional GitHub catalog-review request for maintainer vetting.
 
 ---
 
@@ -89,7 +89,7 @@ The Home screen shows a daily answer goal, answers today, and lifetime mastered 
 - **Folders** (Quizzes page) — group your custom quizzes into named folders.
 - **Tags** — attach comma-separated tags when creating a quiz; search matches name, description, *and* tags.
 - **Library** — a searchable word library over official + custom vocabulary, filterable by `new` / `learning` / `mastered`, with per-word details.
-- **Community** — browse official sets and community-shared public quizzes with **category filters** and **search** (name, description, category, author). Study official sets instantly or import a community quiz to make it yours.
+- **Community** — browse official sets and a personal sharing list. A quiz is not discoverable by other OpenQuiz users just because it appears in this list; direct sharing is done through a snapshot link, JSON file, or Google Drive.
 
 ### Bundled official content
 
@@ -106,7 +106,7 @@ Three ways, all free:
 
 1. **Paste JSON** — paste a vocabulary array (`word`, `ru`, `synonyms`, `simple_examples`, `advanced_example`, `confusions`), a question array (`multiple_choice` / `true_false` / `flashcard` / `simulation`), or a mix — the importer splits and validates each item with per-item error reporting.
 2. **Question builder** — click questions together: multiple choice, true/false, flashcards, and multi-step **simulations** (choice / checkbox / config / placement steps, e.g. CompTIA-style performance questions). Optional image per question, and **LaTeX math** renders with KaTeX.
-3. **AI generate (bring your own key)** — paste your notes or source text and the app calls an **OpenAI-compatible** chat endpoint to produce quiz JSON. You configure the API key, base URL, and model (default: OpenAI `gpt-4o-mini`; any compatible endpoint or a local model via `localhost` works). Your key is stored in browser `localStorage` and sent only to the endpoint you configure — never baked into the build.
+3. **AI generate** — paste notes, a course outline, a question bank, or extracted text from a PDF. OpenQuiz first asks the selected model for a study plan so broad material can be split into multiple focused quizzes, then lets you review and edit that plan. Choose an **OpenAI-compatible** endpoint with your own locally stored API key, or **Google Gemini** with a locally stored key or the signed-in Google-account beta. Prompts go directly from your browser to the selected provider and saved source prompts remain private to the quiz unless you explicitly share them.
 
 > Want to prep for a specific exam? Ask any LLM for: `[{"word": "eloquent", "ru": "красноречивый", "synonyms": ["articulate", "fluent"], "simple_examples": ["She gave an eloquent speech."], "advanced_example": "The author's eloquent prose...", "confusions": ["elegant"]}]`, then paste it into **Create Quiz**.
 
@@ -130,8 +130,13 @@ Write `{{c1::word}}` in a flashcard prompt (or answer) and it becomes a written-
 Sharing is fully static — no server required:
 
 - **Official sets** share as `…/quiz/share?path=/sat/1.json` (paths are allowlisted via the sets manifest).
-- **Custom quizzes** are embedded directly in the URL as `?data=` JSON (images stripped to keep links small), up to a **12,000-character cap**; larger quizzes fall back to copying locally.
+- **Custom quizzes** can be sent as a snapshot link (images and saved AI source notes are excluded) or JSON export. Snapshot links are independent copies; edits do not update a recipient's copy.
+- **Google Drive sharing** creates a separately managed Drive file that can be updated while preserving the OpenQuiz link. Google controls who can access it.
 - Share by copy-link or straight to **Twitter, Facebook, or Telegram**.
+
+### Catalog review
+
+Sharing a quiz does not list it publicly in OpenQuiz. Custom quiz owners can choose **Request catalog review on GitHub** from the Share dialog to ask maintainers to consider it for the free catalog. The public GitHub Issue requires a public review link, contact email, source or license details, and a rights confirmation. Maintainers can discuss the request in comments and add approved content through a tracked pull request. Read [CONTENT_POLICY.md](CONTENT_POLICY.md) before submitting.
 
 ---
 
@@ -164,7 +169,7 @@ Recipients sign in with Google and open that link. If the app lacks access under
 
 Drive sharing requires an internet connection and a Google account, including for link-public files in this implementation. JSON exports and snapshot links remain independent-copy fallbacks. A shared file is not automatically discoverable by every OpenQuiz user: Drive permissions and a sent link/Picker selection control access.
 
-**Additional Google Cloud setup for Picker:** enable **Google Picker API** in the same project as the existing OAuth client and Drive API. Allow both APIs in the public API key's restrictions, with your site's allowed referrers and `https://docs.google.com/*` as required by [Google's Picker setup instructions](https://developers.google.com/workspace/drive/picker/guides/web-picker-sample). Set optional repository variable `NEXT_PUBLIC_GOOGLE_APP_ID` to the Google Cloud **project number** (not its project ID); otherwise the app derives the number from the OAuth client ID prefix. No new OAuth scopes are requested. Confirm setup with two separate Google accounts before relying on restricted sharing in production.
+**Additional Google Cloud setup for Picker:** enable **Google Picker API** in the same project as the existing OAuth client and Drive API. Allow both APIs in the public API key's restrictions, with your site's allowed referrers and `https://docs.google.com/*` as required by [Google's Picker setup instructions](https://developers.google.com/workspace/drive/picker/guides/web-picker-sample). Set optional repository variable `NEXT_PUBLIC_GOOGLE_APP_ID` to the Google Cloud **project number** (not its project ID); otherwise the app derives the number from the OAuth client ID prefix. Picker itself does not add a scope beyond the app's Google sign-in configuration. Review the requested identity, `drive.file`, and Google-account Gemini scopes in Google Cloud before deploying. Confirm setup with two separate Google accounts before relying on restricted sharing in production.
 
 The implementation follows Google's [per-file scope guidance](https://developers.google.com/workspace/drive/api/guides/api-specific-auth) and [resource-key requirements](https://developers.google.com/workspace/drive/api/guides/resource-keys). The Google Cloud configuration and real-account cross-user access cannot be validated by unit tests alone.
 
@@ -238,21 +243,18 @@ On first sign-in, existing guest data (quizzes + progress) is **auto-migrated** 
 
 ## 🤝 Contributing
 
-Built for high schoolers, college students, and lifelong learners. We want to keep education free and accessible.
-Feel free to fork, submit PRs, and help us add new question types, language support, or integrations!
+Built for high schoolers, college students, and lifelong learners. Read [CONTRIBUTING.md](CONTRIBUTING.md) for code changes, quiz feedback, and catalog-review submissions. [SECURITY.md](SECURITY.md) explains how to report vulnerabilities privately.
 
 ## 📄 License
 
 OpenQuiz is free software licensed under the [GNU Affero General Public License
-v3.0 (or later)](LICENSE). It is **free for individuals, personal, educational,
-and non-commercial use**. If you use OpenQuiz in a **corporate or for-profit
-environment** and prefer not to comply with the AGPL's copyleft obligations, a
-**paid commercial license** is available — open an issue in this repository to
-purchase one.
+v3.0 (or later)](LICENSE). The AGPL permits commercial and non-commercial use,
+modification, and redistribution when its conditions are met. Read the license
+itself for the controlling terms.
 
-Third-party study content (quiz sets, practice tests, flashcards) is licensed
-separately by its original authors — see [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)
-for full attributions and license texts.
+Dependency information is recorded in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+Study content is governed by [CONTENT_POLICY.md](CONTENT_POLICY.md); it is educational
+material, not official exam content, and must have documented rights before catalog inclusion.
 
 - [Terms of Use](https://stoptalkingishh.github.io/openquiz/terms/)
 - [Privacy Policy](https://stoptalkingishh.github.io/openquiz/privacy/)
