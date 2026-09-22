@@ -8,9 +8,12 @@
     "dev": "next dev",
     "build": "next build",
     "export": "next build",
-    "start": "next start",
+    "start": "node scripts/serve-static.mjs",
     "lint": "eslint . --cache=false",
     "test": "vitest run"
+  },
+  "engines": {
+    "node": ">=22 <25"
   },
   "dependencies": {
     "@types/katex": "^0.16.7",
