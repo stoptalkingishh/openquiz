@@ -106,7 +106,7 @@ Three ways, all free:
 
 1. **Paste JSON** — paste a vocabulary array (`word`, `ru`, `synonyms`, `simple_examples`, `advanced_example`, `confusions`), a question array (`multiple_choice` / `true_false` / `flashcard` / `simulation`), or a mix — the importer splits and validates each item with per-item error reporting.
 2. **Question builder** — click questions together: multiple choice, true/false, flashcards, and multi-step **simulations** (choice / checkbox / config / placement steps, e.g. CompTIA-style performance questions). Optional image per question, and **LaTeX math** renders with KaTeX.
-3. **AI generate (bring your own key)** — paste your notes or source text and the app calls an **OpenAI-compatible** chat endpoint to produce quiz JSON. You configure the API key, base URL, and model (default: OpenAI `gpt-4o-mini`; any compatible endpoint or a local model via `localhost` works). Your key is stored in browser `localStorage` and sent only to the endpoint you configure — never baked into the build.
+3. **AI generate (bring your own key)** — paste your notes or source text and generate quiz JSON with an **OpenAI-compatible** chat endpoint or **Google Gemini**. Configure the model and API key in the browser (default Gemini model: `gemini-2.0-flash`); the key stays in browser `localStorage` and is sent only to the provider you select. For Gemini, create a key in Google AI Studio. Keys are never baked into the OpenQuiz build.
 
 > Want to prep for a specific exam? Ask any LLM for: `[{"word": "eloquent", "ru": "красноречивый", "synonyms": ["articulate", "fluent"], "simple_examples": ["She gave an eloquent speech."], "advanced_example": "The author's eloquent prose...", "confusions": ["elegant"]}]`, then paste it into **Create Quiz**.
 
