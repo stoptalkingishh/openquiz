@@ -268,7 +268,7 @@ export default function ProfilePage() {
                         <Link href="/terms" className="text-neutral-500 dark:text-neutral-400 hover:text-primary dark:hover:text-primary-light">Terms</Link>
                         <Link href="/privacy" className="text-neutral-500 dark:text-neutral-400 hover:text-primary dark:hover:text-primary-light">Privacy</Link>
                         <a href="https://github.com/stoptalkingishh/openquiz/blob/main/LICENSE" target="_blank" rel="noopener noreferrer" className="text-neutral-500 dark:text-neutral-400 hover:text-primary dark:hover:text-primary-light">License</a>
-                        <a href="https://github.com/stoptalkingishh/openquiz/blob/main/THIRD-PARTY-NOTICES.md" target="_blank" rel="noopener noreferrer" className="text-neutral-500 dark:text-neutral-400 hover:text-primary dark:hover:text-primary-light">Third-Party Notices</a>
+                        <a href="https://github.com/stoptalkingishh/openquiz/blob/main/THIRD_PARTY_NOTICES.md" target="_blank" rel="noopener noreferrer" className="text-neutral-500 dark:text-neutral-400 hover:text-primary dark:hover:text-primary-light">Third-Party Notices</a>
                     </nav>
                 </div>
             </div>

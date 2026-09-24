@@ -68,7 +68,7 @@ export default function TermsPage() {
               that is licensed separately from the OpenQuiz source code. This content is
               provided for educational purposes only. Exam-aligned material is written to
               reference publicly-available exam objectives and is <strong>not</strong> official
-              exam material. See <a href={assetPath('/')} className="text-primary dark:text-primary-light underline">THIRD-PARTY-NOTICES.md</a> in the
+              exam material. See <a href="https://github.com/stoptalkingishh/openquiz/blob/main/THIRD_PARTY_NOTICES.md" className="text-primary dark:text-primary-light underline">THIRD_PARTY_NOTICES.md</a> in the
               repository for attributions and licenses.
             </p>
           </section>
@@ -77,12 +77,10 @@ export default function TermsPage() {
             <h2 className="text-xl font-bold mb-2">6. Intellectual property &amp; licensing</h2>
             <p>
               The OpenQuiz source code is free software licensed under the GNU
-              Affero General Public License v3.0 (or later). It is free for
-              individual, personal, educational, and non-commercial use. If you
-              use OpenQuiz in a corporate or other for-profit environment and
-              prefer not to comply with the AGPL&rsquo;s copyleft obligations, a
-              paid commercial license is available — contact the creator (see the
-              LICENSE file in the repository).
+              Affero General Public License v3.0 (or later). The AGPL permits
+              commercial and non-commercial use when its conditions are met.
+              Copyright holders may offer separate terms for users who need an
+              alternative to the AGPL; those terms do not restrict the AGPL grant.
             </p>
             <p>
               CompTIA, Network+, Security+, CySA+, PenTest+, Cloud+, Linux+, and

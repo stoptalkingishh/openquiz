@@ -244,15 +244,13 @@ Feel free to fork, submit PRs, and help us add new question types, language supp
 ## 📄 License
 
 OpenQuiz is free software licensed under the [GNU Affero General Public License
-v3.0 (or later)](LICENSE). It is **free for individuals, personal, educational,
-and non-commercial use**. If you use OpenQuiz in a **corporate or for-profit
-environment** and prefer not to comply with the AGPL's copyleft obligations, a
-**paid commercial license** is available — open an issue in this repository to
-purchase one.
+v3.0 (or later)](LICENSE). The AGPL permits commercial and non-commercial use,
+modification, and redistribution when its conditions are met. Copyright holders
+may offer separate terms for users who need an alternative to the AGPL; those
+terms do not restrict the AGPL grant.
 
-Third-party study content (quiz sets, practice tests, flashcards) is licensed
-separately by its original authors — see [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)
-for full attributions and license texts.
+Third-party software and study-content attributions are recorded in
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 - [Terms of Use](https://stoptalkingishh.github.io/openquiz/terms/)
 - [Privacy Policy](https://stoptalkingishh.github.io/openquiz/privacy/)

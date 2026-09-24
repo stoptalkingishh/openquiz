@@ -1,9 +1,7 @@
 # Third-Party Notices
 
-OpenQuiz bundles open-source software and study content. Each is licensed under
-its own terms. The GNU Affero General Public License v3.0 (or later) for
-OpenQuiz itself does NOT cover these third-party works; attribution and license
-headers are preserved here.
+OpenQuiz is licensed under AGPL-3.0-or-later. This file records third-party
+software and content that have separate attribution or licensing terms.
 
 ## Study Content (in this repo)
 
@@ -44,7 +42,7 @@ SOFTWARE.
 - **Source:** Original questions authored by the OpenQuiz team, written to align
   with the publicly-available CompTIA Network+ (N10-009) exam objectives.
 - **Author:** OpenQuiz contributors
-- **License:** MIT (project license)
+- **License:** AGPL-3.0-or-later, as original OpenQuiz content in this repository.
 - **What we use:** `public/netplus/*.json` — 3 practice tests (50 questions
   each), a 100-question final exam, and 5 topic flashcard decks (164 cards).
   These are original study questions; they are **not** reproduced from any
@@ -52,7 +50,7 @@ SOFTWARE.
 
 ### SAT Vocabulary sets (`public/sat/*.json`)
 - Original vocabulary content was compiled by the OpenQuiz maintainers / the
-  project's original author and is licensed under the project MIT license.
+  project's original author and is licensed under AGPL-3.0-or-later.
 - The logo mark (and its derivative placeholders) are original OpenQuiz art.
 
 ## Trademarks
@@ -86,6 +84,5 @@ after `npm install`. This project does not modify any dependency source.
 
 ---
 
-**Questions about licensing?** Open an issue in this repository or contact the
-maintainers. See also `LICENSE` for OpenQuiz's own terms and the note about
-commercial use.
+**Questions about licensing?** Open an issue in this repository. See `LICENSE`
+for OpenQuiz's governing AGPL terms and optional alternative-term inquiries.
