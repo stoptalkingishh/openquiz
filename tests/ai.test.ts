@@ -1,6 +1,4 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-const googleToken = vi.hoisted(() => ({ value: 'google-account-token' as string | null }))
-vi.mock('../app/lib/drive', () => ({ getDriveToken: () => Promise.resolve(googleToken.value) }))
 import { buildPlannedQuizPrompt, buildQuizRevisionPrompt, detectExistingQuizItems, generateQuizFromNotes, mergeGeneratedQuizItems, planQuizzesFromMaterial, type AiSettings } from '../app/lib/ai'
 
 const geminiSettings: AiSettings = {
@@ -21,7 +19,6 @@ afterEach(() => {
     vi.useRealTimers()
     vi.unstubAllGlobals()
     vi.restoreAllMocks()
-    googleToken.value = 'google-account-token'
 })
 
 describe('Gemini quiz generation', () => {
@@ -96,19 +93,10 @@ describe('Gemini quiz generation', () => {
         expect(fetchMock).toHaveBeenCalledOnce()
     })
 
-    it('uses the signed-in Google account when no Gemini API key is supplied', async () => {
-        const fetchMock = vi.fn(async () => new Response(JSON.stringify({
-            candidates: [{ content: { parts: [{ text: JSON.stringify(generatedQuiz) }] } }]
-        }), { status: 200 }))
+    it('requires a Gemini API key before making a request', async () => {
+        const fetchMock = vi.fn()
         vi.stubGlobal('fetch', fetchMock)
-
-        await expect(generateQuizFromNotes('notes', { ...geminiSettings, apiKey: '  ' })).resolves.toMatchObject({ questions: [expect.anything()] })
-        const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
-        expect(init.headers).toMatchObject({ Authorization: 'Bearer google-account-token' })
-    })
-
-    it('asks the user to sign in when no API key or Google token is available', async () => {
-        googleToken.value = null
-        await expect(generateQuizFromNotes('notes', { ...geminiSettings, apiKey: '' })).rejects.toThrow('Sign in with Google to use Gemini without an API key.')
+        await expect(generateQuizFromNotes('notes', { ...geminiSettings, apiKey: '  ' })).rejects.toThrow('Add a Gemini API key in the AI settings first.')
+        expect(fetchMock).not.toHaveBeenCalled()
     })
 })

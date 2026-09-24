@@ -1,7 +1,6 @@
 import { normalizeImportedQuizItems } from './db'
 import { Word, QuizQuestion } from './satTypes'
 import { readAccountData, writeAccountData } from './storage'
-import { getDriveToken } from './drive'
 
 export type AiProvider = 'openai' | 'gemini'
 
@@ -278,19 +277,15 @@ async function generateWithGemini(notes: string, s: AiSettings): Promise<{ words
 }
 
 async function generateRawWithGemini(notes: string, s: AiSettings, systemPrompt: string): Promise<string> {
-    const usingGoogleAccount = !s.apiKey.trim()
-    const token = usingGoogleAccount ? await getDriveToken() : ''
-    if (usingGoogleAccount && !token) throw new Error('Sign in with Google to use Gemini without an API key.')
+    if (!s.apiKey.trim()) {
+        throw new Error('Add a Gemini API key in the AI settings first.')
+    }
 
     const model = s.model || DEFAULT_GEMINI_MODEL
     const headers: Record<string, string> = {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'x-goog-api-key': s.apiKey.trim()
     }
-    if (usingGoogleAccount) {
-        headers.Authorization = `Bearer ${token}`
-        const projectId = process.env.NEXT_PUBLIC_GOOGLE_PROJECT_ID || ''
-        if (projectId) headers['x-goog-user-project'] = projectId
-    } else headers['x-goog-api-key'] = s.apiKey.trim()
 
     let res: Response
     try {
@@ -311,10 +306,7 @@ async function generateRawWithGemini(notes: string, s: AiSettings, systemPrompt:
     if (!res.ok) {
         const detail = await readApiError(res)
         if (res.status === 401 || res.status === 403) {
-            const guidance = usingGoogleAccount
-                ? 'Google account access was rejected. Sign in again or add a Gemini API key as a fallback.'
-                : 'Gemini rejected the API key or its permissions. Check the key in Google AI Studio.'
-            throw new Error(`${guidance}${detail ? ` ${detail}` : ''}`)
+            throw new Error(`Gemini rejected the API key or its permissions. Check the key in Google AI Studio.${detail ? ` ${detail}` : ''}`)
         }
         if (res.status === 429) {
             throw new Error(`Gemini rate limit reached. Wait a moment and try again.${detail ? ` ${detail}` : ''}`)
@@ -322,7 +314,7 @@ async function generateRawWithGemini(notes: string, s: AiSettings, systemPrompt:
         if (res.status >= 500) {
             throw new Error(`Gemini is temporarily unavailable after ${GEMINI_MAX_ATTEMPTS} attempts. Try again shortly.${detail ? ` ${detail}` : ''}`)
         }
-        throw new Error(`Gemini request failed (status ${res.status}).${detail ? ` ${detail}` : usingGoogleAccount ? ' Try again or add a Gemini API key as a fallback.' : ' Check the model and API key settings.'}`)
+        throw new Error(`Gemini request failed (status ${res.status}).${detail ? ` ${detail}` : ' Check the model and API key settings.'}`)
     }
 
     let data: any

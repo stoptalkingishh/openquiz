@@ -812,7 +812,7 @@ function CreateQuizModal({ onClose, onCreated }: { onClose: () => void, onCreate
     const [aiPreparing, setAiPreparing] = useState(false)
     const [aiPlan, setAiPlan] = useState<{ overview: string, quizzes: Array<PlannedQuiz & { selected: boolean, instructions: string }> } | null>(null)
     const [sourceFileName, setSourceFileName] = useState('')
-    const { user, signInWithGoogle } = useAuth()
+    const { user } = useAuth()
 
     const setAiProvider = (provider: AiProvider) => {
         setAiSettings(prev => ({
@@ -1277,7 +1277,7 @@ Remember:
                                 AI Generate
                             </div>
                             <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-1">
-                                Paste your notes and generate a quiz using Google Gemini (sign in) or your own AI API key.
+                                Paste your notes and generate a quiz using Google Gemini or an OpenAI-compatible AI API key.
                             </p>
                         </button>
 
@@ -1449,15 +1449,9 @@ Remember:
 
                                     {aiSettings.provider === 'gemini' ? (
                                         <>
-                                            {(!user || user.id === 'guest') ? (
-                                                <div className="p-3 rounded-xl bg-primary/5 border-2 border-primary/20">
-                                                    <p className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-2">Sign in with Google to try Gemini without an API key.</p>
-                                                    <button type="button" onClick={() => signInWithGoogle().catch(() => {})} className="btn-primary w-full text-sm">Sign in with Google</button>
-                                                </div>
-                                            ) : <p className="text-xs text-neutral-500 dark:text-neutral-400">Using your Google account ({user.email}) for Gemini beta. You can add an API key below as a fallback.</p>}
                                             <div>
                                                 <label className="block text-xs font-bold text-neutral-600 dark:text-neutral-400 mb-1">
-                                                    Gemini API Key (optional fallback)
+                                                    Gemini API Key
                                                 </label>
                                                 <input
                                                     type="password"
@@ -1467,7 +1461,7 @@ Remember:
                                                     placeholder="AIza..."
                                                 />
                                                 <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-                                                    Leave this blank to use the signed-in Google account beta. A key from <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="underline">Google AI Studio</a> is the more reliable fallback and is stored only on this device.
+                                                    Create a key in <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="underline">Google AI Studio</a>. It is stored only on this device and sent directly to Google.
                                                 </p>
                                             </div>
                                             <div>
