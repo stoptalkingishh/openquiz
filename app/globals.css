@@ -2,12 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
-
+/*
+ * Fonts are provided by the operating system. We deliberately do not request
+ * webfonts from Google Fonts (or any other third party): that request would
+ * disclose your IP address and user agent to a third party on every page load.
+ * The system stack renders immediately, works offline, and adds no bytes.
+ * See the privacy policy for details.
+ */
 @layer base {
   html {
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue',
+      Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }

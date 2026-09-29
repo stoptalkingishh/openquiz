@@ -5,11 +5,13 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import { ArrowLeft, Play, BookOpen, Globe, Lock, Share2, Copy, Users, Check, Gamepad2, ClipboardList, Folder, FolderPlus, Trophy, Trash2, Pencil } from 'lucide-react'
 import { getCustomQuizById, getQuizSetByPath, getFolders, setQuizInFolder, createFolder, getQuizStats, loadOfficialQuiz, deleteCustomQuiz, updateCustomQuiz } from '../lib/db'
 import { buildShareData, downloadSharedQuiz } from '../lib/share'
+import { buildShareText } from '../lib/shareText'
 import { useQuizStore } from '../lib/quizStore'
 import { useAuth } from '../contexts/AuthContext'
 import Logo from '../components/Logo'
 import CustomQuizEditor from '../components/CustomQuizEditor'
 import DriveQuizShare from '../components/DriveQuizShare'
+import Dialog from '../components/Dialog'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export default function QuizDetailClient() {
@@ -175,7 +177,7 @@ export default function QuizDetailClient() {
 
     const shareToSocial = (platform: 'twitter' | 'facebook' | 'telegram') => {
         const url = getShareUrl()
-        const text = `Check out this SAT vocabulary quiz: ${quiz.name}`
+        const text = buildShareText(quiz)
         const encodedUrl = encodeURIComponent(url)
         const encodedText = encodeURIComponent(text)
 
@@ -253,44 +255,48 @@ function kindLabel(kind: string): string {
                             <div className="w-20 h-20 flex-shrink-0 rounded-xl bg-gradient-to-br from-primary/10 to-secondary/10 p-1.5 shadow-sm border border-primary/20 dark:border-primary/30">
                                 <Logo className="w-full h-full" />
                             </div>
-                            <div className="flex-1">
-                                <div className="flex items-start justify-between mb-2">
-                                    <h1 className="text-3xl font-extrabold text-neutral-900 dark:text-neutral-100">
+                            <div className="flex-1 min-w-0">
+                                <div className="flex items-start justify-between gap-3 mb-2">
+                                    <h1 className="flex-1 min-w-0 text-3xl font-extrabold text-neutral-900 dark:text-neutral-100 break-words">
                                         {quiz.name}
                                     </h1>
-                                    <div className={`badge-secondary flex items-center gap-1 ${quiz.is_public ? '' : 'opacity-60'}`}>
-                                        {quiz.is_public ? (
-                                            <>
-                                                <Globe className="w-3 h-3" />
-                                                Ready to share
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Lock className="w-3 h-3" />
-                                                Private
-                                            </>
+                                    {/* Grouped and non-shrinking so a long title wraps
+                                        instead of crushing the actions at 320px. */}
+                                    <div className="flex flex-shrink-0 items-center gap-2">
+                                        <div className={`badge-secondary flex items-center gap-1 ${quiz.is_public ? '' : 'opacity-60'}`}>
+                                            {quiz.is_public ? (
+                                                <>
+                                                    <Globe className="w-3 h-3" />
+                                                    Ready to share
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Lock className="w-3 h-3" />
+                                                    Private
+                                                </>
+                                            )}
+                                        </div>
+                                        {quiz.isCustom && !quiz.drive_source && (
+                                            <button
+                                                onClick={() => setEditing(true)}
+                                                className="p-2 rounded-lg text-neutral-500 hover:text-primary hover:bg-primary/10 transition-colors flex-shrink-0"
+                                                title="Edit quiz"
+                                                aria-label="Edit quiz"
+                                            >
+                                                <Pencil className="w-5 h-5" />
+                                            </button>
+                                        )}
+                                        {quiz.isCustom && (
+                                            <button
+                                                onClick={handleDeleteQuiz}
+                                                className="p-2 rounded-lg text-neutral-400 hover:text-error hover:bg-error/10 transition-colors flex-shrink-0"
+                                                title="Delete quiz"
+                                                aria-label="Delete quiz"
+                                            >
+                                                <Trash2 className="w-5 h-5" />
+                                            </button>
                                         )}
                                     </div>
-                                    {quiz.isCustom && !quiz.drive_source && (
-                                        <button
-                                            onClick={() => setEditing(true)}
-                                            className="p-2 rounded-lg text-neutral-500 hover:text-primary hover:bg-primary/10 transition-colors"
-                                            title="Edit quiz"
-                                            aria-label="Edit quiz"
-                                        >
-                                            <Pencil className="w-5 h-5" />
-                                        </button>
-                                    )}
-                                    {quiz.isCustom && (
-                                        <button
-                                            onClick={handleDeleteQuiz}
-                                            className="p-2 rounded-lg text-neutral-400 hover:text-error hover:bg-error/10 transition-colors"
-                                            title="Delete quiz"
-                                            aria-label="Delete quiz"
-                                        >
-                                            <Trash2 className="w-5 h-5" />
-                                        </button>
-                                    )}
                                 </div>
                                 {quiz.author_name && (
                                     <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-2 flex items-center gap-2">
@@ -522,7 +528,7 @@ function kindLabel(kind: string): string {
                                             onClick={() => setExpandedWord(isExpanded ? null : word.word)}
                                             className="w-full p-4 text-left flex items-center justify-between hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors"
                                         >
-                                            <div className="flex-1">
+                            <div className="flex-1 min-w-0">
                                                 <div className="flex items-center gap-3">
                                                     <span className="text-sm font-semibold text-neutral-500 dark:text-neutral-400 w-8">
                                                         {index + 1}
@@ -647,39 +653,22 @@ function kindLabel(kind: string): string {
             </div>
 
             {/* Share Modal */}
-            <AnimatePresence>
-                {showShareModal && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            onClick={() => setShowShareModal(false)}
-                            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-                        />
-
-                        <motion.div
-                            initial={{ scale: 0.9, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.9, opacity: 0 }}
-                            className="bg-white dark:bg-surface-dark rounded-3xl p-6 shadow-2xl relative z-10 max-w-md w-full max-h-[90vh] overflow-y-auto"
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            <div className="flex items-center justify-between mb-4">
-                                <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
-                                    Share Quiz
-                                </h2>
-                                <button
-                                    onClick={() => setShowShareModal(false)}
-                                    className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 transition-colors"
-                                    aria-label="Close share dialog"
-                                >
-                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                </button>
-                            </div>
-
+            <Dialog
+                open={showShareModal}
+                onClose={() => setShowShareModal(false)}
+                title="Share Quiz"
+                headerAction={(
+                    <button
+                        onClick={() => setShowShareModal(false)}
+                        className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 transition-colors"
+                        aria-label="Close share dialog"
+                    >
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                )}
+            >
                             <div className="mb-6">
                                 <h3 className="font-bold text-lg text-neutral-900 dark:text-neutral-100 mb-2">
                                     {quiz.name}
@@ -733,10 +722,7 @@ function kindLabel(kind: string): string {
                             >
                                 Close
                             </button>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
+            </Dialog>
         </div>
     )
 }

@@ -2,651 +2,462 @@
   {
     "id": "ntest2-q1",
     "kind": "multiple_choice",
-    "prompt": "Which protocol is connectionless and used primarily for streaming?",
+    "prompt": "On which wireless network authentication mode do all users share a common PSK?",
     "options": [
-      "TCP",
-      "UDP",
-      "HTTP",
-      "FTP"
+      "RADIUS",
+      "Personal",
+      "Enterprise",
+      "SSO"
     ],
     "correctIndex": 1,
-    "explanation": "Answer: UDP"
+    "explanation": "RADIUS is a commonly used single factor authentication protocol. Enterprise mode authentication requires the use of an authentication server. Personal mode authentication uses a pre-shared key, or PSK. Single sign-on or SSO is an authentication method that allows a user to log into multiple applications and websites using a one-time user authentication.",
+    "domain": "1",
+    "source": "packt",
+    "objective": "1.5 - 802.11 Standards.docx"
   },
   {
     "id": "ntest2-q2",
     "kind": "multiple_choice",
-    "prompt": "What is the maximum length for a copper Ethernet cable run?",
+    "prompt": "The acronym VXLAN is short for which of the following?",
     "options": [
-      "50 meters",
-      "100 meters",
-      "200 meters",
-      "500 meters"
+      "Virtual Extreme LAN",
+      "Virtual Extended LAN",
+      "Virtual Extensible LAN",
+      "Virtual Exiting Lan"
     ],
-    "correctIndex": 1,
-    "explanation": "Answer: 100 meters"
+    "correctIndex": 2,
+    "explanation": "There is no virtual LAN service with the names Virtual Extreme LAN or Virtual Exiting LAN. About the closest you will get to Virtual Extended LAN name is on an Azure VM running Extended Network code. Virtual eXtensible Local Area Network (VXLAN) is a network virtualization technology that is used to create a Layer 2 network overlay on a Layer 3 network.",
+    "domain": "1",
+    "source": "packt",
+    "objective": "1.8 Summarize evolving use cases for modern network environments."
   },
   {
     "id": "ntest2-q3",
     "kind": "multiple_choice",
-    "prompt": "Which metric measures variation in packet arrival time?",
+    "prompt": "What are the characters used to shorten IPv6 addresses by replacing contiguous groups of zeros?",
     "options": [
-      "Bandwidth",
-      "Latency",
-      "Jitter",
-      "Packet loss"
+      ";;",
+      "“”",
+      "##",
+      "::"
     ],
-    "correctIndex": 2,
-    "explanation": "Answer: Jitter"
+    "correctIndex": 3,
+    "explanation": "Two colons are used to replace zeroes in one or more contiguous blocks in IPv6 addresses.",
+    "domain": "1",
+    "source": "packt",
+    "objective": "1.8 Summarize evolving use cases for modern network enviroments"
   },
   {
     "id": "ntest2-q4",
     "kind": "multiple_choice",
-    "prompt": "RADIUS uses which transport protocol?",
+    "prompt": "What is the distribution scheme in which the system passes a new message to the next server in sequence to evenly load servers being balanced?",
     "options": [
-      "TCP only",
-      "UDP only",
-      "Both TCP and UDP",
-      "ICMP"
+      "Round-robin",
+      "Least connections",
+      "Traffic filtering",
+      "Vlan segmentation"
     ],
-    "correctIndex": 1,
-    "explanation": "Answer: UDP only"
+    "correctIndex": 0,
+    "explanation": "In this scheme, new connection requests are passed to server with the least number of connections. Round-robin works well when the devices being balanced are equal in capacity. Traffic filtering controls incoming and outgoing network traffic to prevent unauthorized access. VLAN segmentation divides a larger network into smaller virtual networks to improve security and improve performance.",
+    "domain": "1",
+    "source": "packt",
+    "objective": "1.2 - Networking Appliances"
   },
   {
     "id": "ntest2-q5",
     "kind": "multiple_choice",
-    "prompt": "A duplex mismatch occurs when?",
+    "prompt": "What is the IEEE 802.11 standard extension that is also designated as Wi-Fi 6?",
     "options": [
-      "Two devices use the same IP address",
-      "One device is full-duplex and the other is half-duplex",
-      "VLANs are misconfigured",
-      "DNS fails to resolve"
+      "802.11n",
+      "802.11g",
+      "802.11ax",
+      "802.11ac"
     ],
-    "correctIndex": 1,
-    "explanation": "Answer: One device is full-duplex and the other is half-duplex"
+    "correctIndex": 2,
+    "explanation": "IEEE 802.11n is designated as Wi-Fi 4. IEEE 802.11g is designated as Wi-Fi 3. IEEE 802.11ac is designated as Wi-Fi 5. IEEE 802.11ax is designated as Wi-Fi 6.",
+    "domain": "1",
+    "source": "packt",
+    "objective": "1.5 - 802.11 Standards.docx"
   },
   {
     "id": "ntest2-q6",
     "kind": "multiple_choice",
-    "prompt": "What is the purpose of ARP?",
+    "prompt": "What is the primary purpose of the two strands of fiber optic filament in a single fiber optic connection?",
     "options": [
-      "Resolve domain names to IP addresses",
-      "Resolve IP addresses to MAC addresses",
-      "Encrypt network traffic",
-      "Route packets between networks"
+      "To restrict the distance to shorter distances.",
+      "To provide full-duplex connectivity",
+      "To increase data speed",
+      "To prevent crosstalk interference on the connection"
     ],
     "correctIndex": 1,
-    "explanation": "Answer: Resolve IP addresses to MAC addresses"
+    "explanation": "Using two strands can maintain signal integrity over a distance by separating the transmit and receive channels. The use of two strands doesn’t increase the data speed. While crosstalk can’t necessarily be prevented, using two strands reduces its risk significantly. Data is sent and received simultaneously, as one strand transmits data and the other strand receives data.",
+    "domain": "1",
+    "source": "packt",
+    "objective": "1.5 Compare and contrast transmission media and transceivers"
   },
   {
     "id": "ntest2-q7",
     "kind": "multiple_choice",
-    "prompt": "CHAP uses what type of authentication?",
+    "prompt": "What is the software architecture in which multiple users are able to run multiple instances of an application on a cloud server simultaneously?",
     "options": [
-      "Cleartext passwords",
-      "Challenge-Handshake with MD5",
-      "Public key infrastructure",
-      "Biometric"
+      "Tenant mapping",
+      "Single-tenancy",
+      "PaaS",
+      "Multi-tenancy"
     ],
-    "correctIndex": 1,
-    "explanation": "Answer: Challenge-Handshake with MD5"
+    "correctIndex": 3,
+    "explanation": "Tenant mapping is a process that identifies the services and applications a tenant can access on a cloud service. Multi-tenancy Platform as a Service (PaaS) provides a development platform that can be used to build, deploy, and manage applications. Data as a Service (DaaS) provides on-demand access to data stored in a cloud service. Infrastructure as a Service (IaaS) provides on-demand access to a virtualized environment that can include servers, storage, and networking.",
+    "domain": "1",
+    "source": "packt",
+    "objective": "1.3 Summarize cloud concepts and connectivity options."
   },
   {
     "id": "ntest2-q8",
     "kind": "multiple_choice",
-    "prompt": "What is the purpose of a network baseline?",
+    "prompt": "What TCP/IP protocol is connection-oriented and performs a three-way “handshake” to establish a connection?",
     "options": [
-      "Encrypt data",
-      "Establish normal performance for comparison",
-      "Assign IP addresses",
-      "Configure VLANs"
+      "ICMP",
+      "IP",
+      "TCP",
+      "UCP"
     ],
-    "correctIndex": 1,
-    "explanation": "Answer: Establish normal performance for comparison"
+    "correctIndex": 2,
+    "explanation": "ICMP is a connectionless network protocol that uses IP datagrams for signaling and communicating between devices on a network. IP is a communications protocol for relaying packets across network boundaries. TCP is a connection-oriented protocol that establishes a connection through a three-way handshake between the two communicating devices. UDP is a connectionless and unreliable protocol for sending data without establishing a connection.",
+    "domain": "1",
+    "source": "packt",
+    "objective": "1.4 - Internet Protocol IP Types"
   },
   {
     "id": "ntest2-q9",
     "kind": "multiple_choice",
-    "prompt": "Port security violation in shutdown mode does what?",
+    "prompt": "What type of network appliance would be best for securing a network by examining and filtering incoming and outgoing network traffic with rules based on an organization’s security policies?",
     "options": [
-      "Logs a message",
-      "Disables the port",
-      "Drops frames silently",
-      "Sends an email alert"
+      "Firewall",
+      "Network switch",
+      "Gateway router",
+      "Bridge"
     ],
-    "correctIndex": 1,
-    "explanation": "Answer: Disables the port"
+    "correctIndex": 0,
+    "explanation": "A network switch connects devices on a LAN and forwards packets between the devices using MAC addresses. A gateway router acts like both a router and a modem, which allows it to connect a local network to the internet and manage data traffic between networks. A firewall monitors incoming and outgoing network traffic using predefined security rules. A bridge combines multiple network segments to create a single network.",
+    "domain": "1",
+    "source": "packt",
+    "objective": "1.2 - Networking Appliances"
   },
   {
     "id": "ntest2-q10",
     "kind": "multiple_choice",
-    "prompt": "What is the first step in the troubleshooting methodology?",
+    "prompt": "Which of the following is not one of the layers in an SDN network architecture?",
     "options": [
-      "Replace the cable",
-      "Identify the problem",
-      "Check the routing table",
-      "Reboot the device"
+      "Application",
+      "Control",
+      "Infrastructure",
+      "User"
     ],
-    "correctIndex": 1,
-    "explanation": "Answer: Identify the problem"
+    "correctIndex": 3,
+    "explanation": "The SDN Application layer has applications and services that communicate with the SDN controller. The SDN Control layer manages network behavior. The SDN Infrastructure layer is where networking devices handle packet forwarding. The SDN architecture does not include a User layer.",
+    "domain": "1",
+    "source": "packt",
+    "objective": "1.8 Summarize evolving use cases for modern network environments."
   },
   {
     "id": "ntest2-q11",
     "kind": "multiple_choice",
-    "prompt": "Which protocol is connectionless and used primarily for streaming?",
+    "prompt": "Which of the following statements about Multi-fiber push on (MPO) connectors is false?",
     "options": [
-      "TCP",
-      "UDP",
-      "HTTP",
-      "FTP"
+      "An MPO backbone ribbon cable bundles 12 or more strands that are terminated by a single ferrule.",
+      "MPO cables must be fabricated and terminated in the field.",
+      "Variants of the MPO standard include MMF (Multi-Mode Fiber) and SMF (Single-Mode Fiber).",
+      "MPO cables have two types: patch cords and trunk cables."
     ],
     "correctIndex": 1,
-    "explanation": "Answer: UDP"
+    "explanation": "An MPO connector can handle from 12 to 144 fibers in a small footprint. MPO cables and connectors are pre-fabricated and pre-terminated. MMF and SMF are variant of the MPO standard. MPO patch cords connect devices to other parts of a network and MPO trunk cables directly connect racks or devices in a data center.",
+    "domain": "1",
+    "source": "packt",
+    "objective": "1.5 Compare and contrast transmission media and transceivers"
   },
   {
     "id": "ntest2-q12",
     "kind": "multiple_choice",
-    "prompt": "What is the maximum length for a copper Ethernet cable run?",
+    "prompt": "Which of the following statements is false?",
     "options": [
-      "50 meters",
-      "100 meters",
-      "200 meters",
-      "500 meters"
+      "RAID 0 provides no fault tolerance or redundancy",
+      "RAID 1 provides disk mirroring",
+      "RAID 5 requires at least four disks.",
+      "RAID 4 provides block-level striping with a dedicated parity disk."
     ],
-    "correctIndex": 1,
-    "explanation": "Answer: 100 meters"
+    "correctIndex": 2,
+    "explanation": "RAID 0 does not provide fault tolerance or redundancy. RAID 1 store all data on two separate physical disks. The disks are mirror images. RAID 4 uses a dedicated parity disk and block-level striping across multiple disks. RAID 4 uses a dedicated parity disk and block-level striping across multiple disks.",
+    "domain": "1",
+    "source": "packt",
+    "objective": "1.2 - Networking Appliances"
   },
   {
     "id": "ntest2-q13",
     "kind": "multiple_choice",
-    "prompt": "Which metric measures variation in packet arrival time?",
+    "prompt": "Which of the following uses edge servers and DNS addressing to route users to the closest server.",
     "options": [
-      "Bandwidth",
-      "Latency",
-      "Jitter",
-      "Packet loss"
+      "CDN",
+      "SD-WAN",
+      "VPN",
+      "ARP"
     ],
-    "correctIndex": 2,
-    "explanation": "Answer: Jitter"
+    "correctIndex": 0,
+    "explanation": "A software-defined WAN is an internal network setup by an organization to ensure that its employees can access its applications efficiently. A virtual private network is a subscribed secure communication link. The address resolution protocol is used to translate MAC addresses to IP addresses on a LAN. A content delivery network allows an organization to provides cached content close to user locations.",
+    "domain": "1",
+    "source": "packt",
+    "objective": "1.2 - Applications and Functions.docx"
   },
   {
     "id": "ntest2-q14",
     "kind": "multiple_choice",
-    "prompt": "RADIUS uses which transport protocol?",
+    "prompt": "Which one of the following small form-factor pluggable (SFP) devices is an optical module with four full-duplex transceiver channels?",
     "options": [
-      "TCP only",
-      "UDP only",
-      "Both TCP and UDP",
-      "ICMP"
+      "GBIC",
+      "OSFP",
+      "SFP+",
+      "QSFP"
     ],
-    "correctIndex": 1,
-    "explanation": "Answer: UDP only"
+    "correctIndex": 3,
+    "explanation": "A Gigabit Interface Converter is a standard transceiver for connecting Gigabit Ethernet ports to fiber-optic networks. The Octal SFP is a pluggable form factor with eight high speed electrical lanes that supports 400 Gbps. The OSFP is a pluggable form factor with eight high speed electrical lanes that supports 400 Gbps. An Enhanced Small Form-factor Pluggable is a transceiver that supports up to 16 Gbps.",
+    "domain": "1",
+    "source": "packt",
+    "objective": "1.5 Compare and contrast transmission media and transceivers"
   },
   {
     "id": "ntest2-q15",
     "kind": "multiple_choice",
-    "prompt": "A duplex mismatch occurs when?",
+    "prompt": "What is the EIGRP element that manages and dynamically updates the router’s routing table with any changes in the topology automatically?",
     "options": [
-      "Two devices use the same IP address",
-      "One device is full-duplex and the other is half-duplex",
-      "VLANs are misconfigured",
-      "DNS fails to resolve"
+      "Neighbor discovery/recovery",
+      "DUAL",
+      "RTP",
+      "Protocol dependent modules"
     ],
     "correctIndex": 1,
-    "explanation": "Answer: One device is full-duplex and the other is half-duplex"
+    "explanation": "Routers use the Neighbor Discovery/Recovery process to learn of other routers of networks that are on a direct path to them. The Reliable Transport Protocol (RTP) ensures the sequential delivery of multicast and unicast messages sent by the EIGRP router. Diffusing Update Algorithm (DUAL) manages and dynamically updates the router’s routing table with any changes in the topology automatically. Protocol-dependent modules or PDMs are used for protocol-specific Layer 3 packets.",
+    "domain": "2",
+    "source": "packt",
+    "objective": "2.1 - EIGRP.docx"
   },
   {
     "id": "ntest2-q16",
     "kind": "multiple_choice",
-    "prompt": "What is the purpose of ARP?",
+    "prompt": "In what configuration does a network switch copy incoming or outgoing packets passing through one port to another port for observation, analysis, and monitoring?",
     "options": [
-      "Resolve domain names to IP addresses",
-      "Resolve IP addresses to MAC addresses",
-      "Encrypt network traffic",
-      "Route packets between networks"
+      "Port mirroring",
+      "Packet capture",
+      "Flow data",
+      "Port monitoring"
     ],
-    "correctIndex": 1,
-    "explanation": "Answer: Resolve IP addresses to MAC addresses"
+    "correctIndex": 0,
+    "explanation": "The port mirroring function copies data from the mirrored port to an observing port for analysis and monitoring. Packet capture intercepts and logs data packets traveling on a network. Flow data is the information that tracks the movement of data through a system or network. Port monitoring checks the status and performance of network ports.",
+    "domain": "3",
+    "source": "packt",
+    "objective": "3.2 Given a scenario, use network monitoring technologies"
   },
   {
     "id": "ntest2-q17",
     "kind": "multiple_choice",
-    "prompt": "CHAP uses what type of authentication?",
+    "prompt": "In what type of a DNS lookup does one DNS server communicate with other DNS servers to find a particular IP address?",
     "options": [
-      "Cleartext passwords",
-      "Challenge-Handshake with MD5",
-      "Public key infrastructure",
-      "Biometric"
+      "Iterative",
+      "Recursive",
+      "Loop",
+      "Amplification"
     ],
     "correctIndex": 1,
-    "explanation": "Answer: Challenge-Handshake with MD5"
+    "explanation": "In a recursive lookup, a DNS server continues to query other DNS servers until it finds an IP address to return to a client. In an iterative lookup, each DNS query responds directly to the client with the address of another DNS server to query. The more common DNS loop issue is caused by two CNAME records pointing to each other. DNS amplification is a form of DDoS attack that causes a DNS resolver to flood a large volume of traffic to a target.",
+    "domain": "3",
+    "source": "packt",
+    "objective": "3.4 Given a scenario, implement IPv4 and IPv6 network services"
   },
   {
     "id": "ntest2-q18",
     "kind": "multiple_choice",
-    "prompt": "What is the purpose of a network baseline?",
+    "prompt": "The main difference between SNMPv3 and SNMPv2 is _______",
     "options": [
-      "Encrypt data",
-      "Establish normal performance for comparison",
-      "Assign IP addresses",
-      "Configure VLANs"
+      "Management",
+      "Integration",
+      "Enhanced Security",
+      "Classification"
     ],
-    "correctIndex": 1,
-    "explanation": "Answer: Establish normal performance for comparison"
+    "correctIndex": 2,
+    "explanation": "Among other improvements, SNMPv3 added the User-based Security Model (USM) that uses HMAC-SHA to securely authenticate and encrypt with AES-256",
+    "domain": "3",
+    "source": "packt",
+    "objective": "3.2 Given a scenario, use network monitoring technologies"
   },
   {
     "id": "ntest2-q19",
     "kind": "multiple_choice",
-    "prompt": "Port security violation in shutdown mode does what?",
+    "prompt": "What is the system strategy and process that eliminates single points of failure to provide continuous, available, and highly operational service to its users or customers?",
     "options": [
-      "Logs a message",
-      "Disables the port",
-      "Drops frames silently",
-      "Sends an email alert"
+      "Disaster recovery",
+      "Business continuity",
+      "Fault tolerance",
+      "High availability"
     ],
-    "correctIndex": 1,
-    "explanation": "Answer: Disables the port"
+    "correctIndex": 3,
+    "explanation": "Disaster recovery involves the formal policies and procedures used to restore business operations, operating procedures, and IT systems in the event of a disruptive event. Business continuity is a plan and process that ensures the mission-critical business operations of an organization continue to run in the event of a disaster. Fault tolerance lets users continue using a system with reduce functions, when a failure occurs. High availability (HA) is a system design approach that supports an application to keep running without interruption when errors or failures occur.",
+    "domain": "3",
+    "source": "packt",
+    "objective": "3.3 Explain disaster recovery (DR) concepts"
   },
   {
     "id": "ntest2-q20",
     "kind": "multiple_choice",
-    "prompt": "What is the first step in the troubleshooting methodology?",
+    "prompt": "Which of the following represents the maximum amount of time a company can operate without its critical systems, applications, and data being restored after a catastrophic event, disruption, or outage?",
     "options": [
-      "Replace the cable",
-      "Identify the problem",
-      "Check the routing table",
-      "Reboot the device"
+      "Recovery time objective (RTO)",
+      "RPO",
+      "Mean time to repair (MTTR)",
+      "Mean time between failures (MTBF)"
     ],
-    "correctIndex": 1,
-    "explanation": "Answer: Identify the problem"
+    "correctIndex": 0,
+    "explanation": "A recovery point objective (RPO) represents the maximum amount of data loss (measured by time) acceptable to an organization. Mean time to repair (MTTR) represents the amount of time required to repair a system. MTTR is focused on the time an asset is not running. Mean time between failures (MTBF) represents the average length of time before a system fails and needs repair. MTBF is based on the time an asset is running. A recovery time objective (RTO) is the maximum amount of time (days, hours, minutes, seconds) that a system can be unavailable following a catastrophic event, disruption, or outage.",
+    "domain": "3",
+    "source": "packt",
+    "objective": "3.3 Explain disaster recovery (DR) concepts"
   },
   {
     "id": "ntest2-q21",
     "kind": "multiple_choice",
-    "prompt": "Which protocol is connectionless and used primarily for streaming?",
+    "prompt": "Which one of the following software tools is used for network discovery and scanning?",
     "options": [
-      "TCP",
-      "UDP",
-      "HTTP",
-      "FTP"
+      "Burp Suite",
+      "Metasploit",
+      "Nmap",
+      "Wireshark"
     ],
-    "correctIndex": 1,
-    "explanation": "Answer: UDP"
+    "correctIndex": 2,
+    "explanation": "Network Mapper (Nmap) is commonly used for network discovery and security auditing.",
+    "domain": "3",
+    "source": "packt",
+    "objective": "3.2 Given a scenario, use network monitoring technologies"
   },
   {
     "id": "ntest2-q22",
     "kind": "multiple_choice",
-    "prompt": "What is the maximum length for a copper Ethernet cable run?",
+    "prompt": "Port security violation in shutdown mode does what?",
     "options": [
-      "50 meters",
-      "100 meters",
-      "200 meters",
-      "500 meters"
+      "Logs a message",
+      "Disables the port",
+      "Drops frames silently",
+      "Sends an email alert"
     ],
     "correctIndex": 1,
-    "explanation": "Answer: 100 meters"
+    "explanation": "In shutdown mode the port goes into err-disabled after the violation, taking the connected device offline until an administrator re-enables it. Restrict and protect only drop the offending frames.",
+    "domain": "4",
+    "source": "openquiz-original"
   },
   {
     "id": "ntest2-q23",
     "kind": "multiple_choice",
-    "prompt": "Which metric measures variation in packet arrival time?",
+    "prompt": "What is the name CompTIA uses to refer systems that include ICS and SCADA?",
     "options": [
-      "Bandwidth",
-      "Latency",
-      "Jitter",
-      "Packet loss"
+      "Remote terminal units",
+      "ICS",
+      "DCS",
+      "Operational technology"
     ],
-    "correctIndex": 2,
-    "explanation": "Answer: Jitter"
+    "correctIndex": 3,
+    "explanation": "A remote terminal unit is really a PLC that’s designed to be autonomous. An industrial control system (ICS) is basically a PC that is designed to handle processing using sensors. CompTIA includes ICS, SCADA, and DCS in the category of operational technology. A distributed computer system (DCS) is a distributed computer network of independent computers that work together to achieve a common goal.",
+    "domain": "4",
+    "source": "packt",
+    "objective": "4.1 - ICS SCADA and OT.docx"
   },
   {
     "id": "ntest2-q24",
     "kind": "multiple_choice",
-    "prompt": "RADIUS uses which transport protocol?",
+    "prompt": "What is the Wi-Fi Alliance designation for the Wi-Fi standard developed largely for IoT networks?",
     "options": [
-      "TCP only",
-      "UDP only",
-      "Both TCP and UDP",
-      "ICMP"
+      "Wi-Fi 4",
+      "Wi-Fi 5",
+      "Wi-Fi 6",
+      "Wi-Fi 7"
     ],
-    "correctIndex": 1,
-    "explanation": "Answer: UDP only"
+    "correctIndex": 2,
+    "explanation": "IEEE 802.11n or Wi-Fi 4 uses multiple antennas to increase data rates. IEEE 802.11ac or Wi-Fi 5 adds additional channels and better modulation. IEEE 802.11ax or Wi-Fi 6 includes features like OFDMA to better serve the needs of IoT device networks. IEEE 802.11be or Wi-Fi 7 focuses on WLAN indoor and outdoor operation.",
+    "domain": "4",
+    "source": "packt",
+    "objective": "4.1 - IoT and IIoT.docx"
   },
   {
     "id": "ntest2-q25",
     "kind": "multiple_choice",
-    "prompt": "A duplex mismatch occurs when?",
+    "prompt": "What security element is a file or an electronic password that uses PKI and cryptography to verify the authenticity of a device, server, or user?",
     "options": [
-      "Two devices use the same IP address",
-      "One device is full-duplex and the other is half-duplex",
-      "VLANs are misconfigured",
-      "DNS fails to resolve"
+      "Digital certificate",
+      "Web of Trust",
+      "Self-signed certificate",
+      "Certificate authority"
     ],
-    "correctIndex": 1,
-    "explanation": "Answer: One device is full-duplex and the other is half-duplex"
+    "correctIndex": 0,
+    "explanation": "A Web of Trust is a decentralized trust model used in PGP compatible systems to establish the authenticity of public keys. A digital certificate is a file associated with a cryptographic key pair that is used to authenticate the identity of a website, individual, organization, user, device or server. A self-signed cetification is a digital certificate created and signed by a user that provides little or no assurrances on the internet. A certificate authority (CA) issues digital certificates that are used to validate the identity of websites, organizations, or individuals and link them to cryptographic keys.",
+    "domain": "4",
+    "source": "packt",
+    "objective": "4.1 - Digital Certificates.docx"
   },
   {
     "id": "ntest2-q26",
     "kind": "multiple_choice",
-    "prompt": "What is the purpose of ARP?",
+    "prompt": "A duplex mismatch occurs when?",
     "options": [
-      "Resolve domain names to IP addresses",
-      "Resolve IP addresses to MAC addresses",
-      "Encrypt network traffic",
-      "Route packets between networks"
+      "Two devices use the same IP address",
+      "VLANs are misconfigured",
+      "DNS fails to resolve",
+      "One device is full-duplex and the other is half-duplex"
     ],
-    "correctIndex": 1,
-    "explanation": "Answer: Resolve IP addresses to MAC addresses"
+    "correctIndex": 3,
+    "explanation": "A duplex mismatch occurs when one side transmits while the other is listening. Late collisions and a flooded error count on the switch port are the usual symptoms.",
+    "domain": "5",
+    "source": "openquiz-original"
   },
   {
     "id": "ntest2-q27",
     "kind": "multiple_choice",
-    "prompt": "CHAP uses what type of authentication?",
+    "prompt": "As an A+ certified technician, you follow the CompTIA troubleshooting process steps when determining the problem with a computing device. You have completed step 3 of the plan and have a good idea of what the problem may be. What is your next step in the process?",
     "options": [
-      "Cleartext passwords",
-      "Challenge-Handshake with MD5",
-      "Public key infrastructure",
-      "Biometric"
+      "Establish a theory of probable cause",
+      "Establish a plan of action to resolve the problem and identify potential effects",
+      "Test the theory to determine the cause",
+      "Verify full system functionality and implement preventive measures if applicable"
     ],
     "correctIndex": 1,
-    "explanation": "Answer: Challenge-Handshake with MD5"
+    "explanation": "Once you’ve determined the cause, establish a plan of action to resolve the problem and implement the solution.",
+    "domain": "5",
+    "source": "packt",
+    "objective": "5.1 Explain the troubleshooting methodology"
   },
   {
     "id": "ntest2-q28",
     "kind": "multiple_choice",
-    "prompt": "What is the purpose of a network baseline?",
+    "prompt": "What is the maximum length for a copper Ethernet cable run?",
     "options": [
-      "Encrypt data",
-      "Establish normal performance for comparison",
-      "Assign IP addresses",
-      "Configure VLANs"
+      "50 meters",
+      "200 meters",
+      "100 meters",
+      "500 meters"
     ],
-    "correctIndex": 1,
-    "explanation": "Answer: Establish normal performance for comparison"
+    "correctIndex": 2,
+    "explanation": "The 100 metre limit (328 ft) for twisted-pair Ethernet comes from the maximum signal propagation time before round-trip delay exceeds the collision-detection window.",
+    "domain": "5",
+    "source": "openquiz-original"
   },
   {
     "id": "ntest2-q29",
     "kind": "multiple_choice",
-    "prompt": "Port security violation in shutdown mode does what?",
+    "prompt": "Which one of the following Cisco IOS commands is used to display the configuration of the active system operating on a switch?",
     "options": [
-      "Logs a message",
-      "Disables the port",
-      "Drops frames silently",
-      "Sends an email alert"
+      "show running-config",
+      "show interface",
+      "show ip arp",
+      "show run int port-id"
     ],
-    "correctIndex": 1,
-    "explanation": "Answer: Disables the port"
-  },
-  {
-    "id": "ntest2-q30",
-    "kind": "multiple_choice",
-    "prompt": "What is the first step in the troubleshooting methodology?",
-    "options": [
-      "Replace the cable",
-      "Identify the problem",
-      "Check the routing table",
-      "Reboot the device"
-    ],
-    "correctIndex": 1,
-    "explanation": "Answer: Identify the problem"
-  },
-  {
-    "id": "ntest2-q31",
-    "kind": "multiple_choice",
-    "prompt": "Which protocol is connectionless and used primarily for streaming?",
-    "options": [
-      "TCP",
-      "UDP",
-      "HTTP",
-      "FTP"
-    ],
-    "correctIndex": 1,
-    "explanation": "Answer: UDP"
-  },
-  {
-    "id": "ntest2-q32",
-    "kind": "multiple_choice",
-    "prompt": "What is the maximum length for a copper Ethernet cable run?",
-    "options": [
-      "50 meters",
-      "100 meters",
-      "200 meters",
-      "500 meters"
-    ],
-    "correctIndex": 1,
-    "explanation": "Answer: 100 meters"
-  },
-  {
-    "id": "ntest2-q33",
-    "kind": "multiple_choice",
-    "prompt": "Which metric measures variation in packet arrival time?",
-    "options": [
-      "Bandwidth",
-      "Latency",
-      "Jitter",
-      "Packet loss"
-    ],
-    "correctIndex": 2,
-    "explanation": "Answer: Jitter"
-  },
-  {
-    "id": "ntest2-q34",
-    "kind": "multiple_choice",
-    "prompt": "RADIUS uses which transport protocol?",
-    "options": [
-      "TCP only",
-      "UDP only",
-      "Both TCP and UDP",
-      "ICMP"
-    ],
-    "correctIndex": 1,
-    "explanation": "Answer: UDP only"
-  },
-  {
-    "id": "ntest2-q35",
-    "kind": "multiple_choice",
-    "prompt": "A duplex mismatch occurs when?",
-    "options": [
-      "Two devices use the same IP address",
-      "One device is full-duplex and the other is half-duplex",
-      "VLANs are misconfigured",
-      "DNS fails to resolve"
-    ],
-    "correctIndex": 1,
-    "explanation": "Answer: One device is full-duplex and the other is half-duplex"
-  },
-  {
-    "id": "ntest2-q36",
-    "kind": "multiple_choice",
-    "prompt": "What is the purpose of ARP?",
-    "options": [
-      "Resolve domain names to IP addresses",
-      "Resolve IP addresses to MAC addresses",
-      "Encrypt network traffic",
-      "Route packets between networks"
-    ],
-    "correctIndex": 1,
-    "explanation": "Answer: Resolve IP addresses to MAC addresses"
-  },
-  {
-    "id": "ntest2-q37",
-    "kind": "multiple_choice",
-    "prompt": "CHAP uses what type of authentication?",
-    "options": [
-      "Cleartext passwords",
-      "Challenge-Handshake with MD5",
-      "Public key infrastructure",
-      "Biometric"
-    ],
-    "correctIndex": 1,
-    "explanation": "Answer: Challenge-Handshake with MD5"
-  },
-  {
-    "id": "ntest2-q38",
-    "kind": "multiple_choice",
-    "prompt": "What is the purpose of a network baseline?",
-    "options": [
-      "Encrypt data",
-      "Establish normal performance for comparison",
-      "Assign IP addresses",
-      "Configure VLANs"
-    ],
-    "correctIndex": 1,
-    "explanation": "Answer: Establish normal performance for comparison"
-  },
-  {
-    "id": "ntest2-q39",
-    "kind": "multiple_choice",
-    "prompt": "Port security violation in shutdown mode does what?",
-    "options": [
-      "Logs a message",
-      "Disables the port",
-      "Drops frames silently",
-      "Sends an email alert"
-    ],
-    "correctIndex": 1,
-    "explanation": "Answer: Disables the port"
-  },
-  {
-    "id": "ntest2-q40",
-    "kind": "multiple_choice",
-    "prompt": "What is the first step in the troubleshooting methodology?",
-    "options": [
-      "Replace the cable",
-      "Identify the problem",
-      "Check the routing table",
-      "Reboot the device"
-    ],
-    "correctIndex": 1,
-    "explanation": "Answer: Identify the problem"
-  },
-  {
-    "id": "ntest2-q41",
-    "kind": "multiple_choice",
-    "prompt": "Which protocol is connectionless and used primarily for streaming?",
-    "options": [
-      "TCP",
-      "UDP",
-      "HTTP",
-      "FTP"
-    ],
-    "correctIndex": 1,
-    "explanation": "Answer: UDP"
-  },
-  {
-    "id": "ntest2-q42",
-    "kind": "multiple_choice",
-    "prompt": "What is the maximum length for a copper Ethernet cable run?",
-    "options": [
-      "50 meters",
-      "100 meters",
-      "200 meters",
-      "500 meters"
-    ],
-    "correctIndex": 1,
-    "explanation": "Answer: 100 meters"
-  },
-  {
-    "id": "ntest2-q43",
-    "kind": "multiple_choice",
-    "prompt": "Which metric measures variation in packet arrival time?",
-    "options": [
-      "Bandwidth",
-      "Latency",
-      "Jitter",
-      "Packet loss"
-    ],
-    "correctIndex": 2,
-    "explanation": "Answer: Jitter"
-  },
-  {
-    "id": "ntest2-q44",
-    "kind": "multiple_choice",
-    "prompt": "RADIUS uses which transport protocol?",
-    "options": [
-      "TCP only",
-      "UDP only",
-      "Both TCP and UDP",
-      "ICMP"
-    ],
-    "correctIndex": 1,
-    "explanation": "Answer: UDP only"
-  },
-  {
-    "id": "ntest2-q45",
-    "kind": "multiple_choice",
-    "prompt": "A duplex mismatch occurs when?",
-    "options": [
-      "Two devices use the same IP address",
-      "One device is full-duplex and the other is half-duplex",
-      "VLANs are misconfigured",
-      "DNS fails to resolve"
-    ],
-    "correctIndex": 1,
-    "explanation": "Answer: One device is full-duplex and the other is half-duplex"
-  },
-  {
-    "id": "ntest2-q46",
-    "kind": "multiple_choice",
-    "prompt": "What is the purpose of ARP?",
-    "options": [
-      "Resolve domain names to IP addresses",
-      "Resolve IP addresses to MAC addresses",
-      "Encrypt network traffic",
-      "Route packets between networks"
-    ],
-    "correctIndex": 1,
-    "explanation": "Answer: Resolve IP addresses to MAC addresses"
-  },
-  {
-    "id": "ntest2-q47",
-    "kind": "multiple_choice",
-    "prompt": "CHAP uses what type of authentication?",
-    "options": [
-      "Cleartext passwords",
-      "Challenge-Handshake with MD5",
-      "Public key infrastructure",
-      "Biometric"
-    ],
-    "correctIndex": 1,
-    "explanation": "Answer: Challenge-Handshake with MD5"
-  },
-  {
-    "id": "ntest2-q48",
-    "kind": "multiple_choice",
-    "prompt": "What is the purpose of a network baseline?",
-    "options": [
-      "Encrypt data",
-      "Establish normal performance for comparison",
-      "Assign IP addresses",
-      "Configure VLANs"
-    ],
-    "correctIndex": 1,
-    "explanation": "Answer: Establish normal performance for comparison"
-  },
-  {
-    "id": "ntest2-q49",
-    "kind": "multiple_choice",
-    "prompt": "Port security violation in shutdown mode does what?",
-    "options": [
-      "Logs a message",
-      "Disables the port",
-      "Drops frames silently",
-      "Sends an email alert"
-    ],
-    "correctIndex": 1,
-    "explanation": "Answer: Disables the port"
-  },
-  {
-    "id": "ntest2-q50",
-    "kind": "multiple_choice",
-    "prompt": "What is the first step in the troubleshooting methodology?",
-    "options": [
-      "Replace the cable",
-      "Identify the problem",
-      "Check the routing table",
-      "Reboot the device"
-    ],
-    "correctIndex": 1,
-    "explanation": "Answer: Identify the problem"
+    "correctIndex": 0,
+    "explanation": "The show interface command displays the status of one or more switchports. The show ip arp command displays the contents of the current ARP table. The show int port-id command displays the status of a particular VLAN-associated port. The show running-config command displays the settings and values of the configuration actively running on the switch.",
+    "domain": "5",
+    "source": "packt",
+    "objective": "5.5 - Cisco Commands.docx"
   }
 ]
