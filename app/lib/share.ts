@@ -14,7 +14,8 @@ export interface SharedQuiz {
 
 /** Only quiz content is exported; account identifiers and AI source notes stay private. */
 export function buildShareFile(quiz: Partial<SharedQuiz>): string {
-    const { words, questions } = stripShareImages(quiz)
+    const words = Array.isArray(quiz.words) ? quiz.words : []
+    const questions = Array.isArray(quiz.questions) ? quiz.questions : []
     return JSON.stringify({ name: quiz.name, description: quiz.description,
         author_name: quiz.author_name || null, tags: quiz.tags || [], words, questions })
 }
@@ -83,7 +84,8 @@ export function buildShareData(quiz: {
     words?: any[]
     questions?: any[]
 }): string | null {
-    const payload = encodeURIComponent(buildShareFile(quiz))
+    // URL snapshots have a tight size cap. File and Drive shares retain media.
+    const payload = encodeURIComponent(buildShareFile({ ...quiz, ...stripShareImages(quiz) }))
     if (payload.length > SHARE_URL_MAX_PAYLOAD) return null
     return payload
 }

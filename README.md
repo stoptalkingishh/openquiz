@@ -130,7 +130,7 @@ Write `{{c1::word}}` in a flashcard prompt (or answer) and it becomes a written-
 Sharing is fully static — no server required:
 
 - **Official sets** share as `…/quiz/share?path=/sat/1.json` (paths are allowlisted via the sets manifest).
-- **Custom quizzes** are embedded directly in the URL as `?data=` JSON (images stripped to keep links small), up to a **12,000-character cap**; larger quizzes fall back to copying locally.
+- **Custom quizzes** are embedded directly in the URL as `?data=` JSON (images stripped to keep links small), up to a **12,000-character cap**. Downloaded JSON files and Drive publications retain images, subject to the 5 MB import limit.
 - Share by copy-link or straight to **Twitter, Facebook, or Telegram**.
 
 ---
@@ -156,7 +156,7 @@ Without the keys the same code runs in guest mode — nothing breaks, nothing is
 
 ### Share a quiz through Google Drive
 
-In a custom quiz's **Share** dialog, choose **Create / update shared version**. OpenQuiz writes a separate `.openquiz.json` file in your Drive. It never shares the private `OpenQuiz` sync folder or `custom_quizzes.json`. The published file contains quiz metadata and questions, excluding original AI source notes, account IDs, and images.
+In a custom quiz's **Share** dialog, choose **Create / update shared version**. OpenQuiz writes a separate `.openquiz.json` file in your Drive. It never shares the private `OpenQuiz` sync folder or `custom_quizzes.json`. The published file contains quiz metadata, questions, and images, excluding original AI source notes and account IDs.
 
 Use **Open Drive → Share / manage access**, then Google's **Share** button to add people (Viewer recommended) or enable **Anyone with the link** if allowed by your organization. OpenQuiz itself does not change permissions, invite recipients, or send notification emails. Send the **OpenQuiz link** from the dialog after granting access. Future **Create / update shared version** actions update the same Drive file and keep the link valid; edits to the private quiz are not automatically published.
 

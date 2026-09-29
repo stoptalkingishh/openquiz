@@ -1647,7 +1647,7 @@ function ShareQuizModal({
 
                     {quiz.isCustom && <DriveQuizShare quiz={quiz} />}
                     {quiz.isCustom && <div className="text-sm mb-4 space-y-3">
-                        <p>Send a snapshot by link or JSON file. Copies do not receive future edits and are not listed publicly. Images and private AI source notes are excluded.</p>
+                        <p>Send a snapshot by link or JSON file. Copies do not receive future edits and are not listed publicly. Links omit images to stay short; JSON files keep them. Private AI source notes are excluded.</p>
                         <button className="btn-outline" onClick={() => downloadSharedQuiz(quiz)}>Download quiz JSON</button>
                     </div>}
                     {/* Share Link */}

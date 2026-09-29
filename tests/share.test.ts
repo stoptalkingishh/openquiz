@@ -5,7 +5,7 @@ const quiz = {
     id: 'owner-quiz-id', user_id: 'private-account', ai_source_prompt: 'Private uploaded notes',
     name: 'Networking', description: 'Unit exam', tags: ['networking'], author_name: 'Author',
     words: [{ word: 'Switch', ru: 'Connects a LAN', image: 'private-image' }],
-    questions: [{ id: 'q', kind: 'multiple_choice', prompt: 'DNS port?', options: ['53', '80'], correctIndex: 0 }]
+    questions: [{ id: 'q', kind: 'multiple_choice', prompt: 'DNS port?', options: ['53', '80'], correctIndex: 0, image: 'question-image' }]
 }
 
 describe('portable quiz sharing', () => {
@@ -28,6 +28,14 @@ describe('portable quiz sharing', () => {
         const large = { ...quiz, description: 'Ж'.repeat(SHARE_URL_MAX_PAYLOAD / 3) }
         expect(buildShareData(large)).toBeNull()
         expect(parseSharedQuiz(buildShareFile(large)).description).toBe(large.description)
+    })
+    it('preserves media in file exports while keeping it out of URL snapshots', () => {
+        const file = buildShareFile(quiz)
+        expect(file).toContain('private-image')
+        expect(file).toContain('question-image')
+        const parsed = parseSharedQuiz(file)
+        expect(parsed.questions.map(question => question.image)).toEqual(['private-image', 'question-image'])
+        expect(decodeURIComponent(buildShareData(quiz)!)).not.toContain('question-image')
     })
     it('rejects malformed, empty, oversized, and incorrect-answer imports', () => {
         expect(() => parseSharedQuiz('not json')).toThrow('invalid JSON')
