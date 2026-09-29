@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { assetPath } from '../lib/paths'
+import AnalyticsConsentControl from '../components/AnalyticsConsentControl'
 
 export const metadata: Metadata = {
   title: 'Privacy Policy - OpenQuiz',
@@ -27,11 +28,12 @@ export default function PrivacyPage() {
             <h2 className="text-xl font-bold mb-2">1. Overview</h2>
             <p>
               OpenQuiz is a fully client-side, static web application. It has <strong>no
-              backend server</strong>. The site uses Google Analytics to measure aggregate
-              traffic and feature usage; Google may process technical information such as
-              your browser, device, approximate location, and pages viewed. Everything you
-              study stays on your device unless you explicitly choose to sync it to your own
-              Google Drive.
+              backend server</strong>. Google Analytics is available to measure aggregate
+              traffic and feature usage, but it is loaded <strong>only after you opt in</strong>
+              (see section 10); until then nothing is requested and nothing is stored. Once
+              you accept, Google may process technical information such as your browser,
+              device, approximate location, and pages viewed. Everything you study stays on
+              your device unless you explicitly choose to sync it to your own Google Drive.
             </p>
           </section>
 
@@ -78,10 +80,12 @@ export default function PrivacyPage() {
           <section>
             <h2 className="text-xl font-bold mb-2">6. Cookies and tracking</h2>
             <p>
-              Google Analytics may use cookies or similar storage for measurement. The service
-              worker caches static assets (HTML, CSS, JavaScript, and bundled study data)
-              locally so the app works offline. You can limit cookies through your browser
-              settings or browser privacy tools.
+              If you accept analytics (section 10), Google Analytics may use cookies or
+              similar storage for measurement. Until you accept, no analytics code is
+              requested and no analytics cookie is set. The service worker caches static
+              assets (HTML, CSS, JavaScript, and bundled study data) locally so the app
+              works offline. You can limit cookies through your browser settings or browser
+              privacy tools.
             </p>
           </section>
 
@@ -108,6 +112,55 @@ export default function PrivacyPage() {
             <p>
               Questions about this policy can be opened as an issue in the project repository
               on GitHub.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-bold mb-2">10. Analytics consent</h2>
+            <p>
+              OpenQuiz can optionally load Google Analytics to count page visits, but it is{' '}
+              <strong>off until you actively accept it</strong>. The analytics script is not
+              part of the page you first receive, and it is requested only after you choose
+              Accept. If you choose Decline, or close the page without choosing, no analytics
+              code is ever requested and no analytics identifier is written. Accepting and
+              declining are equally easy, and the prompt is not repeated once you have made a
+              choice.
+            </p>
+            <p className="mt-3">
+              Your choice is stored in this browser&rsquo;s <code>localStorage</code> and can be
+              changed at any time using the control below. Withdrawing consent stops further
+              collection from this browser going forward; it cannot delete measurements
+              Google has already received.
+            </p>
+            <p className="mt-3">
+              When analytics is enabled and you accept, Google may process technical
+              information such as your browser, device, approximate location, and pages
+              viewed, and may set a first-party analytics cookie. Quiz content, email
+              addresses, and API keys are never sent to Analytics. Google&rsquo;s Privacy
+              Policy and the{' '}
+              <a
+                href="https://tools.google.com/dlpage/gaoptout"
+                className="text-primary underline dark:text-primary-light"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Analytics opt-out browser add-on
+              </a>{' '}
+              apply.
+            </p>
+            <div className="mt-4">
+              <AnalyticsConsentControl />
+            </div>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-bold mb-2">11. Fonts</h2>
+            <p>
+              OpenQuiz does <strong>not</strong> request webfonts from Google Fonts or any other
+              third-party font host. Text is rendered with the fonts already installed on your
+              operating system, so no font request, and no associated disclosure of your IP
+              address or user agent, leaves your browser. The app also therefore renders
+              correctly offline and adds no font download to the page.
             </p>
           </section>
         </div>
