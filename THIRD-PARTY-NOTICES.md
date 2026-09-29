@@ -41,14 +41,23 @@ SOFTWARE.
 ```
 
 ### CompTIA Network+ N10-009 — practice tests & flashcards
-- **Source:** Original questions authored by the OpenQuiz team, written to align
-  with the publicly-available CompTIA Network+ (N10-009) exam objectives.
-- **Author:** OpenQuiz contributors
-- **License:** MIT (project license)
-- **What we use:** `public/netplus/*.json` — 3 practice tests (50 questions
-  each), a 100-question final exam, and 5 topic flashcard decks (164 cards).
-  These are original study questions; they are **not** reproduced from any
-  CompTIA exam or from a third-party question bank.
+- **Source (exam questions):** "CompTIA Network+ (N10-009) - Updated Episode Quiz
+  Questions.xlsx" from Packt's *CompTIA Network+ Certification (N10-009): The
+  Total Course* repository, combined with original questions authored by the
+  OpenQuiz team.
+- **Authors:** Packt Publishing (78 questions) and OpenQuiz contributors (10 questions)
+- **License:** MIT for both — Packt's course repository is MIT licensed, and the
+  OpenQuiz-authored questions fall under the project license. The Packt MIT
+  notice is reproduced in `public/netplus/PROVENANCE.md`.
+- **What we use:** `public/netplus/*.json` — 3 practice tests (30/29/29
+  questions, sharing no questions with each other), a cumulative 88-question
+  final exam, and 5 topic flashcard decks (164 cards). Full per-question
+  provenance is in `public/netplus/PROVENANCE.md`.
+- **Excluded on purpose:** 64 questions in the Packt workbook are annotated
+  `Use Old Question from N10-009` and are verbatim items from the real CompTIA
+  exam. Those are **not** bundled here: Packt's MIT permission does not extend
+  to CompTIA's exam content. No bundled question is reproduced from a CompTIA
+  exam, and no question was written by an AI assistant.
 
 ### SAT Vocabulary sets (`public/sat/*.json`)
 - Original vocabulary content was compiled by the OpenQuiz maintainers / the

@@ -2,223 +2,272 @@
   {
     "id": "ntest3-q1",
     "kind": "multiple_choice",
-    "prompt": "Which protocol is connectionless and used primarily for streaming?",
+    "prompt": "An SDN operates on two planes. The Control plane and the ______ plane.",
     "options": [
-      "TCP",
-      "UDP",
-      "HTTP",
-      "FTP"
+      "User",
+      "Data",
+      "Network",
+      "Transmission"
     ],
     "correctIndex": 1,
-    "explanation": "Answer: UDP"
+    "explanation": "An SDN does not define a user plane. An SDN does not define a network plane. The SDN data plane performs the actions relating to data packets and data-in-transit, including data segmentation and encapsulation, packet forwarding, and multicasting. An SDN does not define a transmission plane.",
+    "domain": "1",
+    "source": "packt",
+    "objective": "1.8 Summarize evolving use cases for modern network environments."
   },
   {
     "id": "ntest3-q2",
     "kind": "multiple_choice",
-    "prompt": "What is the maximum length for a copper Ethernet cable run?",
+    "prompt": "The three-dimensional hierarchical network model separates the functional elements of a network into three tiers or levels. Which one of the following is not a tier in the three-dimensional hierarchical model?",
     "options": [
-      "50 meters",
-      "100 meters",
-      "200 meters",
-      "500 meters"
+      "Access",
+      "Core",
+      "External",
+      "Distribution"
     ],
-    "correctIndex": 1,
-    "explanation": "Answer: 100 meters"
+    "correctIndex": 2,
+    "explanation": "The Access tier is the lowest tier in the three-tier hierarchy model and is the tier on which end-user devices connect to a network. The core layer is the top tier on which high-speed switching and routing interconnects the distribution layer devices to a WAN. The distribution layer sits between the access layer and the core layer and routes and filters messages to the core and access layers. The three-tier hierarchical model does not define an external layer.",
+    "domain": "1",
+    "source": "packt",
+    "objective": "1.6 - Network Topologies, architectures, and types"
   },
   {
     "id": "ntest3-q3",
     "kind": "multiple_choice",
-    "prompt": "Which metric measures variation in packet arrival time?",
+    "prompt": "What is the biggest difference between 4G LTE and 5G?",
     "options": [
-      "Bandwidth",
-      "Latency",
-      "Jitter",
-      "Packet loss"
+      "5G has lower data transfer speeds than 4G LTE",
+      "4G LTE and 5G operate at the same frequency bands",
+      "4G LTE requires more base stations and antennas than 5G",
+      "5G has lower latency then 4G LTE"
     ],
-    "correctIndex": 2,
-    "explanation": "Answer: Jitter"
+    "correctIndex": 3,
+    "explanation": "5G’s latency is as low as 5 milliseconds, much lower than 4G’s 30 to 70 milliseconds.",
+    "domain": "1",
+    "source": "packt",
+    "objective": "1.5  Compare and contrast transmission media and transceivers"
   },
   {
     "id": "ntest3-q4",
     "kind": "multiple_choice",
-    "prompt": "RADIUS uses which transport protocol?",
+    "prompt": "What is the networking technique used when creating subnets of different sizes within a network?",
     "options": [
-      "TCP only",
-      "UDP only",
-      "Both TCP and UDP",
-      "ICMP"
+      "VLSM",
+      "CIDR",
+      "APIPA",
+      "Classful"
     ],
-    "correctIndex": 1,
-    "explanation": "Answer: UDP only"
+    "correctIndex": 0,
+    "explanation": "Classless Inter-Domain Routing represents the number of bits in an IPv4 address that represent the network address. Automatic Private IP Addressing allows a networked device to assign itself a non-routable IP address when it fails to get one from a DHCP server. Variable Length Subnet Mask uses a different subnet mask for separate subnets of the same network. Classful IPv4 addressing divides the IP addressing universe into 5 fixed IP addressing groups.",
+    "domain": "1",
+    "source": "packt",
+    "objective": "1.7 Given a scenario, use appropriate IPv4 network addressing."
   },
   {
     "id": "ntest3-q5",
     "kind": "multiple_choice",
-    "prompt": "A duplex mismatch occurs when?",
+    "prompt": "What is the purpose of ARP?",
     "options": [
-      "Two devices use the same IP address",
-      "One device is full-duplex and the other is half-duplex",
-      "VLANs are misconfigured",
-      "DNS fails to resolve"
+      "Resolve domain names to IP addresses",
+      "Encrypt network traffic",
+      "Resolve IP addresses to MAC addresses",
+      "Route packets between networks"
     ],
-    "correctIndex": 1,
-    "explanation": "Answer: One device is full-duplex and the other is half-duplex"
+    "correctIndex": 2,
+    "explanation": "ARP maps IPv4 addresses to MAC addresses on the local segment so frames can be delivered. Name resolution is DNS; routing is the router's job.",
+    "domain": "1",
+    "source": "openquiz-original"
   },
   {
     "id": "ntest3-q6",
     "kind": "multiple_choice",
-    "prompt": "What is the purpose of ARP?",
+    "prompt": "What is the term given to a campus network technology that combines the core and distribution layers into a single layer?",
     "options": [
-      "Resolve domain names to IP addresses",
-      "Resolve IP addresses to MAC addresses",
-      "Encrypt network traffic",
-      "Route packets between networks"
+      "Spine and leaf",
+      "Collapsed core",
+      "Hybrid",
+      "Distribution"
     ],
     "correctIndex": 1,
-    "explanation": "Answer: Resolve IP addresses to MAC addresses"
+    "explanation": "Spine-leaf architecture is used in data centers with spine switches and leaf switches. A collapsed core network is a network architecture with the traditional three-layer model condensed to two layers. A hybrid network includes more than one connecting technology or topology. Distribution is one of the three layers of the hierarchical network model.",
+    "domain": "1",
+    "source": "packt",
+    "objective": "1.6 - Network Topologies, architectures, and types"
   },
   {
     "id": "ntest3-q7",
     "kind": "multiple_choice",
-    "prompt": "CHAP uses what type of authentication?",
+    "prompt": "What networking technique allows multiple servers to share a common IP address and forwards incoming message traffic to the nearest server?",
     "options": [
-      "Cleartext passwords",
-      "Challenge-Handshake with MD5",
-      "Public key infrastructure",
-      "Biometric"
+      "Multicast",
+      "Broadcast",
+      "Unicast",
+      "Anycast"
     ],
-    "correctIndex": 1,
-    "explanation": "Answer: Challenge-Handshake with MD5"
+    "correctIndex": 3,
+    "explanation": "Traffic moving from one node to multiple specific nodes is a multicast. Traffic moving from one node to other nodes on a network segment is a broadcast transmission. Traffic moving from one node to only one node is a unicast transmission. Traffic moving from a node to the nearest of several node all with the same IP address is an anycast.",
+    "domain": "1",
+    "source": "packt",
+    "objective": "1.4 - Explain Network Traffic Types.docx"
   },
   {
     "id": "ntest3-q8",
     "kind": "multiple_choice",
-    "prompt": "What is the purpose of a network baseline?",
+    "prompt": "Which of the following authentication protocols is not used by RADIUS on a wireless network?",
     "options": [
-      "Encrypt data",
-      "Establish normal performance for comparison",
-      "Assign IP addresses",
-      "Configure VLANs"
+      "EAP-TLS",
+      "PEAP-MSCHAP",
+      "WPA2",
+      "EAP-TTLS/PAP"
     ],
-    "correctIndex": 1,
-    "explanation": "Answer: Establish normal performance for comparison"
+    "correctIndex": 2,
+    "explanation": "Wi-Fi Protected Access 2 (WPA2) is not an authentication protocol. It is a security protocol for protecting wireless networks using AES encryption.",
+    "domain": "1",
+    "source": "packt",
+    "objective": "1.5 - 802.11 Standards.docx"
   },
   {
     "id": "ntest3-q9",
     "kind": "multiple_choice",
-    "prompt": "Port security violation in shutdown mode does what?",
+    "prompt": "Which of the following best combines the scalability of a public cloud with the security of a private cloud?",
     "options": [
-      "Logs a message",
-      "Disables the port",
-      "Drops frames silently",
-      "Sends an email alert"
+      "Virtual private cloud",
+      "IaaS",
+      "PaaS",
+      "Virtual public cloud"
     ],
-    "correctIndex": 1,
-    "explanation": "Answer: Disables the port"
+    "correctIndex": 0,
+    "explanation": "Infrastructure as a Service (IaaS) provides on-demand access to a group of virtualized computing resources, such as servers, storage, and networking. Platform as a Service (PaaS) provides a development platform for building, deploying, and managing applications. A public cloud is a cloud computing service available openly, which means there is no need for it to be virtualized. A virtual private cloud (VPC) combines the scalability of public cloud services with the security of a private cloud environment.",
+    "domain": "1",
+    "source": "packt",
+    "objective": "1.3 Summarize cloud concepts and connectivity options."
   },
   {
     "id": "ntest3-q10",
     "kind": "multiple_choice",
-    "prompt": "What is the first step in the troubleshooting methodology?",
+    "prompt": "Which of the following is not an approach to forwarding messages between IPv4 and IPv6 networks?",
     "options": [
-      "Replace the cable",
-      "Identify the problem",
-      "Check the routing table",
-      "Reboot the device"
+      "Translation",
+      "Tunneling",
+      "Dual-Stack processes",
+      "ULA forwarding"
     ],
-    "correctIndex": 1,
-    "explanation": "Answer: Identify the problem"
+    "correctIndex": 3,
+    "explanation": "IPv6 to IPv4 translation converts IPv6 addresses into equivalent IPv4 addresses to allow communication between different IP protocols. IPv6 unique local addresses (ULA) are forwarded between VLANs configured to allow traffic from ULA addresses. IPv6 tunneling enables IPv6 hosts and routers to connect with other IPv6 hosts and routers over the existing IPv4 Internet. A dual-stack node has support for both IPv4 and IPv6. Dual-stack nodes can have three modes of operation: IPv4-only, IPv6-only, and IPv6/IPv4.",
+    "domain": "1",
+    "source": "packt",
+    "objective": "1.8 - IPv6 Tunneling and NAT64.docx"
   },
   {
     "id": "ntest3-q11",
     "kind": "multiple_choice",
-    "prompt": "Which protocol is connectionless and used primarily for streaming?",
+    "prompt": "Which one of the following is not a group defined by the IANA for TCP/UDP port assignments?",
     "options": [
-      "TCP",
-      "UDP",
-      "HTTP",
-      "FTP"
+      "Dynamic (Private or Ephemeral)",
+      "Unassigned",
+      "Registered",
+      "Well-known (System)"
     ],
     "correctIndex": 1,
-    "explanation": "Answer: UDP"
+    "explanation": "Dynamic, private, or ephemeral port numbers are in the range of 49152 to 65535 and are open and available for use. Registered ports are in the range of 1025 to 49151 and are assigned by the IANA. The IANA does not define an unassigned group, although there are unassigned ports within each of the defined groups. Well-known or system ports are from 0 to 1023 and are assigned to legacy protocols and services and proprietary protocols and services.",
+    "domain": "1",
+    "source": "packt",
+    "objective": "1.4 - Ports and Services"
   },
   {
     "id": "ntest3-q12",
     "kind": "multiple_choice",
-    "prompt": "What is the maximum length for a copper Ethernet cable run?",
+    "prompt": "Which one of the following is not an address type supported by IPv6?",
     "options": [
-      "50 meters",
-      "100 meters",
-      "200 meters",
-      "500 meters"
+      "Anycast",
+      "Unicast",
+      "Broadcast",
+      "Multicast"
     ],
-    "correctIndex": 1,
-    "explanation": "Answer: 100 meters"
+    "correctIndex": 2,
+    "explanation": "IPv6 does not support broadcast messaging.",
+    "domain": "1",
+    "source": "packt",
+    "objective": "1.4 Explain common networking ports, protocols, services, and traffic types"
   },
   {
     "id": "ntest3-q13",
     "kind": "multiple_choice",
-    "prompt": "Which metric measures variation in packet arrival time?",
+    "prompt": "Which one of the following is not an IPv6 tunneling protocol?",
     "options": [
-      "Bandwidth",
-      "Latency",
-      "Jitter",
-      "Packet loss"
+      "Torreador",
+      "GRE",
+      "ISATAP",
+      "6RD"
     ],
-    "correctIndex": 2,
-    "explanation": "Answer: Jitter"
+    "correctIndex": 0,
+    "explanation": "While there is a Teredo tunneling method, there isn’t a Torreador method. Generic Routing Encapsulation or GRE is a tunneling protocol that allows the encapsulation of IPv6 packets within IPv4 packets. Intra-Site Automatic Tunnel Addressing Protocol or ISATAP is a method used for transmitting IPv6 packets on an IPv4 network. It is defined in RFC 5214. IPv6 Rapid Deployment or 6rd facilitates IPv6 deployment across IPv4 networks.",
+    "domain": "1",
+    "source": "packt",
+    "objective": "1.8 - IPv6 Tunneling and NAT64.docx"
   },
   {
     "id": "ntest3-q14",
     "kind": "multiple_choice",
-    "prompt": "RADIUS uses which transport protocol?",
+    "prompt": "Which protocol is connectionless and used primarily for streaming?",
     "options": [
-      "TCP only",
-      "UDP only",
-      "Both TCP and UDP",
-      "ICMP"
+      "TCP",
+      "HTTP",
+      "FTP",
+      "UDP"
     ],
-    "correctIndex": 1,
-    "explanation": "Answer: UDP only"
+    "correctIndex": 3,
+    "explanation": "UDP is connectionless: it sends datagrams without a handshake, which suits streaming where a late packet is worse than a lost one. TCP adds reliability and ordering at the cost of that latency.",
+    "domain": "1",
+    "source": "openquiz-original"
   },
   {
     "id": "ntest3-q15",
     "kind": "multiple_choice",
-    "prompt": "A duplex mismatch occurs when?",
+    "prompt": "If a gateway router fails, any host configured with its address becomes isolated from any outside networks. Which of the following is a mechanism that provides alternate default gateways for a switched network on which there are two or more routers in the same VLANs?",
     "options": [
-      "Two devices use the same IP address",
-      "One device is full-duplex and the other is half-duplex",
-      "VLANs are misconfigured",
-      "DNS fails to resolve"
+      "APIPA address",
+      "FHRP protocols",
+      "DHCP",
+      "DNS"
     ],
     "correctIndex": 1,
-    "explanation": "Answer: One device is full-duplex and the other is half-duplex"
+    "explanation": "First Hop Routing Protocols (FHRPs) provide a failover redundant virtual gateway that is activated when the primary gateway router fails. Automatic Private IP Addressing (APIPA) allows devices to automatically assign themselves an IP address when they cannot obtain one from a DHCP server. Dynamic Host Configuration Protocol (DHCP) is a network management protocol that assigns IP configuration parameters to devices on a network. Domain Name System (DNS) is a distributed naming service that provides translation of domain names to IP addresses.",
+    "domain": "2",
+    "source": "packt",
+    "objective": "2.1 - FHRP.docx"
   },
   {
     "id": "ntest3-q16",
     "kind": "multiple_choice",
-    "prompt": "What is the purpose of ARP?",
+    "prompt": "An MIB is a collection of grouped objects that is managed by which one of the following protocols?",
     "options": [
-      "Resolve domain names to IP addresses",
-      "Resolve IP addresses to MAC addresses",
-      "Encrypt network traffic",
-      "Route packets between networks"
+      "SNMP",
+      "SMTP",
+      "TCP/IP",
+      "UDP"
     ],
-    "correctIndex": 1,
-    "explanation": "Answer: Resolve IP addresses to MAC addresses"
+    "correctIndex": 0,
+    "explanation": "Simple Mail Transfer Protocol (SMTP) is a protocol for sending emails over the internet. SNMP is an application layer protocol used to monitor and manage system and network devices on IP-based networks. TCP/IP is a protocol suite that includes many network function, control, and communication protocols, including SNMP. User Datagram Protocol (UDP) is a connectionless transfer protocol.",
+    "domain": "3",
+    "source": "packt",
+    "objective": "3.2 - Network Monitoring.docx"
   },
   {
     "id": "ntest3-q17",
     "kind": "multiple_choice",
-    "prompt": "CHAP uses what type of authentication?",
+    "prompt": "What is the process in which log data is collected and consolidated from multiple sources into a summary for analysis and troubleshooting?",
     "options": [
-      "Cleartext passwords",
-      "Challenge-Handshake with MD5",
-      "Public key infrastructure",
-      "Biometric"
+      "Automated pipelines",
+      "Log aggregation",
+      "File replication",
+      "Syslog centralization"
     ],
     "correctIndex": 1,
-    "explanation": "Answer: Challenge-Handshake with MD5"
+    "explanation": "Log aggregation collects, standardizes, and consolidates log data from an IT environment to facilitate log analysis.",
+    "domain": "3",
+    "source": "packt",
+    "objective": "3.2 Given a scenario, use network monitoring technologies"
   },
   {
     "id": "ntest3-q18",
@@ -226,77 +275,93 @@
     "prompt": "What is the purpose of a network baseline?",
     "options": [
       "Encrypt data",
-      "Establish normal performance for comparison",
       "Assign IP addresses",
+      "Establish normal performance for comparison",
       "Configure VLANs"
     ],
-    "correctIndex": 1,
-    "explanation": "Answer: Establish normal performance for comparison"
+    "correctIndex": 2,
+    "explanation": "A baseline records normal CPU, memory, bandwidth and error-rate levels so that later measurements can be compared against a known-good reference to isolate a change.",
+    "domain": "3",
+    "source": "openquiz-original"
   },
   {
     "id": "ntest3-q19",
     "kind": "multiple_choice",
-    "prompt": "Port security violation in shutdown mode does what?",
+    "prompt": "What is the term that is used interchangeably with “configuration management?”",
     "options": [
-      "Logs a message",
-      "Disables the port",
-      "Drops frames silently",
-      "Sends an email alert"
+      "System management",
+      "Device management",
+      "System control",
+      "Change management"
     ],
-    "correctIndex": 1,
-    "explanation": "Answer: Disables the port"
+    "correctIndex": 3,
+    "explanation": "Systems management is the enterprise-wide administration of distributed systems. Device management is a program for securing and maintaining an organization’s devices, including those that are virtual, physical, mobile, and IoT. Change management is the process of managing changes desired, approved, and applied to an organization’s systems. Configuration management is commonly referred to as change management. Systems control is the control and implementation of functions that prevent degradation of a system and respond to system necessary changes.",
+    "domain": "3",
+    "source": "packt",
+    "objective": "3.1 - Configuration Management.docx"
   },
   {
     "id": "ntest3-q20",
     "kind": "multiple_choice",
-    "prompt": "What is the first step in the troubleshooting methodology?",
+    "prompt": "What port is used by the Network Time Protocol (NTP)?",
     "options": [
-      "Replace the cable",
-      "Identify the problem",
-      "Check the routing table",
-      "Reboot the device"
+      "UDP 123",
+      "TCP 123",
+      "TCP 125",
+      "UDP 125"
     ],
-    "correctIndex": 1,
-    "explanation": "Answer: Identify the problem"
+    "correctIndex": 0,
+    "explanation": "While TCP port 123 is associated with it, NTP normally operates over UDP port 123 and using TCP for NTP is not a standard practice. TCP port 125 is an alternate to port 25 for SMTP. UDP port 123 is used by NTP to synchronize computer and device clocks over the internet. UDP port 125 is used by the Locus PC-Interface Net Map Service and may be used as an alternative to port 25 for sending emails.",
+    "domain": "3",
+    "source": "packt",
+    "objective": "3.4 Given a scenario, implement IPv4 and IPv6 network services"
   },
   {
     "id": "ntest3-q21",
     "kind": "multiple_choice",
-    "prompt": "Which protocol is connectionless and used primarily for streaming?",
+    "prompt": "Which of the following statements is not true concerning DNS?",
     "options": [
-      "TCP",
-      "UDP",
-      "HTTP",
-      "FTP"
+      "Multiple hostnames may be linked to a single IP address",
+      "A single hostname may be linked to multiple IP addresses",
+      "A single hostname may be linked to only a single IP address",
+      "Multiple hostnames and multiple IP addresses can be cross-linked"
     ],
-    "correctIndex": 1,
-    "explanation": "Answer: UDP"
+    "correctIndex": 2,
+    "explanation": "A single hostname can be liked to multiple IP addresses and vice versa.",
+    "domain": "3",
+    "source": "packt",
+    "objective": "3.4 Given a scenario, implement IPv4 and IPv6 network services"
   },
   {
     "id": "ntest3-q22",
     "kind": "multiple_choice",
-    "prompt": "What is the maximum length for a copper Ethernet cable run?",
+    "prompt": "CHAP uses what type of authentication?",
     "options": [
-      "50 meters",
-      "100 meters",
-      "200 meters",
-      "500 meters"
+      "Cleartext passwords",
+      "Challenge-Handshake with MD5",
+      "Public key infrastructure",
+      "Biometric"
     ],
     "correctIndex": 1,
-    "explanation": "Answer: 100 meters"
+    "explanation": "CHAP is a challenge-response protocol: the server issues a random challenge and the client returns an MD5 hash of it plus the shared secret, so the password never crosses the wire in cleartext.",
+    "domain": "4",
+    "source": "openquiz-original"
   },
   {
     "id": "ntest3-q23",
     "kind": "multiple_choice",
-    "prompt": "Which metric measures variation in packet arrival time?",
+    "prompt": "In what security stage is data stored on a non-volatile device?",
     "options": [
-      "Bandwidth",
-      "Latency",
-      "Jitter",
-      "Packet loss"
+      "Data in memory",
+      "Data in transit",
+      "Data in use",
+      "Data at rest"
     ],
-    "correctIndex": 2,
-    "explanation": "Answer: Jitter"
+    "correctIndex": 3,
+    "explanation": "Non-volatile storage devices, such as an HDD or SSD, is data at rest. Data in memory, another term for data in use, is on volatile storage. Data in transit is not physically stored, but is in motion. Data in use, like data in memory, is stored in volatile memory.",
+    "domain": "4",
+    "source": "packt",
+    "objective": "4.1 - Logical Security.docx"
   },
   {
     "id": "ntest3-q24",
@@ -304,349 +369,92 @@
     "prompt": "RADIUS uses which transport protocol?",
     "options": [
       "TCP only",
-      "UDP only",
       "Both TCP and UDP",
+      "UDP only",
       "ICMP"
     ],
-    "correctIndex": 1,
-    "explanation": "Answer: UDP only"
+    "correctIndex": 2,
+    "explanation": "RADIUS uses UDP, historically port 1812 (1813 for accounting). UDP keeps authentication fast, at the cost of RADIUS itself not encrypting the traffic - hence radsec over TLS.",
+    "domain": "4",
+    "source": "openquiz-original"
   },
   {
     "id": "ntest3-q25",
     "kind": "multiple_choice",
-    "prompt": "A duplex mismatch occurs when?",
+    "prompt": "What is the access control model that uses a set of predefined access privileges to system resources to a user?",
     "options": [
-      "Two devices use the same IP address",
-      "One device is full-duplex and the other is half-duplex",
-      "VLANs are misconfigured",
-      "DNS fails to resolve"
+      "MAC",
+      "DAC",
+      "RBAC",
+      "RuBAC"
     ],
-    "correctIndex": 1,
-    "explanation": "Answer: One device is full-duplex and the other is half-duplex"
+    "correctIndex": 0,
+    "explanation": "Discretionary access control allows a resource owner to assign access and use privileges to data and devices under that user’s control. Mandatory access control model is a static model that uses a predefined set of access privileges to files on the system. The permissions and rights granted to a user in the role-based access control model are based on the user’s role in an organization. The rule-based access control uses rules and limits, such as number of users accessing a resource, or the hours of access, to determine the rights and privileges of a user.",
+    "domain": "4",
+    "source": "packt",
+    "objective": "4.1 Explain the importance of basic network security concepts"
   },
   {
     "id": "ntest3-q26",
     "kind": "multiple_choice",
-    "prompt": "What is the purpose of ARP?",
+    "prompt": "What is the first step in the troubleshooting methodology?",
     "options": [
-      "Resolve domain names to IP addresses",
-      "Resolve IP addresses to MAC addresses",
-      "Encrypt network traffic",
-      "Route packets between networks"
+      "Replace the cable",
+      "Check the routing table",
+      "Reboot the device",
+      "Identify the problem"
     ],
-    "correctIndex": 1,
-    "explanation": "Answer: Resolve IP addresses to MAC addresses"
+    "correctIndex": 3,
+    "explanation": "CompTIA methodology: identify the problem, establish a theory, test the theory, establish a plan, verify full functionality, and document. Jumping straight to replacement skips the diagnosis.",
+    "domain": "5",
+    "source": "openquiz-original"
   },
   {
     "id": "ntest3-q27",
     "kind": "multiple_choice",
-    "prompt": "CHAP uses what type of authentication?",
+    "prompt": "When the total power required by all of the connected PoE devices exceeds the PoW switch’s capacity, what is the error that occurs?",
     "options": [
-      "Cleartext passwords",
-      "Challenge-Handshake with MD5",
-      "Public key infrastructure",
-      "Biometric"
+      "Poe Mode Mismatch",
+      "PoE Power budget exceeded",
+      "PoE PD reloads intermittently",
+      "PoE Switch Not Providing Power"
     ],
     "correctIndex": 1,
-    "explanation": "Answer: Challenge-Handshake with MD5"
+    "explanation": "PoE Power budget exceeded indicates that the number and power requirements of the PDs has exceeded the PoE switch’s capacity.",
+    "domain": "5",
+    "source": "packt",
+    "objective": "5.2 Given a scenario, troubleshoot common cabling and physical interface issues."
   },
   {
     "id": "ntest3-q28",
     "kind": "multiple_choice",
-    "prompt": "What is the purpose of a network baseline?",
+    "prompt": "Which of the following can cause a network cabling problem? (Choose one).  1. Physical damage - 2. Signal interference  - 3. Improper termination. - 4 Excessive cable length - 5. Improper installation",
     "options": [
-      "Encrypt data",
-      "Establish normal performance for comparison",
-      "Assign IP addresses",
-      "Configure VLANs"
+      "1, 4, and 5 only",
+      "2, 3, and 5 only",
+      "1, 2, 3, 4, and 5",
+      "2, 3, and 4 only"
     ],
-    "correctIndex": 1,
-    "explanation": "Answer: Establish normal performance for comparison"
+    "correctIndex": 2,
+    "explanation": "All five of the causes listed could cause a network cabling problem.",
+    "domain": "5",
+    "source": "packt",
+    "objective": "5.2 Given a scenario, troubleshoot common cabling and physical interface issues."
   },
   {
     "id": "ntest3-q29",
     "kind": "multiple_choice",
-    "prompt": "Port security violation in shutdown mode does what?",
+    "prompt": "Which of the following is the term for the nominal or rated amount of data that could be transmitted on a network medium?",
     "options": [
-      "Logs a message",
-      "Disables the port",
-      "Drops frames silently",
-      "Sends an email alert"
-    ],
-    "correctIndex": 1,
-    "explanation": "Answer: Disables the port"
-  },
-  {
-    "id": "ntest3-q30",
-    "kind": "multiple_choice",
-    "prompt": "What is the first step in the troubleshooting methodology?",
-    "options": [
-      "Replace the cable",
-      "Identify the problem",
-      "Check the routing table",
-      "Reboot the device"
-    ],
-    "correctIndex": 1,
-    "explanation": "Answer: Identify the problem"
-  },
-  {
-    "id": "ntest3-q31",
-    "kind": "multiple_choice",
-    "prompt": "Which protocol is connectionless and used primarily for streaming?",
-    "options": [
-      "TCP",
-      "UDP",
-      "HTTP",
-      "FTP"
-    ],
-    "correctIndex": 1,
-    "explanation": "Answer: UDP"
-  },
-  {
-    "id": "ntest3-q32",
-    "kind": "multiple_choice",
-    "prompt": "What is the maximum length for a copper Ethernet cable run?",
-    "options": [
-      "50 meters",
-      "100 meters",
-      "200 meters",
-      "500 meters"
-    ],
-    "correctIndex": 1,
-    "explanation": "Answer: 100 meters"
-  },
-  {
-    "id": "ntest3-q33",
-    "kind": "multiple_choice",
-    "prompt": "Which metric measures variation in packet arrival time?",
-    "options": [
+      "Throughput",
       "Bandwidth",
-      "Latency",
-      "Jitter",
-      "Packet loss"
+      "Data transfer speed",
+      "Frequency"
     ],
-    "correctIndex": 2,
-    "explanation": "Answer: Jitter"
-  },
-  {
-    "id": "ntest3-q34",
-    "kind": "multiple_choice",
-    "prompt": "RADIUS uses which transport protocol?",
-    "options": [
-      "TCP only",
-      "UDP only",
-      "Both TCP and UDP",
-      "ICMP"
-    ],
-    "correctIndex": 1,
-    "explanation": "Answer: UDP only"
-  },
-  {
-    "id": "ntest3-q35",
-    "kind": "multiple_choice",
-    "prompt": "A duplex mismatch occurs when?",
-    "options": [
-      "Two devices use the same IP address",
-      "One device is full-duplex and the other is half-duplex",
-      "VLANs are misconfigured",
-      "DNS fails to resolve"
-    ],
-    "correctIndex": 1,
-    "explanation": "Answer: One device is full-duplex and the other is half-duplex"
-  },
-  {
-    "id": "ntest3-q36",
-    "kind": "multiple_choice",
-    "prompt": "What is the purpose of ARP?",
-    "options": [
-      "Resolve domain names to IP addresses",
-      "Resolve IP addresses to MAC addresses",
-      "Encrypt network traffic",
-      "Route packets between networks"
-    ],
-    "correctIndex": 1,
-    "explanation": "Answer: Resolve IP addresses to MAC addresses"
-  },
-  {
-    "id": "ntest3-q37",
-    "kind": "multiple_choice",
-    "prompt": "CHAP uses what type of authentication?",
-    "options": [
-      "Cleartext passwords",
-      "Challenge-Handshake with MD5",
-      "Public key infrastructure",
-      "Biometric"
-    ],
-    "correctIndex": 1,
-    "explanation": "Answer: Challenge-Handshake with MD5"
-  },
-  {
-    "id": "ntest3-q38",
-    "kind": "multiple_choice",
-    "prompt": "What is the purpose of a network baseline?",
-    "options": [
-      "Encrypt data",
-      "Establish normal performance for comparison",
-      "Assign IP addresses",
-      "Configure VLANs"
-    ],
-    "correctIndex": 1,
-    "explanation": "Answer: Establish normal performance for comparison"
-  },
-  {
-    "id": "ntest3-q39",
-    "kind": "multiple_choice",
-    "prompt": "Port security violation in shutdown mode does what?",
-    "options": [
-      "Logs a message",
-      "Disables the port",
-      "Drops frames silently",
-      "Sends an email alert"
-    ],
-    "correctIndex": 1,
-    "explanation": "Answer: Disables the port"
-  },
-  {
-    "id": "ntest3-q40",
-    "kind": "multiple_choice",
-    "prompt": "What is the first step in the troubleshooting methodology?",
-    "options": [
-      "Replace the cable",
-      "Identify the problem",
-      "Check the routing table",
-      "Reboot the device"
-    ],
-    "correctIndex": 1,
-    "explanation": "Answer: Identify the problem"
-  },
-  {
-    "id": "ntest3-q41",
-    "kind": "multiple_choice",
-    "prompt": "Which protocol is connectionless and used primarily for streaming?",
-    "options": [
-      "TCP",
-      "UDP",
-      "HTTP",
-      "FTP"
-    ],
-    "correctIndex": 1,
-    "explanation": "Answer: UDP"
-  },
-  {
-    "id": "ntest3-q42",
-    "kind": "multiple_choice",
-    "prompt": "What is the maximum length for a copper Ethernet cable run?",
-    "options": [
-      "50 meters",
-      "100 meters",
-      "200 meters",
-      "500 meters"
-    ],
-    "correctIndex": 1,
-    "explanation": "Answer: 100 meters"
-  },
-  {
-    "id": "ntest3-q43",
-    "kind": "multiple_choice",
-    "prompt": "Which metric measures variation in packet arrival time?",
-    "options": [
-      "Bandwidth",
-      "Latency",
-      "Jitter",
-      "Packet loss"
-    ],
-    "correctIndex": 2,
-    "explanation": "Answer: Jitter"
-  },
-  {
-    "id": "ntest3-q44",
-    "kind": "multiple_choice",
-    "prompt": "RADIUS uses which transport protocol?",
-    "options": [
-      "TCP only",
-      "UDP only",
-      "Both TCP and UDP",
-      "ICMP"
-    ],
-    "correctIndex": 1,
-    "explanation": "Answer: UDP only"
-  },
-  {
-    "id": "ntest3-q45",
-    "kind": "multiple_choice",
-    "prompt": "A duplex mismatch occurs when?",
-    "options": [
-      "Two devices use the same IP address",
-      "One device is full-duplex and the other is half-duplex",
-      "VLANs are misconfigured",
-      "DNS fails to resolve"
-    ],
-    "correctIndex": 1,
-    "explanation": "Answer: One device is full-duplex and the other is half-duplex"
-  },
-  {
-    "id": "ntest3-q46",
-    "kind": "multiple_choice",
-    "prompt": "What is the purpose of ARP?",
-    "options": [
-      "Resolve domain names to IP addresses",
-      "Resolve IP addresses to MAC addresses",
-      "Encrypt network traffic",
-      "Route packets between networks"
-    ],
-    "correctIndex": 1,
-    "explanation": "Answer: Resolve IP addresses to MAC addresses"
-  },
-  {
-    "id": "ntest3-q47",
-    "kind": "multiple_choice",
-    "prompt": "CHAP uses what type of authentication?",
-    "options": [
-      "Cleartext passwords",
-      "Challenge-Handshake with MD5",
-      "Public key infrastructure",
-      "Biometric"
-    ],
-    "correctIndex": 1,
-    "explanation": "Answer: Challenge-Handshake with MD5"
-  },
-  {
-    "id": "ntest3-q48",
-    "kind": "multiple_choice",
-    "prompt": "What is the purpose of a network baseline?",
-    "options": [
-      "Encrypt data",
-      "Establish normal performance for comparison",
-      "Assign IP addresses",
-      "Configure VLANs"
-    ],
-    "correctIndex": 1,
-    "explanation": "Answer: Establish normal performance for comparison"
-  },
-  {
-    "id": "ntest3-q49",
-    "kind": "multiple_choice",
-    "prompt": "Port security violation in shutdown mode does what?",
-    "options": [
-      "Logs a message",
-      "Disables the port",
-      "Drops frames silently",
-      "Sends an email alert"
-    ],
-    "correctIndex": 1,
-    "explanation": "Answer: Disables the port"
-  },
-  {
-    "id": "ntest3-q50",
-    "kind": "multiple_choice",
-    "prompt": "What is the first step in the troubleshooting methodology?",
-    "options": [
-      "Replace the cable",
-      "Identify the problem",
-      "Check the routing table",
-      "Reboot the device"
-    ],
-    "correctIndex": 1,
-    "explanation": "Answer: Identify the problem"
+    "correctIndex": 0,
+    "explanation": "Bandwidth is the nominal amount of data that could be transmitted on a network medium. The data transfer speed is the rate at which data moves through a medium. Throughput is the actual amount of data transmitted on a medium. Frequency is the one of the electromagnetic wave ranges including those used for communications signals.",
+    "domain": "5",
+    "source": "packt",
+    "objective": "5.4 - Common Performance Issues.docx"
   }
 ]
