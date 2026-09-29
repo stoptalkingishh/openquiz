@@ -10,7 +10,8 @@
     "export": "next build",
     "start": "next start",
     "lint": "eslint . --cache=false",
-    "test": "vitest run"
+    "test": "vitest run",
+    "validate-content": "node scripts/validate-content.mjs"
   },
   "dependencies": {
     "@types/katex": "^0.16.7",
