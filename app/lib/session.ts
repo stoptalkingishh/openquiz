@@ -15,6 +15,21 @@ function escapeRegExp(value: string): string {
     return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
+function clozeSentence(source: string, word: Word): string {
+    const target = word.word.trim()
+    const example = source.trim()
+    if (example) {
+        const pattern = new RegExp(`\\b${escapeRegExp(target)}\\w*\\b`, 'gi')
+        if (pattern.test(example)) return example.replace(pattern, '_______')
+        if (/_{3,}/.test(example) && !example.toLocaleLowerCase().includes(target.toLocaleLowerCase())) {
+            return example
+        }
+    }
+    // Minimal word/definition imports have no example. Use the definition as
+    // the clue instead of displaying the answer as the entire sentence.
+    return `A word meaning "${word.ru.trim()}" is _______.`
+}
+
 function uniqueOptions(correct: string, distractors: string[]): string[] {
     const seen = new Set<string>()
     return [correct, ...distractors].filter(value => {
@@ -213,14 +228,7 @@ function makeRecallQuestion(word: Word): Question {
 
 function makeSimpleUsageQuestion(word: Word, allWords: Word[]): Question {
     const correctSentence = (Array.isArray(word.simple_examples) && word.simple_examples[0]) || ''
-    // Simple cloze: replace word with blank
-    let sentenceWithBlank
-    if (correctSentence) {
-        const parts = correctSentence.split(new RegExp(`\\b${escapeRegExp(word.word)}\\w*\\b`, 'i'))
-        sentenceWithBlank = parts.length > 1 ? parts.join('_______') : correctSentence.replace(word.word, '_______')
-    } else {
-        sentenceWithBlank = word.word
-    }
+    const sentenceWithBlank = clozeSentence(correctSentence, word)
 
     // Distractors: confusions + random
     const distractors = shuffle([
@@ -249,16 +257,7 @@ function makeSimpleUsageQuestion(word: Word, allWords: Word[]): Question {
 
 function makeSatClozeQuestion(word: Word, allWords: Word[]): Question {
     const correctSentence = word.advanced_example || (Array.isArray(word.simple_examples) && word.simple_examples[0]) || ''
-    // Regex to replace the word and its variations (e.g. contending, contended)
-    // For simplicity, we just look for the word stem or exact match if possible
-    let sentenceWithBlank: string
-    if (correctSentence) {
-        const regex = new RegExp(`\\b${escapeRegExp(word.word)}\\w*\\b`, 'i')
-        const replaced = correctSentence.replace(regex, '_______')
-        sentenceWithBlank = replaced === correctSentence ? correctSentence.replace(word.word, '_______') : replaced
-    } else {
-        sentenceWithBlank = word.word
-    }
+    const sentenceWithBlank = clozeSentence(correctSentence, word)
 
     const distractors = shuffle([
         ...(word.confusions || []),
@@ -601,5 +600,5 @@ export function buildTestSession(
         })
     })
 
-    return shuffle(built)
+    return shuffle(built).slice(0, limit)
 }

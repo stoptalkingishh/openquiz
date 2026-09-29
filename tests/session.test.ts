@@ -137,6 +137,27 @@ describe('buildSession', () => {
         const questions = buildSession('learn', words, {})
         expect(questions.every(q => q.word === 'cat')).toBe(true)
     })
+
+    it('uses a definition clue when imported vocabulary has no usable example', () => {
+        const minimal = word('eloquent', 'articulate and persuasive')
+        minimal.simple_examples = ['She gave a speech.']
+        const questions = buildSession('learn', [minimal], {})
+        const cloze = questions.filter(q => q.type === 'simple_usage' || q.type === 'sat_cloze')
+        expect(cloze).toHaveLength(2)
+        for (const question of cloze) {
+            expect(question.payload.sentence).toContain('_______')
+            expect(question.payload.sentence).not.toContain('eloquent')
+            expect(question.payload.sentence).toContain('articulate and persuasive')
+        }
+    })
+
+    it('blanks every appearance of the answer in an example', () => {
+        const repeated = word('eloquent', 'persuasive')
+        repeated.simple_examples = ['An eloquent speech made eloquent points.']
+        const questions = buildSession('learn', [repeated], {})
+        const usage = questions.find(q => q.type === 'simple_usage')!
+        expect(usage.payload.sentence).toBe('An _______ speech made _______ points.')
+    })
 })
 
 describe('buildTestSession', () => {
@@ -150,6 +171,14 @@ describe('buildTestSession', () => {
         const questions = buildTestSession(words, undefined, 100)
         expect(questions.map(q => q.type).sort()).toEqual(['generic_mc', 'generic_written'])
         expect(questions.every(q => q.word === 'cat')).toBe(true)
+    })
+
+    it('caps a vocabulary test at the requested number of questions', () => {
+        const words = Array.from({ length: 25 }, (_, i) => word(`term${i}`, `meaning${i}`))
+        const questions = buildTestSession(words, undefined, 20)
+        expect(questions).toHaveLength(20)
+        expect(questions.some(q => q.type === 'generic_mc')).toBe(true)
+        expect(questions.some(q => q.type === 'generic_written')).toBe(true)
     })
 })
 
