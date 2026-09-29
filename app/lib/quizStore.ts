@@ -17,3 +17,9 @@ export const useQuizStore = create<QuizStore>()(
         }
     )
 )
+
+/** A custom quiz path is private to the account that selected it. */
+export function clearPrivateQuizSelection() {
+    const { selectedQuizPath, setSelectedQuizPath } = useQuizStore.getState()
+    if (selectedQuizPath.startsWith('/custom-quiz/')) setSelectedQuizPath('/sat/1.json')
+}

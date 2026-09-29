@@ -10,6 +10,7 @@ import {
     DriveUser
 } from '../lib/drive'
 import { syncLocalToCloud } from '../lib/db'
+import { clearPrivateQuizSelection } from '../lib/quizStore'
 
 /**
  * Hybrid auth:
@@ -94,6 +95,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     .then(u => {
                         if (!mounted || transition.current !== generation) return
                         if (u) {
+                            if (u.id !== stored.id) clearPrivateQuizSelection()
                             setUser(u)
                         }
                         syncLocalToCloud().catch(() => { })
@@ -124,6 +126,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const generation = ++transition.current
         const driveUser = await signInToDrive()
         if (generation !== transition.current) return
+        if (user?.id !== driveUser.id) clearPrivateQuizSelection()
         setUser(driveUser)
         syncLocalToCloud().catch(() => { })
     }
@@ -135,6 +138,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Fall back to a fresh guest profile so the app keeps working.
         const guest = defaultGuest()
         writeGuest(guest)
+        if (user?.id !== guest.id) clearPrivateQuizSelection()
         setUser(guest)
     }
 
