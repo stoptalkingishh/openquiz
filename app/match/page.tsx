@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Timer, Trophy, RotateCcw, Gamepad2 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useQuizStore } from '../lib/quizStore'
-import { getCustomQuizById, getQuizSetByPath, recordQuizSession, loadOfficialQuiz } from '../lib/db'
+import { getCustomQuizById, getQuizSetByPath, recordQuizSession, recordDailyAnswer, loadOfficialQuiz } from '../lib/db'
 import { Word, QuizQuestion } from '../lib/satTypes'
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -72,6 +72,7 @@ export default function MatchPage() {
     const [seconds, setSeconds] = useState(0)
     const [finished, setFinished] = useState(false)
     const [quizMeta, setQuizMeta] = useState<{ id: string; name: string }>({ id: '', name: '' })
+    const runIdRef = useRef<string | null>(null)
     const totalPairs = useMemo(() => cards.length / 2, [cards])
     const matchedPairs = Object.keys(matched).length
     const isDone = totalPairs > 0 && matchedPairs === totalPairs
@@ -128,10 +129,20 @@ export default function MatchPage() {
         if (isDone && !finished) {
             setFinished(true)
             const elapsed = seconds
-            recordQuizSession(quizMeta.id, quizMeta.name, { correct: totalPairs, total: totalPairs, seconds: elapsed })
-                .catch(e => console.error('Failed to record match:', e))
+            if (!runIdRef.current) {
+                runIdRef.current = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+                    ? crypto.randomUUID()
+                    : `match-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+            }
+            const runId = runIdRef.current
+            Promise.all([
+                recordQuizSession(quizMeta.id, quizMeta.name, {
+                    correct: totalPairs, total: attempts, seconds: elapsed, id: runId
+                }),
+                user ? recordDailyAnswer(user.id, runId, attempts) : Promise.resolve()
+            ]).catch(e => console.error('Failed to record match:', e))
         }
-    }, [isDone, finished, seconds, totalPairs, quizMeta])
+    }, [isDone, finished, seconds, totalPairs, attempts, quizMeta, user])
 
     // Timer
     useEffect(() => {
@@ -185,6 +196,7 @@ export default function MatchPage() {
         setAttempts(0)
         setSeconds(0)
         setFinished(false)
+        runIdRef.current = null
     }
 
     const formatTime = (s: number) => {
@@ -299,7 +311,7 @@ export default function MatchPage() {
                                     {matchedPairs} pairs in {formatTime(seconds)}
                                 </p>
                                 <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-6">
-                                    {attempts} attempts · {totalPairs} points
+                                    {attempts} attempts · {Math.round((totalPairs / attempts) * 100)}% accuracy
                                 </p>
                                 <button onClick={handleRestart} className="btn-primary w-full flex items-center justify-center gap-2 mb-3">
                                     <RotateCcw className="w-4 h-4" />
