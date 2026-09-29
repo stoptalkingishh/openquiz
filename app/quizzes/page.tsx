@@ -1479,7 +1479,7 @@ Remember:
                                                     value={aiSettings.model}
                                                     onChange={(e) => setAiSettings({ ...aiSettings, model: e.target.value })}
                                                     className="input-field"
-                                                    placeholder="gemini-2.0-flash"
+                                                    placeholder="gemini-3.5-flash"
                                                 />
                                             </div>
                                         </>

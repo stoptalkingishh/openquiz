@@ -99,6 +99,13 @@ GAME_LOOP_IMPLEMENTATION.md
 SUPABASE_SETUP.md
 node-v20.10.0-darwin-x64/
 node.tar.gz
+
+# Local scratch: source material, notes, and one-off scripts
+tmp/
+logo-preview.html
+pr-*.md
+import-compita-questions.js
+compita-*.json
 *.json
 !package.json
 !package-lock.json

@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 const googleToken = vi.hoisted(() => ({ value: 'google-account-token' as string | null }))
 vi.mock('../app/lib/drive', () => ({ getDriveToken: () => Promise.resolve(googleToken.value) }))
-import { buildPlannedQuizPrompt, buildQuizRevisionPrompt, detectExistingQuizItems, generateQuizFromNotes, mergeGeneratedQuizItems, planQuizzesFromMaterial, type AiSettings } from '../app/lib/ai'
+import { buildPlannedQuizPrompt, buildQuizRevisionPrompt, detectExistingQuizItems, generateQuizFromNotes, mergeGeneratedQuizItems, planQuizzesFromMaterial, DEFAULT_GEMINI_MODEL, GEMINI_MODEL_FALLBACKS, type AiSettings } from '../app/lib/ai'
 
 const geminiSettings: AiSettings = {
     provider: 'gemini',
@@ -110,5 +110,64 @@ describe('Gemini quiz generation', () => {
     it('asks the user to sign in when no API key or Google token is available', async () => {
         googleToken.value = null
         await expect(generateQuizFromNotes('notes', { ...geminiSettings, apiKey: '' })).rejects.toThrow('Sign in with Google to use Gemini without an API key.')
+    })
+})
+
+// Google retires models on a schedule the app does not control, so a stored
+// model name can go stale between releases. These cover the behaviour that
+// turns a retirement into a slower request instead of a dead feature.
+describe('Gemini model retirement handling', () => {
+    const okBody = () => new Response(JSON.stringify({
+        candidates: [{ content: { parts: [{ text: JSON.stringify(generatedQuiz) }] } }]
+    }), { status: 200 })
+
+    const notFound = () => new Response(JSON.stringify({
+        error: { message: 'models/gemini-2.0-flash is not found for API version v1beta, or is not supported for generateContent.' }
+    }), { status: 404 })
+
+    it('falls back to the next supported model when the chosen one is retired', async () => {
+        const fetchMock = vi.fn()
+            .mockResolvedValueOnce(notFound())
+            .mockResolvedValueOnce(okBody())
+        vi.stubGlobal('fetch', fetchMock)
+
+        await expect(generateQuizFromNotes('notes', { ...geminiSettings, model: 'gemini-2.0-flash' }))
+            .resolves.toMatchObject({ questions: [expect.anything()] })
+
+        expect(fetchMock).toHaveBeenCalledTimes(2)
+        const [secondUrl] = fetchMock.mock.calls[1] as unknown as [string]
+        expect(secondUrl).toContain(encodeURIComponent(DEFAULT_GEMINI_MODEL))
+    })
+
+    it('tries every supported model before giving up', async () => {
+        const fetchMock = vi.fn(async () => notFound())
+        vi.stubGlobal('fetch', fetchMock)
+
+        await expect(generateQuizFromNotes('notes', { ...geminiSettings, model: 'gemini-2.0-flash' }))
+            .rejects.toThrow(/no longer available/i)
+
+        // The retired choice plus each supported fallback.
+        expect(fetchMock).toHaveBeenCalledTimes(GEMINI_MODEL_FALLBACKS.length + 1)
+    })
+
+    it('does not fall back on an error that is not about the model', async () => {
+        const fetchMock = vi.fn(async () => new Response(JSON.stringify({
+            error: { message: 'API key not valid' }
+        }), { status: 403 }))
+        vi.stubGlobal('fetch', fetchMock)
+
+        await expect(generateQuizFromNotes('notes', geminiSettings)).rejects.toThrow(/API key/i)
+        // A rejected key would fail identically on every candidate.
+        expect(fetchMock).toHaveBeenCalledTimes(1)
+    })
+
+    it('keeps a newer model the visitor chose instead of overriding it', async () => {
+        const fetchMock = vi.fn(async () => okBody())
+        vi.stubGlobal('fetch', fetchMock)
+
+        await expect(generateQuizFromNotes('notes', { ...geminiSettings, model: 'gemini-9.9-flash' }))
+            .resolves.toMatchObject({ questions: [expect.anything()] })
+        const [url] = fetchMock.mock.calls[0] as unknown as [string]
+        expect(url).toContain(encodeURIComponent('gemini-9.9-flash'))
     })
 })
