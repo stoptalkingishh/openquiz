@@ -89,13 +89,22 @@ describe('analytics consent', () => {
         expect(dom.window.dataLayer).toHaveLength(2)
     })
 
-    it('does not load analytics when no measurement id is configured', () => {
+    it('does not load analytics when the id resolves to empty', () => {
+        // A build with no configured id must not request anything, so the
+        // no-op path is still guarded even though the shipped default is set.
         vi.stubEnv('NEXT_PUBLIC_GA_MEASUREMENT_ID', '')
-        expect(analyticsMeasurementId()).toBe('')
-        expect(shouldLoadAnalytics('granted')).toBe(false)
+        expect(shouldLoadAnalytics('granted', '')).toBe(false)
         const dom = fakeDom()
         expect(loadAnalytics('granted', '', dom)).toBe(false)
         expect(dom.appended).toHaveLength(0)
+    })
+
+    it('falls back to the shipped measurement id when none is configured', () => {
+        // The gate has to govern the analytics that actually ships, so the
+        // project property is retained as the default rather than silently
+        // disabling analytics on builds that omit the variable.
+        vi.stubEnv('NEXT_PUBLIC_GA_MEASUREMENT_ID', '')
+        expect(analyticsMeasurementId()).toBe('G-G0MB0JNRD4')
     })
 
     it('persists the choice so the prompt is not shown again', () => {
