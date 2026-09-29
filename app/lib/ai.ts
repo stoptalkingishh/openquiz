@@ -15,7 +15,46 @@ export interface AiSettings {
 const AI_SETTINGS_KEY = 'oquiz:ai_settings'
 
 export const DEFAULT_OPENAI_MODEL = 'gpt-4o-mini'
-export const DEFAULT_GEMINI_MODEL = 'gemini-2.0-flash'
+
+/**
+ * Gemini models to try, most-preferred first.
+ *
+ * Google retires models on a schedule we do not control: `gemini-2.0-flash`
+ * was shut down on 1 June 2026, and a model released today can be retired in
+ * under two months, because short-lived releases are cut 45 days after a
+ * replacement ships. Hardcoding one name means a scheduled outage later.
+ *
+ * The order encodes Google's own retirement guidance rather than "newest
+ * wins": long-lived models first, because they are the ones actually
+ * supported, with the short-lived releases behind them as a fallback.
+ *
+ *   gemini-3.5-flash      released 2026-05-19, supported to 2027-05-19+
+ *   gemini-3.5-flash-lite released 2026-07-21, supported to 2027-07-21+
+ *   gemini-3.1-flash-lite released 2026-05-07, supported to 2027-05-07+
+ *
+ * When the preferred model is gone, `generateRawWithGemini` walks down this
+ * list and reports which one it settled on, so a retirement degrades to a
+ * slower request instead of a dead feature.
+ */
+export const GEMINI_MODEL_FALLBACKS: readonly string[] = [
+    'gemini-3.5-flash',
+    'gemini-3.5-flash-lite',
+    'gemini-3.1-flash-lite'
+]
+
+export const DEFAULT_GEMINI_MODEL = GEMINI_MODEL_FALLBACKS[0]
+
+/**
+ * Models that Google has already retired. A stored preference for one of
+ * these is migrated forward on load instead of failing on first use.
+ */
+const RETIRED_GEMINI_MODELS: ReadonlySet<string> = new Set([
+    'gemini-1.0-pro',
+    'gemini-1.5-flash',
+    'gemini-1.5-pro',
+    'gemini-2.0-flash',
+    'gemini-2.0-flash-lite'
+])
 
 const DEFAULT_SETTINGS: AiSettings = {
     provider: 'openai',
@@ -43,11 +82,21 @@ function writeJson(key: string, value: unknown) {
 
 export function getAiSettings(): AiSettings {
     const stored = readJson<Partial<AiSettings>>(AI_SETTINGS_KEY, {})
+    const provider = stored.provider === 'gemini' ? 'gemini' : 'openai'
+    const fallbackModel = provider === 'gemini' ? DEFAULT_GEMINI_MODEL : DEFAULT_SETTINGS.model
+    // Move a stored preference forward when it names a model Google has
+    // already retired, or when it belongs to the other provider. Otherwise the
+    // visitor keeps whatever they chose, including a newer model than our
+    // default, which we must not override.
+    const storedModel = stored.model
+    const unusable = !storedModel
+        || RETIRED_GEMINI_MODELS.has(storedModel)
+        || (provider === 'gemini' && storedModel === DEFAULT_SETTINGS.model)
     return {
-        provider: stored.provider === 'gemini' ? 'gemini' : 'openai',
+        provider,
         apiKey: stored.apiKey || DEFAULT_SETTINGS.apiKey,
         baseUrl: stored.baseUrl || DEFAULT_SETTINGS.baseUrl,
-        model: stored.model || (stored.provider === 'gemini' ? DEFAULT_GEMINI_MODEL : DEFAULT_SETTINGS.model)
+        model: unusable ? fallbackModel : storedModel
     }
 }
 
@@ -282,7 +331,6 @@ async function generateRawWithGemini(notes: string, s: AiSettings, systemPrompt:
     const token = usingGoogleAccount ? await getDriveToken() : ''
     if (usingGoogleAccount && !token) throw new Error('Sign in with Google to use Gemini without an API key.')
 
-    const model = s.model || DEFAULT_GEMINI_MODEL
     const headers: Record<string, string> = {
         'Content-Type': 'application/json'
     }
@@ -292,20 +340,50 @@ async function generateRawWithGemini(notes: string, s: AiSettings, systemPrompt:
         if (projectId) headers['x-goog-user-project'] = projectId
     } else headers['x-goog-api-key'] = s.apiKey.trim()
 
-    let res: Response
-    try {
-        res = await fetchWithRetry(() => fetch(`${GEMINI_ENDPOINT}/${encodeURIComponent(model)}:generateContent`, {
-            signal: AbortSignal.timeout(60000),
-            method: 'POST',
-            headers,
-            body: JSON.stringify({
-                systemInstruction: { parts: [{ text: systemPrompt }] },
-                contents: [{ role: 'user', parts: [{ text: notes }] }],
-                generationConfig: { responseMimeType: 'application/json' }
-            })
-        }), GEMINI_MAX_ATTEMPTS)
-    } catch {
-        throw new Error('Could not reach Google Gemini. Check your connection.')
+    // The visitor's choice first, then our supported list. A model that Google
+    // has retired answers 404, so a miss is retried against the next candidate
+    // rather than surfaced as a dead feature.
+    const requested = s.model || DEFAULT_GEMINI_MODEL
+    const candidates = [requested, ...GEMINI_MODEL_FALLBACKS.filter(m => m !== requested)]
+
+    let res: Response | null = null
+    let model = requested
+    for (const candidate of candidates) {
+        try {
+            res = await fetchWithRetry(() => fetch(`${GEMINI_ENDPOINT}/${encodeURIComponent(candidate)}:generateContent`, {
+                signal: AbortSignal.timeout(60000),
+                method: 'POST',
+                headers,
+                body: JSON.stringify({
+                    systemInstruction: { parts: [{ text: systemPrompt }] },
+                    contents: [{ role: 'user', parts: [{ text: notes }] }],
+                    generationConfig: { responseMimeType: 'application/json' }
+                })
+            }), GEMINI_MAX_ATTEMPTS)
+        } catch {
+            throw new Error('Could not reach Google Gemini. Check your connection.')
+        }
+
+        if (res.ok) {
+            model = candidate
+            break
+        }
+
+        // 404 means the model is gone; 400 with a not-found detail means the
+        // same thing. Anything else is a real error worth reporting.
+        const detail = await readApiError(res.clone())
+        if (res.status === 404 || /not found|is not found|does not exist/i.test(detail)) {
+            res = null
+            continue
+        }
+        break
+    }
+
+    if (!res) {
+        throw new Error(
+            'The selected Gemini model is no longer available, and none of the supported fallbacks responded. '
+            + 'Set a current model in AI settings.'
+        )
     }
 
     if (!res.ok) {
