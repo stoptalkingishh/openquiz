@@ -303,6 +303,158 @@ export function parseOfficialQuiz(items: unknown): { words: Word[]; questions: Q
 // Custom quizzes
 // ---------------------------------------------------------------------------
 
+// Quiz records carry an optional `updatedAt` revision (ms epoch). It is
+// optional so records written by older builds still load: they are treated as
+// having no revision yet. `lineage` lists the revisions this record was edited
+// from, which is what separates "the remote copy is simply an older version of
+// my edit" from "the remote copy is a concurrent edit on another device".
+
+const CONFLICT_COPY_LABEL = ' (conflict copy)'
+const MAX_LINEAGE = 10
+
+let lastIssuedRevision = 0
+
+/**
+ * A strictly increasing revision stamp. Two edits landing in the same
+ * millisecond must still be orderable, otherwise the newer one looks like a
+ * concurrent edit and spawns a bogus conflict copy.
+ */
+function issueRevision(): number {
+    const now = Date.now()
+    lastIssuedRevision = now > lastIssuedRevision ? now : lastIssuedRevision + 1
+    return lastIssuedRevision
+}
+
+// 0 means "no revision recorded" (a record from a build without revisions).
+function quizRevision(quiz: any): number {
+    const value = Number(quiz?.updatedAt)
+    return Number.isFinite(value) && value > 0 ? value : 0
+}
+
+function quizLineage(quiz: any): number[] {
+    return Array.isArray(quiz?.lineage) ? quiz.lineage.filter((n: any) => Number.isFinite(n)) : []
+}
+
+function extendsLineage(quiz: any, revision: number): boolean {
+    return revision > 0 && quizLineage(quiz).includes(revision)
+}
+
+// Revision stamps are not part of a quiz's content, so records that differ only
+// in them are the same version (e.g. a legacy local copy of a freshly synced
+// remote record) and must not be reported as a conflict.
+function sameQuizContent(a: any, b: any): boolean {
+    const strip = (q: any) => {
+        const { updatedAt, lineage, ...rest } = q || {}
+        return JSON.stringify(rest)
+    }
+    return strip(a) === strip(b)
+}
+
+/**
+ * Resolve the local and remote copies of one quiz id. Returns the record that
+ * wins plus, when the two sides are genuinely divergent, the record that lost.
+ *
+ * A conflict is reported only when the remote revision is not an ancestor of
+ * the local record and vice versa — i.e. neither side can be read as a later
+ * version of the other. That keeps a failed cloud write (remote still holds the
+ * revision this edit was made from) out of the conflict path, so the newer
+ * local edit simply wins.
+ */
+function splitByRevision(local: any, remote: any): { winner?: any; loser?: any } {
+    if (!local) return { winner: remote }
+    if (!remote) return { winner: local }
+    const localRevision = quizRevision(local)
+    const remoteRevision = quizRevision(remote)
+    if (localRevision === remoteRevision) return { winner: local }
+    if (!localRevision) {
+        return sameQuizContent(local, remote)
+            ? { winner: remote }
+            : { winner: remote, loser: local }
+    }
+    if (!remoteRevision) {
+        return sameQuizContent(local, remote)
+            ? { winner: local }
+            : { winner: local, loser: remote }
+    }
+    // One side descends from the other, so the newer one is simply the newer one.
+    if (extendsLineage(local, remoteRevision)) return { winner: local }
+    if (extendsLineage(remote, localRevision)) return { winner: remote }
+    return localRevision > remoteRevision
+        ? { winner: local, loser: remote }
+        : { winner: remote, loser: local }
+}
+
+function makeConflictCopy(loser: any, usedIds: Set<string>): any {
+    const revision = quizRevision(loser)
+    let id = `${loser.id}-conflict-${revision}`
+    let n = 1
+    while (usedIds.has(id)) id = `${loser.id}-conflict-${revision}-${n++}`
+    usedIds.add(id)
+    // The copy keeps the loser's own revision so it stays recognisable as the
+    // preserved version of that edit.
+    return { ...loser, id, name: `${loser.name ?? 'Quiz'}${CONFLICT_COPY_LABEL}`, conflict_of: loser.id }
+}
+
+/**
+ * Merge a local quiz snapshot with the Drive copy, newest revision per id
+ * winning. Divergent records are never dropped: the losing version is returned
+ * in `conflicts` as a clearly-named duplicate for the caller to persist.
+ */
+function reconcileQuizzes(localList: any[], remoteList: any[]): { quizzes: any[]; conflicts: any[] } {
+    const local = Array.isArray(localList) ? localList : []
+    const remote = Array.isArray(remoteList) ? remoteList : []
+
+    const remoteById = new Map<string, any>()
+    const usedIds = new Set<string>()
+    for (const record of [...local, ...remote]) {
+        if (typeof record?.id !== 'string') continue
+        usedIds.add(record.id)
+        remoteById.set(record.id, record)
+    }
+
+    // A conflict copy that already exists (locally or on Drive) means the
+    // divergence was already dealt with; re-reading it must not pile up copies.
+    const preserved = new Set<string>()
+    for (const record of [...local, ...remote]) {
+        if (record?.conflict_of) preserved.add(`${record.conflict_of}:${quizRevision(record)}`)
+    }
+
+    const quizzes: any[] = []
+    const conflicts: any[] = []
+    const claimed = new Set<string>()
+
+    for (const record of local) {
+        const id = typeof record?.id === 'string' ? record.id : ''
+        const { winner, loser } = splitByRevision(record, id ? remoteById.get(id) : undefined)
+        if (winner) quizzes.push(winner)
+        if (loser) {
+            const copy = makeConflictCopy(loser, usedIds)
+            const key = `${copy.conflict_of}:${quizRevision(copy)}`
+            if (!preserved.has(key)) {
+                preserved.add(key)
+                conflicts.push(copy)
+            }
+        }
+        if (id) claimed.add(id)
+    }
+
+    for (const record of remote) {
+        const id = typeof record?.id === 'string' ? record.id : ''
+        if (!id || !claimed.has(id)) quizzes.push(record)
+    }
+
+    return { quizzes: [...quizzes, ...conflicts], conflicts }
+}
+
+// Conflict copies must survive a reload, otherwise every read rediscovers the
+// same divergence. Only the new copies are appended; the rest of the local
+// snapshot is left exactly as it was, so a read stays side-effect free.
+function persistConflictCopies(local: any[], conflicts: any[]) {
+    if (!conflicts.length) return
+    try { writeJson(CUSTOM_QUIZZES_KEY, [...local, ...conflicts]) }
+    catch { /* Storage full: the copies are still returned to the caller. */ }
+}
+
 export async function getCustomQuizzes(userId: string) {
     if (userId !== currentAccountId()) return []
     const local = readJson<any[]>(CUSTOM_QUIZZES_KEY, [])
@@ -310,7 +462,11 @@ export async function getCustomQuizzes(userId: string) {
 
     if (isCloudActive()) {
         const remote = await readForDisplay<any[]>(CUSTOM_QUIZZES_FILE)
-        if (remote) return withoutDeleted('quizzes', [...local, ...remote.filter(q => !local.some(l => l.id === q.id))])
+        if (remote) {
+            const { quizzes, conflicts } = reconcileQuizzes(local, remote)
+            persistConflictCopies(local, conflicts)
+            return withoutDeleted('quizzes', quizzes)
+        }
     }
 
     return local
@@ -332,15 +488,22 @@ export async function getCustomQuizById(quizId: string) {
     const owner = currentAccountId()
     if (!withoutDeleted('quizzes', [{ id: quizId }]).length) return null
     const local = readJson<any[]>(CUSTOM_QUIZZES_KEY, [])
-        .find(q => q.id === quizId) || null
+    const localQuiz = local.find(q => q.id === quizId) || null
 
     if (isCloudActive()) {
         const remote = await readForDisplay<any[]>(CUSTOM_QUIZZES_FILE)
-        const remoteQuiz = (remote || []).find(q => q.id === quizId)
-        if (remoteQuiz) return resolveLinkedQuiz(remoteQuiz, owner)
+        const remoteQuiz = (remote || []).find(q => q.id === quizId) || null
+        // Resolve by revision first, so a stale remote copy can never displace a
+        // newer local edit, then resolve any Drive link on the winning version.
+        const { quizzes, conflicts } = reconcileQuizzes(
+            localQuiz ? [localQuiz] : [],
+            remoteQuiz ? [remoteQuiz] : []
+        )
+        persistConflictCopies(local, conflicts)
+        if (quizzes.length) return resolveLinkedQuiz(quizzes[0], owner)
     }
 
-    return resolveLinkedQuiz(local, owner)
+    return resolveLinkedQuiz(localQuiz, owner)
 }
 
 async function resolveLinkedQuiz(quiz: CustomQuiz | null, owner: string) {
@@ -769,7 +932,8 @@ export async function createCustomQuiz(
             drive_source: driveSource,
             is_public: isPublic,
             author_name: authorName || null,
-            created_at: new Date().toISOString()
+            created_at: new Date().toISOString(),
+            updatedAt: issueRevision()
         }
 
         const all = readJson<any[]>(CUSTOM_QUIZZES_KEY, [])
@@ -783,8 +947,9 @@ export async function createCustomQuiz(
         if (isCloudActive()) {
             try {
                 const remote = (await readDriveFile<any[]>(CUSTOM_QUIZZES_FILE)) || []
-                remote.unshift(quiz)
-                await writeDriveFile(CUSTOM_QUIZZES_FILE, remote)
+                const { quizzes, conflicts } = reconcileQuizzes(all, remote)
+                persistConflictCopies(all, conflicts)
+                await writeDriveFile(CUSTOM_QUIZZES_FILE, quizzes)
             } catch { /* Local save succeeded; SyncNotice provides cloud retry. */ }
         }
 
@@ -792,6 +957,16 @@ export async function createCustomQuiz(
     })
 }
 
+/**
+ * Apply a local edit to a quiz and stamp it with a new revision plus the
+ * revision it was edited from. The edit is written locally before the cloud
+ * write is attempted, so a failed upload leaves the newer record in place
+ * instead of losing it, and the read path can still prove the remote copy is
+ * simply an older version of the same quiz.
+ *
+ * When the two sides are genuinely divergent the losing version is kept as a
+ * conflict copy instead of being overwritten.
+ */
 export async function updateCustomQuiz(
     quizId: string,
     changes: Pick<CustomQuiz, 'name' | 'description' | 'tags' | 'words' | 'questions' | 'is_public' | 'ai_source_prompt'>
@@ -813,18 +988,24 @@ export async function updateCustomQuiz(
             words: Array.isArray(changes.words) ? changes.words : [],
             questions: Array.isArray(changes.questions) && changes.questions.length ? changes.questions : undefined,
             ai_source_prompt: String(changes.ai_source_prompt || '').trim() || undefined,
-            is_public: Boolean(changes.is_public)
+            is_public: Boolean(changes.is_public),
+            // Stamp the edit with a new revision plus the revision it was
+            // derived from, so the read path can later tell "older version of
+            // the same quiz" apart from a genuine two-device conflict.
+            updatedAt: issueRevision(),
+            lineage: [...quizLineage(all[index]), quizRevision(all[index])].filter(Boolean).slice(-MAX_LINEAGE)
         }
         all[index] = updated
         writeJson(CUSTOM_QUIZZES_KEY, all)
 
         if (isCloudActive()) {
             try {
-                const remote = (await readDriveFile<CustomQuiz[]>(CUSTOM_QUIZZES_FILE)) || []
-                const remoteIndex = remote.findIndex(quiz => quiz.id === quizId)
-                if (remoteIndex >= 0) remote[remoteIndex] = updated
-                else remote.unshift(updated)
-                await writeDriveFile(CUSTOM_QUIZZES_FILE, remote)
+                const remote = (await readDriveFile<any[]>(CUSTOM_QUIZZES_FILE)) || []
+                // Reconcile rather than blind-overwrite, so a divergent edit
+                // from another device is preserved instead of clobbered.
+                const { quizzes, conflicts } = reconcileQuizzes(all, remote)
+                persistConflictCopies(all, conflicts)
+                await writeDriveFile(CUSTOM_QUIZZES_FILE, quizzes)
             } catch { /* Local save succeeded; SyncNotice provides cloud retry. */ }
         }
         return updated
@@ -1197,7 +1378,7 @@ export async function syncLocalToCloud(): Promise<boolean> {
             const remoteStats = await readDriveFile<Record<string, any>>(DAILY_STATS_FILE) || {}
             const remoteFolders = await readDriveFile<Folder[]>(FOLDERS_FILE) || []
             const remoteQuizStats = await readDriveFile<Record<string, QuizStats>>(QUIZ_STATS_FILE) || {}
-            const mergedQuizzes = withoutDeleted('quizzes', [...localQuizzes, ...remoteQuizzes.filter(q => !localQuizzes.some(l => l.id === q.id))])
+            const mergedQuizzes = withoutDeleted('quizzes', reconcileQuizzes(localQuizzes, remoteQuizzes).quizzes)
             const mergedProgress = mergeProgress(localProgress, remoteProgress)
             const mergedStats = { ...remoteStats }
             for (const [key, value] of Object.entries(localStats)) {

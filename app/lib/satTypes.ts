@@ -201,6 +201,19 @@ export interface CustomQuiz {
   is_public: boolean;
   author_name: string | null;
   created_at: string;
+  /**
+   * Monotonic ms-epoch revision stamped on every edit, used to reconcile this
+   * record against the Drive copy. Absent on records written before revision
+   * tracking existed, which are treated as having no revision yet.
+   */
+  updatedAt?: number;
+  /**
+   * The most recent revisions this record was edited from, oldest first. Lets
+   * the sync path distinguish "the remote copy is simply an older version of
+   * this same quiz" from "two devices genuinely diverged", so a failed upload
+   * followed by a read does not manufacture a conflict copy.
+   */
+  lineage?: number[];
 }
 
 // ---------------------------------------------------------------------------
