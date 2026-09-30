@@ -33,7 +33,7 @@ Preparing for the SAT or language exams is hard enough. Existing tools are often
 - **🔁 SM-2-lite Spaced Repetition** — self-rate every card **Again / Hard / Good / Easy**; the scheduler decides when each word comes back.
 - **📊 Analytics & Streaks** — day streak, daily answer goal, session count, accuracy, weakest words, and a 90-day activity heatmap.
 - **🗂 Organization** — folders for your custom quizzes, taggable quizzes, and a searchable word library.
-- **🌍 Community Hub** — official sets and public quizzes with category filters and search.
+- **🌍 Community Hub** — browse official sets, manage quizzes you have marked for sharing, and open a shared quiz by link or Google Drive.
 - **🧩 Cloze Deletion** — Anki-style `{{c1::word}}` cards become written-answer questions.
 - **📥 Import / 📤 Export** — create quizzes from **JSON or CSV**, back up quizzes + progress as JSON, export vocabulary as CSV.
 - **🤖 AI Quiz Generation** — paste your notes and generate a quiz with your *own* AI API key.
@@ -89,13 +89,13 @@ The Home screen shows a daily answer goal, answers today, and lifetime mastered 
 - **Folders** (Quizzes page) — group your custom quizzes into named folders.
 - **Tags** — attach comma-separated tags when creating a quiz; search matches name, description, *and* tags.
 - **Library** — a searchable word library over official + custom vocabulary, filterable by `new` / `learning` / `mastered`, with per-word details.
-- **Community** — browse official sets and community-shared public quizzes with **category filters** and **search** (name, description, category, author). Study official sets instantly or import a community quiz to make it yours.
+- **Community** — browse official sets with **category filters** and **search**, and manage your own sharing list. Marking a custom quiz for sharing does not publish it to a public directory; send a link or JSON file to a recipient, or grant access to a separate Google Drive publication.
 
 ### Bundled official content
 
 - **SAT Vocabulary** — Set 1, Set 2, and Archaic & Literary words.
 - **CompTIA Security+ (SY0-701)** — 3 practice tests, a 100-question final exam, and topic flashcards (fundamentals, physical & deception, threats & attacks, crypto & PKI, incident response & compliance).
-- **CompTIA Network+ (N10-009)** — 3 practice tests, a 100-question final exam, and topic flashcards (networking concepts, network implementation, network operations, network security, network troubleshooting).
+- **CompTIA Network+ (N10-009)** — 3 practice tests with 30, 29, and 29 questions, an 88-question cumulative final, and topic flashcards (networking concepts, network implementation, network operations, network security, network troubleshooting). The current exam pool is uneven across domains; see [question provenance](public/netplus/PROVENANCE.md) for its distribution and source limitations.
 - Question-shaped sets run through every mode, including Test (multiple choice / true / false) and Match.
 
 ---
