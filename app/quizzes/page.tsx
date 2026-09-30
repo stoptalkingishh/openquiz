@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, Sparkles, BookOpen, Check, Users, Play, Globe, Lock, Share2, Copy, Twitter, Facebook, MessageCircle, X, Folder, FolderPlus, FolderOpen, Gamepad2, ClipboardList, Trash2, ChevronDown, Search, Pencil, Layers } from 'lucide-react'
 import BottomNav from '../components/BottomNav'
+import Dialog from '../components/Dialog'
 import { useAuth } from '../contexts/AuthContext'
 import { combineCustomQuizQuestions, getQuizSets, getCustomQuizById, getCustomQuizzes, getPublicQuizzes, createCustomQuiz, getFolders, createFolder, normalizeImportedQuizItems, validateQuizJSON, deleteCustomQuiz, csvToWords, delimitedToWords } from '../lib/db'
 import { buildShareData, downloadSharedQuiz } from '../lib/share'
@@ -623,50 +624,35 @@ export default function QuizzesPage() {
                     />
                 )}
                 {confirmDelete && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            onClick={() => setConfirmDelete(null)}
-                            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-                        />
-                        <motion.div
-                            initial={{ scale: 0.9, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.9, opacity: 0 }}
-                            className="bg-white dark:bg-surface-dark rounded-3xl p-6 shadow-2xl relative z-10 max-w-sm w-full"
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className="w-12 h-12 bg-error/10 dark:bg-error/20 rounded-full flex items-center justify-center">
-                                    <Trash2 className="w-6 h-6 text-error" />
-                                </div>
-                                <div>
-                                    <h3 className="font-bold text-lg text-neutral-900 dark:text-neutral-100">
-                                        Delete Quiz?
-                                    </h3>
-                                    <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                                        &ldquo;{confirmDelete.name}&rdquo; will be permanently removed.
-                                    </p>
-                                </div>
+                    <Dialog
+                        open
+                        onClose={() => setConfirmDelete(null)}
+                        title="Delete Quiz?"
+                        className="max-w-sm"
+                    >
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-12 h-12 bg-error/10 dark:bg-error/20 rounded-full flex items-center justify-center">
+                                <Trash2 className="w-6 h-6 text-error" />
                             </div>
-                            <div className="flex gap-3">
-                                <button
-                                    onClick={() => setConfirmDelete(null)}
-                                    className="flex-1 py-3 px-4 bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 rounded-xl font-semibold hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={() => handleDelete(confirmDelete)}
-                                    className="flex-1 py-3 px-4 bg-error text-white rounded-xl font-semibold hover:bg-error/90 transition-colors"
-                                >
-                                    Delete
-                                </button>
-                            </div>
-                        </motion.div>
-                    </div>
+                            <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                                &ldquo;{confirmDelete.name}&rdquo; will be permanently removed.
+                            </p>
+                        </div>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setConfirmDelete(null)}
+                                className="flex-1 py-3 px-4 bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 rounded-xl font-semibold hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => handleDelete(confirmDelete)}
+                                className="flex-1 py-3 px-4 bg-error text-white rounded-xl font-semibold hover:bg-error/90 transition-colors"
+                            >
+                                Delete
+                            </button>
+                        </div>
+                    </Dialog>
                 )}
             </AnimatePresence>
 
@@ -704,48 +690,37 @@ function CreateFolderModal({ onClose, onCreated }: { onClose: () => void; onCrea
     }
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={onClose}
-                className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        <Dialog
+            open
+            onClose={onClose}
+            title="New Folder"
+            className="max-w-sm"
+        >
+            <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleCreate() }}
+                className="input-field mb-4"
+                placeholder="e.g., SAT Vocab, Biology, Spanish"
+                autoFocus
             />
-            <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.9, opacity: 0 }}
-                className="bg-white dark:bg-surface-dark rounded-3xl p-6 shadow-2xl relative z-10 max-w-sm w-full"
-                onClick={(e) => e.stopPropagation()}
-            >
-                <h2 className="text-xl font-bold mb-4">New Folder</h2>
-                <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter') handleCreate() }}
-                    className="input-field mb-4"
-                    placeholder="e.g., SAT Vocab, Biology, Spanish"
-                    autoFocus
-                />
-                {error && (
-                    <p className="text-sm text-error mb-4">{error}</p>
-                )}
-                <div className="flex gap-3">
-                    <button onClick={onClose} className="btn-outline flex-1">
-                        Cancel
-                    </button>
-                    <button
-                        onClick={handleCreate}
-                        disabled={!name.trim()}
-                        className="btn-primary flex-1 disabled:opacity-50"
-                    >
-                        Create
-                    </button>
-                </div>
-            </motion.div>
-        </div>
+            {error && (
+                <p className="text-sm text-error mb-4">{error}</p>
+            )}
+            <div className="flex gap-3">
+                <button onClick={onClose} className="btn-outline flex-1">
+                    Cancel
+                </button>
+                <button
+                    onClick={handleCreate}
+                    disabled={!name.trim()}
+                    className="btn-primary flex-1 disabled:opacity-50"
+                >
+                    Create
+                </button>
+            </div>
+        </Dialog>
     )
 }
 
@@ -779,10 +754,17 @@ function CombineQuizModal({ quizzes, userId, onClose, onCreated }: { quizzes: an
         }
     }
 
-    return <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-        <div className="bg-white dark:bg-surface-dark w-full max-w-2xl rounded-3xl p-6 shadow-2xl relative z-10 max-h-[90vh] overflow-y-auto space-y-4">
-            <div className="flex items-start justify-between gap-3"><div><h2 className="text-2xl font-bold">Build a combined test</h2><p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">Your original quizzes stay unchanged. Vocabulary becomes flashcards in the new test.</p></div><button type="button" onClick={onClose} className="p-2 rounded-lg text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800" aria-label="Close"><X className="w-5 h-5" /></button></div>
+    return <Dialog
+        open
+        onClose={onClose}
+        title="Build a combined test"
+        className="max-w-2xl max-h-[90vh] overflow-y-auto"
+        headerAction={(
+            <button type="button" onClick={onClose} className="p-2 rounded-lg text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800" aria-label="Close"><X className="w-5 h-5" /></button>
+        )}
+    >
+        <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">Your original quizzes stay unchanged. Vocabulary becomes flashcards in the new test.</p>
+        <div className="space-y-4">
             <div className="grid gap-3 sm:grid-cols-2"><label className="text-sm font-semibold">Test name<input value={name} onChange={e => setName(e.target.value)} className="input-field mt-1" /></label><label className="text-sm font-semibold">Questions <span className="font-normal text-neutral-500">(0 = all)</span><input type="number" min="0" max={available} value={questionLimit} onChange={e => setQuestionLimit(Math.min(available, Math.max(0, Number(e.target.value) || 0)))} className="input-field mt-1" /></label></div>
             <label className="block text-sm font-semibold">Description<textarea value={description} onChange={e => setDescription(e.target.value)} className="input-field mt-1 min-h-20" /></label>
             <label className="block text-sm font-semibold">Tags<input value={tags} onChange={e => setTags(e.target.value)} className="input-field mt-1" /></label>
@@ -790,7 +772,7 @@ function CombineQuizModal({ quizzes, userId, onClose, onCreated }: { quizzes: an
             {error && <p className="text-sm text-error-dark dark:text-error-light">{error}</p>}
             <div className="flex gap-3"><button type="button" onClick={onClose} className="btn-outline flex-1">Cancel</button><button type="button" onClick={create} disabled={saving} className="btn-primary flex-1 disabled:opacity-50"><Layers className="w-4 h-4 inline mr-2" />{saving ? 'Creating…' : `Create ${Math.min(questionLimit || available, available)}-question test`}</button></div>
         </div>
-    </div>
+    </Dialog>
 }
 
 function CreateQuizModal({ onClose, onCreated }: { onClose: () => void, onCreated: () => void }) {
@@ -1145,22 +1127,12 @@ Remember:
     }
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={onClose}
-                className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            />
-
-            <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.9, opacity: 0 }}
-                className="bg-white dark:bg-surface-dark w-full max-w-2xl rounded-3xl p-6 shadow-2xl relative z-10 max-h-[90vh] overflow-y-auto"
-            >
-                <h2 className="text-2xl font-bold mb-4">Create Custom Quiz</h2>
+        <Dialog
+            open
+            onClose={onClose}
+            title="Create Custom Quiz"
+            className="max-w-2xl max-h-[90vh] overflow-y-auto"
+        >
 
                 {step === 'info' ? (
                     <div className="space-y-4">
@@ -1576,8 +1548,7 @@ Remember:
                         </div>
                     </div>
                 )}
-            </motion.div>
-        </div>
+        </Dialog>
     )
 }
 
@@ -1609,33 +1580,20 @@ function ShareQuizModal({
     const shareTooLarge = quiz.isCustom && shareUrl === ''
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={onClose}
-                className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            />
-
-            <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.9, opacity: 0 }}
-                className="bg-white dark:bg-surface-dark rounded-3xl p-6 shadow-2xl relative z-10 max-w-md w-full max-h-[90vh] overflow-y-auto"
-                onClick={(e) => e.stopPropagation()}
-            >
-                <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
-                        Share Quiz
-                    </h2>
-                    <button
-                        onClick={onClose}
-                        className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 transition-colors"
-                    >
-                        <X className="w-5 h-5" />
-                    </button>
-                </div>
+        <Dialog
+            open
+            onClose={onClose}
+            title="Share Quiz"
+            className="max-h-[90vh] overflow-y-auto"
+            headerAction={
+                <button
+                    onClick={onClose}
+                    className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 transition-colors"
+                >
+                    <X className="w-5 h-5" />
+                </button>
+            }
+        >
 
                 <div className="mb-6">
                     <h3 className="font-bold text-lg text-neutral-900 dark:text-neutral-100 mb-2">
@@ -1722,7 +1680,6 @@ function ShareQuizModal({
                 >
                     Close
                 </button>
-            </motion.div>
-        </div>
+        </Dialog>
     )
 }

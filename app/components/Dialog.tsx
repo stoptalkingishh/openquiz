@@ -55,6 +55,10 @@ export default function Dialog({
     closeOnEscape = true,
     disableAnimation = false
 }: DialogProps) {
+    // Callers that need a wider or narrower panel pass their own `max-w-*`; the
+    // default only applies when they did not, because two competing max-width
+    // utilities on one element resolve by stylesheet order, not by class order.
+    const hasOwnWidth = /(^|\s)max-w-/.test(className)
     const panelRef = useRef<HTMLDivElement>(null)
     const previouslyFocused = useRef<HTMLElement | null>(null)
     const titleId = useId()
@@ -183,7 +187,7 @@ export default function Dialog({
                         tabIndex={-1}
                         {...panelMotion}
                         onKeyDown={onPanelKeyDown}
-                        className={`bg-white dark:bg-surface-dark rounded-3xl p-6 shadow-2xl relative z-10 max-w-md w-full ${className}`}
+                        className={`bg-white dark:bg-surface-dark rounded-3xl p-6 shadow-2xl relative z-10 ${hasOwnWidth ? '' : 'max-w-md '}w-full ${className}`}
                     >
                         {title || headerAction ? (
                             <div className="flex items-center justify-between gap-3 mb-4">
