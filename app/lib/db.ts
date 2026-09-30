@@ -237,6 +237,33 @@ function readProgressStore(): ProgressStore {
     return store
 }
 
+/**
+ * Resolve a card's record for a given word.
+ *
+ * Progress is stored per quiz (`${quizPath}::${word}`), so a plain `progress[word]`
+ * lookup no longer finds anything. When `quizPath` is known this returns that
+ * quiz's record. Without one (the Library, which pools every quiz) it returns the
+ * most advanced record for the word, so a word studied in several decks still
+ * reports its real status instead of "new".
+ */
+export function resolveWordProgress(
+    progressMap: Record<string, WordProgress>,
+    word: string,
+    quizPath?: string
+): WordProgress | undefined {
+    if (quizPath) {
+        const scopedKey = `${quizPath}::${word}`
+        return progressMap[scopedKey] || progressMap[word]
+    }
+    const suffix = `::${word}`
+    let best: WordProgress | undefined
+    for (const [key, record] of Object.entries(progressMap || {})) {
+        if (!record || (key !== word && !key.endsWith(suffix))) continue
+        if (!best || (record.strength || 0) > (best.strength || 0)) best = record
+    }
+    return best
+}
+
 export async function getWordProgress(userId: string): Promise<Record<string, WordProgress>> {
     if (userId !== currentAccountId()) return {}
     const store = readProgressStore()

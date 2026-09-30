@@ -148,7 +148,7 @@ export default function SessionModePage() {
 
             if (quizData.questions && quizData.questions.length) {
                 const q = mode === 'test'
-                    ? buildTestSession(undefined, quizData.questions, Math.min(20, quizData.questions.length))
+                    ? buildTestSession(undefined, quizData.questions, Math.min(20, quizData.questions.length), selectedQuizPath)
                     : buildQuestionSession(mode, quizData.questions, progressData, Math.min(50, quizData.questions.length), selectedQuizPath)
                 buildFromQuestions(q)
                 return
@@ -157,10 +157,10 @@ export default function SessionModePage() {
             const wordsOrUndefined = quizData.words || []
             const sessionLimit = mode === 'learn' ? undefined : Math.min(50, wordsOrUndefined.length)
             const q = mode === 'test'
-                ? buildTestSession(wordsOrUndefined, undefined, 20)
+                ? buildTestSession(wordsOrUndefined, undefined, 20, selectedQuizPath)
                 : mode === 'write'
-                    ? buildWriteSession(wordsOrUndefined, 20)
-                    : buildSession(mode, wordsOrUndefined, progressData, sessionLimit)
+                    ? buildWriteSession(wordsOrUndefined, 20, selectedQuizPath)
+                    : buildSession(mode, wordsOrUndefined, progressData, sessionLimit, selectedQuizPath)
             buildFromQuestions(q)
         }).catch(err => {
             clearTimeout(timeout)
@@ -219,7 +219,12 @@ export default function SessionModePage() {
 
         const progressKey = (currentQ as Question & { progressKey?: string }).progressKey || currentQ.word
         const newProgress = updateProgress(progressRef.current[progressKey], correct, progressKey, quality)
-        newProgress.word = currentQ.progressKey ? String(currentQ.payload.prompt || currentQ.word) : currentQ.word
+        // The record key is now quiz-scoped, so the display label has to be
+        // carried explicitly. Vocabulary cards show the word; generic question
+        // cards show their prompt, since their key is a question id.
+        newProgress.word = String((currentQ as Question & { progressWord?: string }).progressWord
+            || (currentQ.progressKey ? (currentQ.payload as { prompt?: unknown }).prompt : undefined)
+            || currentQ.word)
 
         // Persist before committing the in-memory review. If local storage
         // rejects, the card remains retryable and the score is unchanged.

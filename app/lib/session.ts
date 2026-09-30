@@ -109,13 +109,58 @@ export function updateProgress(prev: WordProgress | undefined, correct: boolean,
     };
 }
 
+// ---------------------------------------------------------------------------
+// Quiz-scoped progress keys
+// ---------------------------------------------------------------------------
+
+/**
+ * Progress used to be stored under the bare word, so the same spelling in two
+ * quizzes shared mastery, scheduling and mistake history even when their
+ * definitions differed. Sessions now key every card as `${quizPath}::${item}`,
+ * matching what generic quiz questions already do.
+ */
+export function progressKeyFor(progressKeyPrefix: string, id: string): string {
+    return progressKeyPrefix ? `${progressKeyPrefix}::${id}` : id
+}
+
+/**
+ * Read a card's progress, preferring the quiz-scoped key and falling back to the
+ * bare word, so history written before this change is honored once instead of
+ * looking brand new.
+ */
+function makeProgressLookup(progressMap: Record<string, WordProgress>, progressKeyPrefix: string) {
+    return (id: string): WordProgress | undefined => {
+        const scoped = progressMap[progressKeyFor(progressKeyPrefix, id)]
+        if (scoped) return scoped
+        return progressKeyPrefix ? progressMap[id] : undefined
+    }
+}
+
+/**
+ * Stamp quiz-scoped progress keys onto a built session, plus the label that
+ * should appear on the saved record. Vocabulary cards label the record with the
+ * word itself; generic quiz cards label it with the prompt, because their key
+ * is a question id and would be meaningless in a progress list.
+ */
+export function scopeSessionProgress(questions: Question[], progressKeyPrefix = ''): Question[] {
+    if (!progressKeyPrefix) return questions
+    return questions.map(question => ({
+        ...question,
+        progressKey: (question as Question & { progressKey?: string }).progressKey
+            || progressKeyFor(progressKeyPrefix, question.word || question.id),
+        progressWord: String(question.word || question.id)
+    }))
+}
+
 export function buildSession(
     mode: SessionMode,
     allWords: Word[],
     progressMap: Record<string, WordProgress>,
-    limit?: number // undefined means all words
+    limit?: number, // undefined means all words
+    progressKeyPrefix = ''
 ): Question[] {
-    const now = Date.now();
+    const now = Date.now()
+    const lookupProgress = makeProgressLookup(progressMap, progressKeyPrefix);
 
     // Drop malformed entries so a bad custom quiz can never crash the build.
     const safeWords = (allWords || []).filter(w =>
@@ -125,13 +170,13 @@ export function buildSession(
     // "Mistakes" mode should only draw from words the user actually got wrong,
     // otherwise brand-new words (highest priority) crowd the mistakes out.
     const sourceWords = mode === 'mistakes'
-        ? safeWords.filter(w => (progressMap[w.word]?.wrongStreak || 0) > 0)
+        ? safeWords.filter(w => (lookupProgress(w.word)?.wrongStreak || 0) > 0)
         : safeWords
 
     // 1. Select candidates by priority - prioritize new/weak words, avoid recently seen
     const candidates = sourceWords
         .map(w => {
-            const p = progressMap[w.word];
+            const p = lookupProgress(w.word);
             const progress = p ?? { 
                 strength: 0, 
                 nextDue: 0, 
@@ -197,7 +242,7 @@ export function buildSession(
         } else if (mode === "exam") {
             questions.push(makeSatClozeQuestion(w, safeWords));
         } else if (mode === "mistakes") {
-            const p = progressMap[w.word];
+            const p = lookupProgress(w.word);
             if (p && (p.wrongStreak || 0) > 0) {
                 questions.push(makeSatClozeQuestion(w, safeWords));
             }
@@ -208,7 +253,7 @@ export function buildSession(
     questions = shuffle(questions);
 
     // 4. Limit
-    return questions.slice(0, limit);
+    return scopeSessionProgress(questions.slice(0, limit), progressKeyPrefix);
 }
 
 function makeRecallQuestion(word: Word): Question {
@@ -349,7 +394,8 @@ export function buildQuestionSession(
             // carried separately and is only used for progress persistence.
             word: (q as QuizQuestion & { word?: string }).word || q.id,
             image: q.image || '',
-            progressKey: progressKey(q.id)
+            progressKey: progressKey(q.id),
+            progressWord: String(q.prompt || q.id)
         };
 
         if (q.kind === 'simulation') {
@@ -457,7 +503,7 @@ export function buildQuestionSession(
 // from a vocabulary list OR from a generic question quiz.
 // ---------------------------------------------------------------------------
 
-export function buildWriteSession(words: Word[], limit = 20): Question[] {
+export function buildWriteSession(words: Word[], limit = 20, progressKeyPrefix = ''): Question[] {
     const safe = (words || []).filter(w =>
         w && typeof w.word === 'string' && w.word.trim() && typeof w.ru === 'string'
     )
@@ -490,13 +536,14 @@ export function buildWriteSession(words: Word[], limit = 20): Question[] {
         })
     }
 
-    return shuffle(questions).slice(0, limit)
+    return scopeSessionProgress(shuffle(questions).slice(0, limit), progressKeyPrefix)
 }
 
 export function buildTestSession(
     words: Word[] | undefined,
     questions: QuizQuestion[] | undefined,
-    limit = 20
+    limit = 20,
+    progressKeyPrefix = ''
 ): Question[] {
     let built: Question[] = []
 
@@ -506,7 +553,7 @@ export function buildTestSession(
             .filter(q => q && typeof (q.prompt || '') === 'string')
             .slice(0, limit)
 .map(q => {
-                const base = { id: q.id, word: q.id, image: q.image || '' }
+                const base = { id: q.id, word: q.id, image: q.image || '', progressWord: String(q.prompt || q.id) }
 
                 if (q.kind === 'simulation') {
                     return {
@@ -559,7 +606,7 @@ export function buildTestSession(
                     }
                 }
             })
-        return shuffle(built)
+        return scopeSessionProgress(shuffle(built), progressKeyPrefix)
     }
 
     const list = (words || []).filter(w =>
@@ -600,5 +647,5 @@ export function buildTestSession(
         })
     })
 
-    return shuffle(built).slice(0, limit)
+    return scopeSessionProgress(shuffle(built).slice(0, limit), progressKeyPrefix)
 }
