@@ -177,7 +177,7 @@ function initGapi(): Promise<boolean> {
 // Token + profile
 // ---------------------------------------------------------------------------
 
-function requestToken(prompt: 'consent' | ''): Promise<TokenGrant> {
+function requestToken(prompt: 'consent' | '' | 'none'): Promise<TokenGrant> {
     return new Promise((resolve, reject) => {
         const client = window.google.accounts.oauth2.initTokenClient({
             client_id: CLIENT_ID,
@@ -200,7 +200,11 @@ function requestToken(prompt: 'consent' | ''): Promise<TokenGrant> {
                 reject(new Error(error?.error_description || error?.error || 'Google sign-in was cancelled'))
             }
         })
-        client.requestAccessToken({ prompt })
+        const requestConfig: { prompt: 'consent' | '' | 'none'; login_hint?: string } = { prompt }
+        // The stored profile identifies the account for silent restores. This
+        // skips the account chooser without creating another consent flow.
+        if (prompt !== 'consent' && currentUser?.email) requestConfig.login_hint = currentUser.email
+        client.requestAccessToken(requestConfig)
     })
 }
 
@@ -288,7 +292,9 @@ async function requestTokenNow(context: AuthContext): Promise<string | null> {
         assertAuthContextCurrent(context)
 
         // If the user already has a Google session, grab a token without a popup.
-        const grant = await withTimeoutOrThrow(requestToken(''), 8000, 'Google token request')
+        // `none` guarantees that a page refresh never opens an account or
+        // consent popup. The explicit sign-in button is the consent flow.
+        const grant = await withTimeoutOrThrow(requestToken('none'), 8000, 'Google token request')
         assertAuthContextCurrent(context)
         if (!tokenMatchesCurrentUser(grant)) {
             throw new DriveError('Google account changed while refreshing the Drive token')
