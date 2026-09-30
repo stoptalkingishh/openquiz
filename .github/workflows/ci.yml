@@ -28,6 +28,9 @@ jobs:
       - name: Test
         run: npm test
 
+      - name: Validate bundled content
+        run: npm run validate-content
+
       - name: Build static export
         run: npm run build
         env:

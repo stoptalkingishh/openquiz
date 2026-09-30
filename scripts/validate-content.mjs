@@ -1,6 +1,10 @@
-#!/usr/bin/env node
 /**
  * Content integrity validator for bundled quiz data (audit finding A-04).
+ *
+ * Note: no shebang on purpose. A `#!` line makes this file unparseable to the
+ * test runner (esbuild rejects the hashbang when the module is imported rather
+ * than executed), which previously made tests/content-validation.test.ts fail
+ * to collect and hid every finding below from CI. Run it with `node`.
  *
  * Guards against the class of defect where an exam advertises N questions but
  * the file is the same small prompt block repeated to reach N. Concretely it
@@ -14,6 +18,13 @@
  *   - a file contains a duplicate normalized prompt  (error)
  *   - two variants of the same exam series overlap more than the configured
  *     share of their prompts                          (error)
+ *   - an advertised question count (README or the sets manifest) does not match
+ *     the bundled file it describes                   (error)
+ *
+ * Thin content that is not a false claim is reported separately as a "finding"
+ * (exit 0): a cumulative final that restates its practice tests without adding
+ * a single new question is honest as long as the docs say so, but it should
+ * never be invisible.
  *
  * Normalization is deliberately conservative: trim, collapse internal
  * whitespace runs to a single space, and lowercase. Two prompts that differ
@@ -24,8 +35,7 @@
  *   node scripts/validate-content.mjs --json       # machine-readable report
  *   node scripts/validate-content.mjs --max-overlap 0.2
  *
- * Intended to be wired into CI via an npm script (see README follow-up);
- * the package.json entry is intentionally left for the repo owner to add.
+ * Wired into CI via `npm run validate-content` (see .github/workflows/ci.yml).
  */
 
 import { readFileSync, existsSync, readdirSync } from 'node:fs'
@@ -46,10 +56,29 @@ const EXAM_SERIES = {
             'public/netplus/netplus-test2.json',
             'public/netplus/netplus-test3.json',
         ],
-        // Cumulative exams legitimately restate earlier material, so a high
-        // overlap is expected and is reported but never failed.
+        // A cumulative exam may restate earlier material, so overlap is reported
+        // rather than failed. Content that adds nothing new is surfaced as a
+        // finding instead of passing silently (see runValidation).
         cumulative: ['public/netplus/netplus-final.json'],
     },
+    securityplus: {
+        variants: [
+            'public/securityplus/test1.json',
+            'public/securityplus/test2.json',
+            'public/securityplus/test3.json',
+        ],
+        cumulative: ['public/securityplus/final.json'],
+    },
+}
+
+/**
+ * Categories whose advertised question counts appear in README prose, keyed by
+ * the category the README line talks about, and the file that "final exam"
+ * refers to within it.
+ */
+const README_FINAL_CLAIMS = {
+    netplus: { marker: 'Network+', final: 'public/netplus/netplus-final.json' },
+    securityplus: { marker: 'Security+', final: 'public/securityplus/final.json' },
 }
 
 /** Any two variants sharing more than this fraction of prompts is a failure. */
@@ -160,6 +189,78 @@ function discoverQuestionFiles() {
 }
 
 /**
+ * Cross-check every question count the docs advertise against the bundled file
+ * it describes. Catches the audit A-04 follow-on defect: a README that promises
+ * a 100-question final exam while the data file holds 88.
+ *
+ * Two sources are checked: the per-set descriptions in the sets manifest, and
+ * the bundled-content prose in README.md.
+ *
+ * @returns {string[]} one message per advertised count that does not match
+ */
+export function checkAdvertisedCounts() {
+    const errors = []
+    const actual = new Map()
+    const countOf = (relPath) => {
+        if (!actual.has(relPath)) {
+            const items = loadQuestions(relPath)
+            actual.set(relPath, items ? items.length : null)
+        }
+        return actual.get(relPath)
+    }
+
+    // 1. Sets manifest: "30-question CompTIA Network+ ... practice test".
+    const manifestPath = join(ROOT, 'public', 'sat', 'quiz-sets.json')
+    if (existsSync(manifestPath)) {
+        const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
+        for (const set of manifest) {
+            const relPath = String(set.file_path || '').replace(/^\//, 'public/')
+            const claimed = /(\d+)[- ]question/i.exec(String(set.description || ''))
+            if (!claimed) continue
+            const total = countOf(relPath)
+            if (total === null) {
+                errors.push(`${set.id}: manifest describes ${claimed[1]} questions but "${relPath}" is missing or unreadable`)
+            } else if (Number(claimed[1]) !== total) {
+                errors.push(
+                    `${set.id}: manifest advertises ${claimed[1]} questions, "${relPath}" contains ${total}`,
+                )
+            }
+        }
+    }
+
+    // 2. README prose: "… — 3 practice tests, a 100-question final exam, …".
+    const readmePath = join(ROOT, 'README.md')
+    if (existsSync(readmePath)) {
+        const readme = readFileSync(readmePath, 'utf8')
+        for (const [category, claim] of Object.entries(README_FINAL_CLAIMS)) {
+            const lines = readme.split(/\r?\n/)
+            const line = lines.find(l => l.includes(claim.marker) && /final/i.test(l))
+            if (!line) continue
+            // The count and the word "final" can be separated by adjectives, and a
+            // final need not be called an "exam" ("an 88-question cumulative final").
+            const claimed = /([0-9]+)-question[^.]{0,80}?final/i.exec(line)
+            if (!claimed) {
+                errors.push(
+                    `README: the ${category} line mentions a final exam but states no question count`,
+                )
+                continue
+            }
+            const total = countOf(claim.final)
+            if (total === null) {
+                errors.push(`README: no readable file for the ${category} final exam ("${claim.final}")`)
+            } else if (Number(claimed[1]) !== total) {
+                errors.push(
+                    `README: ${category} advertises a ${claimed[1]}-question final exam, ` +
+                    `"${claim.final}" contains ${total}`,
+                )
+            }
+        }
+    }
+
+    return errors
+}
+
+/**
  * Run the full audit.
  * @param {{maxOverlap?: number}} [options]
  */
@@ -171,6 +272,8 @@ export function runValidation(options = {}) {
     const errors = []
     /** @type {string[]} */
     const warnings = []
+    /** @type {string[]} */
+    const findings = []
 
     for (const relPath of discoverQuestionFiles()) {
         const items = loadQuestions(relPath)
@@ -241,7 +344,33 @@ export function runValidation(options = {}) {
         }
     }
 
-    return { maxOverlap, files, overlaps, errors, warnings, ok: errors.length === 0 }
+    // Advertised counts must match the data (audit A-04 follow-on).
+    errors.push(...checkAdvertisedCounts())
+
+    // Content debt, not a false claim: a "cumulative" final that adds no prompt
+    // of its own is a copy of its practice tests. Reported on every run so it
+    // cannot quietly become the shipped exam.
+    for (const [category, series] of Object.entries(EXAM_SERIES)) {
+        for (const cumulative of series.cumulative || []) {
+            const cumulativeSet = setsByFile.get(cumulative)
+            if (!cumulativeSet) continue
+            const variantSet = new Set()
+            for (const variant of series.variants) {
+                for (const prompt of setsByFile.get(variant) ?? []) variantSet.add(prompt)
+            }
+            let novel = 0
+            for (const prompt of cumulativeSet) if (!variantSet.has(prompt)) novel++
+            if (novel === 0) {
+                findings.push(
+                    `${category}: "${cumulative}" (${cumulativeSet.size} questions) adds 0 prompts of its own — ` +
+                    `it is the practice tests restated, so a "final exam" pass measures recall of questions ` +
+                    `the learner already saw`,
+                )
+            }
+        }
+    }
+
+    return { maxOverlap, files, overlaps, errors, warnings, findings, ok: errors.length === 0 }
 }
 
 function pct(value) {
@@ -274,6 +403,11 @@ function printHuman(report) {
         )
     }
 
+    if (report.findings?.length) {
+        console.log('\nFindings (thin content, not a failed check)')
+        for (const f of report.findings) console.log(`  * ${f}`)
+    }
+
     if (report.warnings.length) {
         console.log('\nWarnings')
         for (const w of report.warnings) console.log(`  ! ${w}`)
@@ -282,7 +416,13 @@ function printHuman(report) {
     console.log('\nResult')
     console.log('-'.repeat(72))
     if (report.ok) {
-        console.log(`PASS: no duplicate prompts within a file, no variant overlap above ${pct(report.maxOverlap)}.`)
+        console.log(
+            `PASS: no duplicate prompts within a file, no variant overlap above ${pct(report.maxOverlap)}, ` +
+            'every advertised question count matches its data file.',
+        )
+        if (report.findings?.length) {
+            console.log(`${report.findings.length} finding(s) above are content debt and do not fail the check.`)
+        }
     } else {
         console.log(`FAIL: ${report.errors.length} problem(s):`)
         for (const e of report.errors) console.log(`  x ${e}`)
