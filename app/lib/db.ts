@@ -192,6 +192,24 @@ function mergeQuizStats(local: Record<string, QuizStats>, remote: Record<string,
     return merged
 }
 
+function mergeDailyStats(local: Record<string, any>, remote: Record<string, any>): Record<string, any> {
+    const merged = { ...remote }
+    for (const [key, value] of Object.entries(local)) {
+        const other = remote[key]
+        if (!other) { merged[key] = value; continue }
+        const answerSessions = { ...(other.answer_sessions || {}) }
+        for (const [sessionId, count] of Object.entries(value.answer_sessions || {})) {
+            answerSessions[sessionId] = Math.max(Number(answerSessions[sessionId]) || 0, Number(count) || 0)
+        }
+        merged[key] = {
+            ...((value.updated_at || '') >= (other.updated_at || '') ? other : value),
+            ...((value.updated_at || '') >= (other.updated_at || '') ? value : other),
+            answer_sessions: answerSessions
+        }
+    }
+    return merged
+}
+
 function readProgressStore(): ProgressStore {
     const raw = readJson<any>(PROGRESS_KEY, {})
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {}
@@ -1053,15 +1071,44 @@ export async function updateDailyStats(userId: string, stats: {
         }
 
         const all = readJson<Record<string, any>>(DAILY_STATS_KEY, {})
-        all[`${userId}:${today}`] = next
+        all[`${userId}:${today}`] = { ...(all[`${userId}:${today}`] || {}), ...next }
         writeJson(DAILY_STATS_KEY, all)
 
         if (isCloudActive()) {
             try {
                 const remote = (await readDriveFile<Record<string, any>>(DAILY_STATS_FILE)) || {}
-                remote[`${userId}:${today}`] = next
-                await writeDriveFile(DAILY_STATS_FILE, remote)
+                await writeDriveFile(DAILY_STATS_FILE, mergeDailyStats(all, remote))
             } catch { /* Local save succeeded; SyncNotice provides cloud retry. */ }
+        }
+    })
+}
+
+/** Track answered questions even when the learner leaves before finishing. */
+export async function recordDailyAnswer(userId: string, sessionId: string, count: number, date = localDate()): Promise<void> {
+    assertAccount(userId)
+    if (!sessionId || !Number.isFinite(count) || count < 1) return
+    await queueLocalWrite(DAILY_STATS_KEY, async () => {
+        const key = `${userId}:${date}`
+        const all = readJson<Record<string, any>>(DAILY_STATS_KEY, {})
+        const current = all[key] || {}
+        all[key] = {
+            ...current,
+            user_id: userId,
+            date,
+            answer_sessions: {
+                ...(current.answer_sessions || {}),
+                [sessionId]: Math.max(Number(current.answer_sessions?.[sessionId]) || 0, count)
+            },
+            updated_at: new Date().toISOString()
+        }
+        writeJson(DAILY_STATS_KEY, all)
+        if (isCloudActive()) {
+            try {
+                const remote = (await readDriveFile<Record<string, any>>(DAILY_STATS_FILE)) || {}
+                const merged = mergeDailyStats(all, remote)
+                await writeDriveFile(DAILY_STATS_FILE, merged)
+                writeJson(DAILY_STATS_KEY, merged)
+            } catch { /* Local count survives and SyncNotice offers a retry. */ }
         }
     })
 }
@@ -1280,11 +1327,7 @@ async function getAllDailyStats(): Promise<Record<string, any>> {
     const local = readJson<Record<string, any>>(DAILY_STATS_KEY, {})
     if (!isCloudActive()) return local
     const remote = await readForDisplay<Record<string, any>>(DAILY_STATS_FILE)
-    const merged = { ...remote }
-    for (const [key, value] of Object.entries(local)) {
-        if (!merged[key] || (value.updated_at || '') >= (merged[key].updated_at || '')) merged[key] = value
-    }
-    return merged
+    return mergeDailyStats(local, remote || {})
 }
 
 export interface StudyAnalytics {
@@ -1310,7 +1353,9 @@ export async function getStudyAnalytics(userId: string): Promise<StudyAnalytics>
         if (!entry || entry.user_id !== userId) continue
         const date = String(entry.date || '').slice(0, 10)
         if (!date) continue
-        const answers = (Number(entry.words_learned) || 0) + (Number(entry.words_drilled) || 0) + (Number(entry.words_examined) || 0)
+        const sessionAnswers = Object.values(entry.answer_sessions || {}).reduce<number>((sum, count) => sum + (Number(count) || 0), 0)
+        const legacyAnswers = (Number(entry.words_learned) || 0) + (Number(entry.words_drilled) || 0) + (Number(entry.words_examined) || 0)
+        const answers = Math.max(sessionAnswers, legacyAnswers)
         countsByDate.set(date, Math.max(countsByDate.get(date) || 0, answers))
     }
 
@@ -1380,10 +1425,7 @@ export async function syncLocalToCloud(): Promise<boolean> {
             const remoteQuizStats = await readDriveFile<Record<string, QuizStats>>(QUIZ_STATS_FILE) || {}
             const mergedQuizzes = withoutDeleted('quizzes', reconcileQuizzes(localQuizzes, remoteQuizzes).quizzes)
             const mergedProgress = mergeProgress(localProgress, remoteProgress)
-            const mergedStats = { ...remoteStats }
-            for (const [key, value] of Object.entries(localStats)) {
-                if (!mergedStats[key] || (value.updated_at || '') >= (mergedStats[key].updated_at || '')) mergedStats[key] = value
-            }
+            const mergedStats = mergeDailyStats(localStats, remoteStats)
             const mergedFolders = withoutDeleted('folders', [...localFolders, ...remoteFolders.filter(f => !localFolders.some(l => l.id === f.id))])
             const mergedQuizStats = mergeQuizStats(localQuizStats, remoteQuizStats)
             await writeDriveFile(CUSTOM_QUIZZES_FILE, mergedQuizzes)

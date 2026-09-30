@@ -29,6 +29,9 @@ import {
     updateCustomQuiz,
     getCustomQuizzes,
     getCustomQuizById,
+    getStudyAnalytics,
+    getDailyStats,
+    recordDailyAnswer,
     syncLocalToCloud
 } from '../app/lib/db'
 import { accountKey } from '../app/lib/storage'
@@ -197,6 +200,38 @@ describe('validateQuizJSON', () => {
         const result = validateQuizJSON('[{"word":"cat","ru":"кошка"}]')
         expect(result.ok).toBe(true)
         expect(result.count).toBe(1)
+    })
+})
+
+describe('daily answer activity', () => {
+    it('counts partial sessions and treats repeated saves for one session as idempotent', async () => {
+        await recordDailyAnswer('alice', 'run-a', 1)
+        await recordDailyAnswer('alice', 'run-a', 1)
+        await recordDailyAnswer('alice', 'run-a', 2)
+        await recordDailyAnswer('alice', 'run-b', 1)
+        const analytics = await getStudyAnalytics('alice')
+        expect(analytics.studyDays.at(-1)?.count).toBe(3)
+    })
+
+    it('merges independent device sessions without losing either count', async () => {
+        await recordDailyAnswer('alice', 'local-run', 2)
+        const today = new Date()
+        const date = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+        cloud.remote['daily_stats.json'] = {
+            [`alice:${date}`]: { user_id: 'alice', date, answer_sessions: { 'remote-run': 3 }, updated_at: new Date().toISOString() }
+        }
+        cloud.configured = true
+        expect(await syncLocalToCloud()).toBe(true)
+        const sessions = cloud.remote['daily_stats.json'][`alice:${date}`].answer_sessions
+        expect(sessions).toEqual({ 'local-run': 2, 'remote-run': 3 })
+        expect((await getStudyAnalytics('alice')).studyDays.at(-1)?.count).toBe(5)
+    })
+
+    it('keeps a session spanning midnight in separate daily buckets', async () => {
+        await recordDailyAnswer('alice', 'overnight-run', 2, '2026-09-28')
+        await recordDailyAnswer('alice', 'overnight-run', 1, '2026-09-29')
+        expect((await getDailyStats('alice', '2026-09-28'))?.answer_sessions['overnight-run']).toBe(2)
+        expect((await getDailyStats('alice', '2026-09-29'))?.answer_sessions['overnight-run']).toBe(1)
     })
 })
 

@@ -9,7 +9,7 @@ import { buildGoogleResearchQuery } from '../../lib/research'
 import QuestionCard from '../../components/QuestionCard'
 import SessionMenu, { ReviewRecord } from '../../components/SessionMenu'
 import { useAuth } from '../../contexts/AuthContext'
-import { getWordProgress, saveWordProgress, getCustomQuizById, getQuizSetByPath, recordQuizSession, loadOfficialQuiz } from '../../lib/db'
+import { getWordProgress, saveWordProgress, getCustomQuizById, getQuizSetByPath, recordQuizSession, recordDailyAnswer, localDate, loadOfficialQuiz } from '../../lib/db'
 import { useQuizStore } from '../../lib/quizStore'
 import { stopSpeech, isSpeaking, setOnTtsEnd } from '../../lib/tts'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
@@ -45,6 +45,8 @@ export default function SessionModePage() {
     const savePromisesRef = useRef<Record<string, Promise<void>>>({})
     const finishedRef = useRef(false)
     const sessionIdRef = useRef<string | null>(null)
+    const dailyAnswerCountRef = useRef(0)
+    const dailyAnswerDateRef = useRef(localDate())
     const pendingFinishRef = useRef<{ correct: number; total: number } | null>(null)
     const exitTriggerRef = useRef<HTMLButtonElement>(null)
     const exitDialogRef = useRef<HTMLDivElement>(null)
@@ -134,7 +136,11 @@ export default function SessionModePage() {
                 setHistory({})
                 setIndex(0)
                 finishedRef.current = false
-                sessionIdRef.current = null
+                sessionIdRef.current = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+                    ? crypto.randomUUID()
+                    : `session-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+                dailyAnswerCountRef.current = 0
+                dailyAnswerDateRef.current = localDate()
                 pendingFinishRef.current = null
                 setFinishError(null)
                 setLoading(false)
@@ -217,8 +223,21 @@ export default function SessionModePage() {
 
         // Persist before committing the in-memory review. If local storage
         // rejects, the card remains retryable and the score is unchanged.
-        const savePromise = saveWordProgress(user.id, progressKey, newProgress).then(() => {
+        const savePromise = saveWordProgress(user.id, progressKey, newProgress).then(async () => {
             progressRef.current = { ...progressRef.current, [progressKey]: newProgress }
+            const answerDate = localDate()
+            if (dailyAnswerDateRef.current !== answerDate) {
+                dailyAnswerDateRef.current = answerDate
+                dailyAnswerCountRef.current = 0
+            }
+            dailyAnswerCountRef.current += 1
+            try {
+                await recordDailyAnswer(user.id, sessionIdRef.current!, dailyAnswerCountRef.current, answerDate)
+            } catch (error) {
+                // The answer itself was saved; a stats failure must not make
+                // the learner submit the same card again.
+                console.error('Failed to record daily activity:', error)
+            }
             if (correct) correctCountRef.current += 1
             const record = { correct, chosen: chosen ?? null }
             historyRef.current = { ...historyRef.current, [currentQ.id]: record }
