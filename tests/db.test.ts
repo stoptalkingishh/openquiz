@@ -32,10 +32,11 @@ import {
     getStudyAnalytics,
     getDailyStats,
     recordDailyAnswer,
-    syncLocalToCloud
+    syncLocalToCloud,
+    resolveWordProgress
 } from '../app/lib/db'
 import { accountKey } from '../app/lib/storage'
-import type { CustomQuiz } from '../app/lib/satTypes'
+import type { CustomQuiz, WordProgress } from '../app/lib/satTypes'
 
 let store: Map<string, string>
 
@@ -200,6 +201,57 @@ describe('validateQuizJSON', () => {
         const result = validateQuizJSON('[{"word":"cat","ru":"кошка"}]')
         expect(result.ok).toBe(true)
         expect(result.count).toBe(1)
+    })
+})
+
+describe('resolveWordProgress (quiz-scoped lookups, issue #53)', () => {
+    const scoped = (word: string, extra: Partial<WordProgress> = {}): WordProgress => ({
+        word,
+        status: 'learning',
+        strength: 0.4,
+        seenCount: 3,
+        lastSeen: 0,
+        ...extra
+    })
+
+    it('finds a card by quiz path', () => {
+        const progress = {
+            '/sat/1.json::highlight': scoped('highlight'),
+        }
+        expect(resolveWordProgress(progress, 'highlight', '/sat/1.json')?.seenCount).toBe(3)
+        expect(resolveWordProgress(progress, 'highlight', '/sat/2.json')).toBeUndefined()
+    })
+
+    it('keeps the same word in two quizzes independent', () => {
+        const progress = {
+            '/biology.json::valid': scoped('valid', { strength: 1, status: 'mastered' }),
+            '/grammar.json::valid': scoped('valid', { strength: 0.1, status: 'learning' }),
+        }
+        expect(resolveWordProgress(progress, 'valid', '/biology.json')?.status).toBe('mastered')
+        expect(resolveWordProgress(progress, 'valid', '/grammar.json')?.status).toBe('learning')
+    })
+
+    it('falls back to a legacy bare record for a known quiz', () => {
+        const progress = { highlight: scoped('highlight', { seenCount: 9 }) }
+        expect(resolveWordProgress(progress, 'highlight', '/sat/1.json')?.seenCount).toBe(9)
+    })
+
+    it('without a quiz path, reports the most advanced record for the word', () => {
+        const progress = {
+            '/biology.json::valid': scoped('valid', { strength: 0.2 }),
+            '/grammar.json::valid': scoped('valid', { strength: 0.8, status: 'mastered' }),
+            '/sat/1.json::contend': scoped('contend'),
+        }
+        // The Library pools every quiz, so a word must not read as "new" just
+        // because its record now lives under a scoped key.
+        expect(resolveWordProgress(progress, 'valid')?.status).toBe('mastered')
+        expect(resolveWordProgress(progress, 'contend')?.status).toBe('learning')
+        expect(resolveWordProgress(progress, 'absent')).toBeUndefined()
+    })
+
+    it('does not match a word that is only a suffix of another key', () => {
+        const progress = { '/sat/1.json::highlight': scoped('highlight') }
+        expect(resolveWordProgress(progress, 'light')).toBeUndefined()
     })
 })
 

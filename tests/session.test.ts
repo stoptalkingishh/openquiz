@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { updateProgress, buildSession, buildTestSession, buildQuestionSession } from '../app/lib/session'
+import { updateProgress, buildSession, buildTestSession, buildQuestionSession, buildWriteSession, scopeSessionProgress, progressKeyFor } from '../app/lib/session'
 import { Word, WordProgress, QuizQuestion, Question } from '../app/lib/satTypes'
 import { extractClozeCards } from '../app/lib/cloze'
 
@@ -248,6 +248,71 @@ describe('buildQuestionSession', () => {
         const result = buildQuestionSession('drill', questions, {}, undefined, 'quiz-a')
         expect(result[0]?.word).toBe('Display label')
         expect((result[0] as Question & { progressKey?: string }).progressKey).toBe('quiz-a::q1')
+    })
+})
+
+
+describe('quiz-scoped vocabulary progress (issue #53)', () => {
+    // Two decks that both teach "valid" with different definitions. Before
+    // scoping, mastery, scheduling and mistake history for the shared spelling
+    // leaked between them.
+    const deckA: Word[] = [word('valid', 'legally binding'), word('vivid', 'bright and intense')]
+    const deckB: Word[] = [word('valid', 'well founded in fact'), word('vivid', 'producing powerful feelings')]
+    const pathA = '/custom/biology.json'
+    const pathB = '/custom/grammar.json'
+
+    it('keys every card by quiz path, not by the bare word', () => {
+        const questions = buildSession('drill', deckA, {}, undefined, pathA)
+        expect(questions.length).toBeGreaterThan(0)
+        expect(questions.every(q => (q as Question & { progressKey?: string }).progressKey?.startsWith(pathA + '::'))).toBe(true)
+    })
+
+    it('keeps the same word in two quizzes on independent schedules', () => {
+        const progress: Record<string, WordProgress> = {
+            [progressKeyFor(pathA, 'valid')]: { word: 'valid', strength: 1, seenCount: 9, lastSeen: Date.now(), wrongStreak: 0, nextDue: Date.now() + 86400000, status: 'mastered' },
+        }
+        // Deck A: the scoped record is found, so "valid" is not treated as new.
+        const aQuestions = buildSession('drill', deckA, progress, undefined, pathA)
+        expect(aQuestions.some(q => q.word === 'valid')).toBe(true)
+
+        // Deck B has no record for its own "valid", so the word is new there.
+        const bQuestions = buildSession('drill', deckB, progress, undefined, pathB)
+        expect(bQuestions.some(q => q.word === 'valid')).toBe(true)
+        const bKeys = bQuestions.map(q => (q as Question & { progressKey?: string }).progressKey)
+        expect(bKeys.every(key => key?.startsWith(pathB + '::'))).toBe(true)
+        expect(bKeys).not.toContain(progressKeyFor(pathA, 'valid'))
+    })
+
+    it('honors legacy bare-word progress on the first read after upgrade', () => {
+        const legacy: Record<string, WordProgress> = {
+            valid: { word: 'valid', strength: 0.1, seenCount: 4, lastSeen: 0, wrongStreak: 2, nextDue: 0, status: 'learning' },
+        }
+        // A word with a wrong streak in the legacy bare record must still be
+        // selectable in mistakes mode under the scoped lookup.
+        const questions = buildSession('mistakes', deckA, legacy, undefined, pathA)
+        expect(questions.some(q => q.word === 'valid')).toBe(true)
+    })
+
+    it('scopes write and test modes too', () => {
+        const write = buildWriteSession(deckA, 20, pathA)
+        expect(write.length).toBeGreaterThan(0)
+        expect(write.every(q => (q as Question & { progressKey?: string }).progressKey?.startsWith(pathA + '::'))).toBe(true)
+
+        const test = buildTestSession(deckA, undefined, 20, pathA)
+        expect(test.length).toBeGreaterThan(0)
+        expect(test.every(q => (q as Question & { progressKey?: string }).progressKey?.startsWith(pathA + '::'))).toBe(true)
+    })
+
+    it('leaves existing scoped keys untouched and no-ops without a prefix', () => {
+        const existing = [{ id: 'q1', word: 'Deck Label', type: 'generic_mc' as const, progressKey: '/sat/1.json::q1', payload: { prompt: 'p' } }] as Question[]
+        const stamped = scopeSessionProgress(existing, '/sat/2.json')
+        expect(stamped[0].progressKey).toBe('/sat/1.json::q1')
+        expect(scopeSessionProgress(existing, '')).toBe(existing)
+    })
+
+    it('produces no separator when no quiz path is given', () => {
+        expect(progressKeyFor('', 'cat')).toBe('cat')
+        expect(progressKeyFor('/sat/1.json', 'cat')).toBe('/sat/1.json::cat')
     })
 })
 

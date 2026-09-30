@@ -8,7 +8,7 @@ import WordModal from '../components/WordModal'
 import { Word } from '../lib/satTypes'
 import { AnimatePresence } from 'framer-motion'
 import { useAuth } from '../contexts/AuthContext'
-import { getWordProgress, getCustomQuizzes } from '../lib/db'
+import { getWordProgress, getCustomQuizzes, resolveWordProgress } from '../lib/db'
 import { assetPath } from '../lib/paths'
 
 export default function LibraryPage() {
@@ -76,7 +76,7 @@ export default function LibraryPage() {
 
         if (!matchesSearch) return false
 
-        const status = progress[w.word]?.status || 'new'
+        const status = resolveWordProgress(progress, w.word)?.status || 'new'
         if (filter === 'all') return true
         return status === filter
     })
@@ -133,7 +133,7 @@ export default function LibraryPage() {
                     </div>
                 )}
                 {filteredWords.map(w => {
-                    const status: 'new' | 'learning' | 'mastered' = (progress[w.word]?.status || 'new') as 'new' | 'learning' | 'mastered'
+                    const status: 'new' | 'learning' | 'mastered' = (resolveWordProgress(progress, w.word)?.status || 'new') as 'new' | 'learning' | 'mastered'
                     const statusColorMap: Record<'new' | 'learning' | 'mastered', string> = {
                         new: 'bg-blue-500',
                         learning: 'bg-yellow-500',
