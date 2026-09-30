@@ -183,6 +183,7 @@ Build a static export:
 
 ```bash
 npm run build    # outputs to ./out
+npm start        # serves ./out at http://localhost:3000
 ```
 
 Deploy to GitHub Pages:
