@@ -33,9 +33,12 @@ import {
     getDailyStats,
     recordDailyAnswer,
     syncLocalToCloud,
-    resolveWordProgress
+    resolveWordProgress,
+    migrateGuestDataToAccount,
+    getWordProgress,
+    getFolders
 } from '../app/lib/db'
-import { accountKey } from '../app/lib/storage'
+import { accountKey, pendingGuestMigration, guestMigrationCompleted, dismissGuestMigration, GUEST_ACCOUNT_ID } from '../app/lib/storage'
 import type { CustomQuiz, WordProgress } from '../app/lib/satTypes'
 
 let store: Map<string, string>
@@ -402,5 +405,139 @@ describe('quiz revisions and sync conflicts', () => {
         cloud.remote['custom_quizzes.json'] = [{ ...legacy }]
         expect(await getCustomQuizzes('alice')).toHaveLength(1)
         expect(localQuizzes()).toHaveLength(1)
+    })
+})
+
+
+// Regression cover for issue #50: sign-in used to sync only account-scoped data,
+// so this browser's guest quizzes and progress stayed behind in the guest bucket
+// and never reached the newly signed-in Google account.
+describe('one-time guest data migration on sign-in (issue #50)', () => {
+    const guest = (key: string) => accountKey(key, GUEST_ACCOUNT_ID)
+
+    const seedGuestData = () => {
+        store.set(guest('oquiz:custom_quizzes'), JSON.stringify([
+            { id: 'guest-quiz', user_id: 'guest', name: 'Guest deck', description: '', words: [], questions: undefined, tags: [], is_public: false, author_name: null, created_at: '2026-01-01', updatedAt: 1_000 }
+        ]))
+        store.set(guest('oquiz:folders'), JSON.stringify([
+            { id: 'guest-folder', user_id: 'guest', name: 'Guest folder', quiz_ids: ['guest-quiz'], created_at: '2026-01-01' }
+        ]))
+        store.set(guest('oquiz:progress'), JSON.stringify({
+            guest: { '/sat/1.json::highlight': { word: 'highlight', status: 'learning', strength: 0.6, seenCount: 4, lastSeen: 5_000 } }
+        }))
+        store.set(guest('oquiz:daily_stats'), JSON.stringify({
+            'guest:2026-09-20': { user_id: 'guest', date: '2026-09-20', answer_sessions: { 'guest-run': 7 }, updated_at: '2026-09-20T10:00:00.000Z' }
+        }))
+        store.set(guest('oquiz:quiz_stats'), JSON.stringify({
+            'guest-quiz': { plays: 2, bestCorrect: 8, bestAccuracy: 80, lastStudied: '2026-09-20T10:00:00.000Z', quizName: 'Guest deck', history: [{ id: 'h1', date: '2026-09-20T10:00:00.000Z', correct: 8, total: 10 }] }
+        }))
+    }
+
+    beforeEach(() => {
+        cloud.owner = 'alice'
+        cloud.configured = true
+        cloud.remote = {}
+        cloud.failWrite = false
+        cloud.failRead = false
+    })
+
+    it('moves guest quizzes, progress, folders and history into the signed-in account', async () => {
+        seedGuestData()
+        expect(pendingGuestMigration()).toBe(true)
+
+        expect(await migrateGuestDataToAccount()).toBe(true)
+
+        const quizzes = cloud.remote['custom_quizzes.json']
+        expect(quizzes).toHaveLength(1)
+        // Re-owned, not copied verbatim: guest-owned rows must not keep the
+        // guest user_id or they would stay invisible to the account.
+        expect(quizzes[0]).toMatchObject({ id: 'guest-quiz', user_id: 'alice' })
+        expect(cloud.remote['progress.json']['/sat/1.json::highlight'].seenCount).toBe(4)
+        expect(cloud.remote['folders.json']).toMatchObject([{ id: 'guest-folder', user_id: 'alice' }])
+        expect(cloud.remote['daily_stats.json']['alice:2026-09-20'].answer_sessions).toEqual({ 'guest-run': 7 })
+        expect(cloud.remote['quiz_stats.json']['guest-quiz'].plays).toBe(2)
+
+        expect(await getWordProgress('alice')).toHaveProperty('/sat/1.json::highlight')
+        expect((await getFolders()).map(f => f.id)).toEqual(['guest-folder'])
+        expect(guestMigrationCompleted('alice')).toBe(true)
+        expect(pendingGuestMigration()).toBe(false)
+    })
+
+    it('is idempotent: migrating twice does not duplicate quizzes or double progress', async () => {
+        seedGuestData()
+        expect(await migrateGuestDataToAccount()).toBe(true)
+        const first = JSON.parse(JSON.stringify(cloud.remote))
+
+        // A retry after a "lost" marker still converges instead of piling up.
+        store.delete(accountKey('oquiz:guest_migrated', 'alice'))
+        expect(await migrateGuestDataToAccount()).toBe(true)
+
+        expect(cloud.remote['custom_quizzes.json']).toHaveLength(1)
+        expect(cloud.remote['folders.json']).toHaveLength(1)
+        expect(cloud.remote['progress.json']['/sat/1.json::highlight'].seenCount).toBe(4)
+        expect(cloud.remote['quiz_stats.json']['guest-quiz'].history).toHaveLength(1)
+        expect(cloud.remote['quiz_stats.json']['guest-quiz'].plays).toBe(2)
+        expect(cloud.remote['daily_stats.json']['alice:2026-09-20'].answer_sessions).toEqual({ 'guest-run': 7 })
+        expect(cloud.remote).toEqual(first)
+        expect(guestMigrationCompleted('alice')).toBe(true)
+    })
+
+    it('keeps the guest copy and leaves the offer pending when cloud sync fails', async () => {
+        seedGuestData()
+        cloud.failWrite = true
+
+        expect(await migrateGuestDataToAccount()).toBe(false)
+
+        // Nothing was moved and nothing was marked done.
+        expect(cloud.remote).toEqual({})
+        expect(localQuizzes()).toEqual([])
+        expect(guestMigrationCompleted('alice')).toBe(false)
+        expect(pendingGuestMigration()).toBe(true)
+        // The user's only copy is untouched, so a retry can still succeed.
+        expect(JSON.parse(store.get(guest('oquiz:custom_quizzes'))!)).toHaveLength(1)
+        expect(JSON.parse(store.get(guest('oquiz:progress'))!)).toHaveProperty('guest')
+
+        cloud.failWrite = false
+        expect(await migrateGuestDataToAccount()).toBe(true)
+        expect(cloud.remote['custom_quizzes.json']).toHaveLength(1)
+    })
+
+    it('never migrates another account\'s data', async () => {
+        seedGuestData()
+        // A previous account used this browser.
+        store.set(accountKey('oquiz:custom_quizzes', 'mallory'), JSON.stringify([
+            { id: 'mallory-quiz', user_id: 'mallory', name: 'Mallory deck', words: [], created_at: '2026-02-01', updatedAt: 2_000 }
+        ]))
+
+        expect(await migrateGuestDataToAccount()).toBe(true)
+
+        const ids = cloud.remote['custom_quizzes.json'].map((q: any) => q.id)
+        expect(ids).toContain('guest-quiz')
+        expect(ids).not.toContain('mallory-quiz')
+        // And the other account's own bucket is left exactly as it was.
+        expect(JSON.parse(store.get(accountKey('oquiz:custom_quizzes', 'mallory'))!).map((q: any) => q.id))
+            .toEqual(['mallory-quiz'])
+    })
+
+    it('offers nothing when the guest bucket is empty or the offer was dismissed', async () => {
+        expect(pendingGuestMigration()).toBe(false)
+        expect(await migrateGuestDataToAccount()).toBe(false)
+
+        seedGuestData()
+        expect(pendingGuestMigration()).toBe(true)
+        dismissGuestMigration('alice')
+        expect(pendingGuestMigration()).toBe(false)
+
+        // A different account in the same browser still gets its own offer.
+        cloud.owner = 'bob'
+        expect(pendingGuestMigration()).toBe(true)
+    })
+
+    it('does not migrate while nobody is signed in', async () => {
+        seedGuestData()
+        cloud.owner = GUEST_ACCOUNT_ID
+        expect(pendingGuestMigration()).toBe(false)
+        expect(await migrateGuestDataToAccount()).toBe(false)
+        expect(cloud.remote).toEqual({})
     })
 })

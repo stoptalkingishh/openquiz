@@ -78,7 +78,9 @@ export default function AuthPage() {
                             <span>
                                 Your quizzes, progress and stats are stored privately in a
                                 per-user <strong>&ldquo;OpenQuiz&rdquo;</strong> folder in your
-                                Google Drive, synced across devices.
+                                Google Drive, synced across devices. Afterwards you&rsquo;ll be
+                                asked once whether to move any guest data from this browser
+                                into your account.
                             </span>
                         </div>
                     )}
