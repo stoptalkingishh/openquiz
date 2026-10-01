@@ -2,6 +2,7 @@ import { WordProgress, QuizQuestion, SimulationStep, Word, Folder, QuizStats, Cu
 import { assetPath } from './paths'
 import { isDriveConfigured, readDriveFile as readRemoteFile, writeDriveFile as writeRemoteFile, getDriveUser, readSharedDriveQuiz } from './drive'
 import { readAccountData, writeAccountData, currentAccountId, assertAccount, setSyncMessage } from './storage'
+import { BackupData, BackupValidation, ImportMode, mergeBackupData, serializeBackup, validateBackup } from './backup'
 
 /**
  * Hybrid data layer for the static (GitHub Pages) build.
@@ -1620,4 +1621,124 @@ export async function exportQuizData(userId: string): Promise<{ quizzes: CustomQ
     ])
     const json = JSON.stringify({ quizzes, progress }, null, 2)
     return { quizzes, progress, json }
+}
+
+// ---------------------------------------------------------------------------
+// Complete account backup (export + restore)
+// ---------------------------------------------------------------------------
+//
+// `exportQuizData` above is a quiz/progress excerpt kept for the CSV export.
+// A real backup must round-trip every user-owned category: custom quizzes,
+// folders, word progress (with its quiz-scoped keys intact), daily stats and
+// per-quiz study history. Shape and validation live in `backup.ts`.
+
+/** Read every category that belongs to the current account, ready for export. */
+async function collectBackupData(userId: string): Promise<BackupData> {
+    assertAccount(userId)
+    const [quizzes, folders, progress, dailyStats, quizStats, deleted] = await Promise.all([
+        getCustomQuizzes(userId),
+        getFolders(),
+        getWordProgress(userId),
+        getAllDailyStats(),
+        getAllQuizStats(),
+        Promise.resolve(readJson<Record<string, string[]>>(DELETED_IDS_KEY, {}))
+    ])
+    return {
+        quizzes,
+        folders: folders.filter(folder => folder.user_id === userId),
+        progress,
+        dailyStats: Object.fromEntries(
+            Object.entries(dailyStats).filter(([key, entry]) => (entry as any)?.user_id === userId || key.startsWith(`${userId}:`))
+        ),
+        quizStats,
+        deletedIds: {
+            quizzes: Array.isArray(deleted?.quizzes) ? deleted.quizzes : [],
+            folders: Array.isArray(deleted?.folders) ? deleted.folders : []
+        }
+    }
+}
+
+/**
+ * Build a versioned backup file containing all user-owned data.
+ * Throws if the account changed mid-read, so a file can never mix two users.
+ */
+export async function exportAccountBackup(userId: string): Promise<{ json: string; data: BackupData }> {
+    const data = await collectBackupData(userId)
+    assertAccount(userId)
+    return { json: serializeBackup(userId, data), data }
+}
+
+/** Validate a backup file without writing anything. */
+export function inspectAccountBackup(text: string, owner: string = currentAccountId()): BackupValidation {
+    return validateBackup(text, owner)
+}
+
+export interface BackupImportResult {
+    ok: boolean
+    errors: string[]
+    warnings: string[]
+    counts: { quizzes: number; folders: number; progress: number; dailyStats: number; quizStats: number }
+}
+
+/**
+ * Restore a backup into the *current* account.
+ *
+ * The payload is fully validated before the first write, so a malformed or
+ * mismatched file changes nothing at all. Records owned by another account are
+ * dropped during validation. `merge` keeps existing data (newest record per id
+ * wins); `replace` discards the account's current data first.
+ */
+export async function importAccountBackup(
+    userId: string,
+    text: string,
+    mode: ImportMode = 'merge'
+): Promise<BackupImportResult> {
+    assertAccount(userId)
+    const validation = validateBackup(text, userId)
+    const empty = { quizzes: 0, folders: 0, progress: 0, dailyStats: 0, quizStats: 0 }
+    if (!validation.ok || !validation.backup) {
+        return { ok: false, errors: validation.errors, warnings: validation.warnings, counts: empty }
+    }
+
+    const current = await collectBackupData(userId)
+    const merged = mergeBackupData(current, validation.backup.data, mode)
+
+    await queueLocalWrite('importAccountBackup', async () => {
+        assertAccount(userId)
+        writeJson(CUSTOM_QUIZZES_KEY, merged.quizzes)
+        writeJson(FOLDERS_KEY, merged.folders)
+        writeJson(DAILY_STATS_KEY, merged.dailyStats)
+        writeJson(QUIZ_STATS_KEY, merged.quizStats)
+        writeJson(DELETED_IDS_KEY, merged.deletedIds)
+        // Store progress as a full store keyed by the restoring account. The
+        // bucket is written verbatim so quiz-scoped `${quizPath}::${word}`
+        // keys survive the round trip exactly as exported.
+        writeJson(PROGRESS_KEY, { [userId]: merged.progress })
+    })
+    assertAccount(userId)
+
+    // Upload the restored data so a signed-in account keeps its new devices in
+    // step. A cloud failure leaves the local restore intact.
+    if (isCloudActive()) {
+        try {
+            await writeRemoteFile(CUSTOM_QUIZZES_FILE, merged.quizzes)
+            await writeRemoteFile(FOLDERS_FILE, merged.folders)
+            await writeRemoteFile(DAILY_STATS_FILE, merged.dailyStats)
+            await writeRemoteFile(QUIZ_STATS_FILE, merged.quizStats)
+            await writeRemoteFile(PROGRESS_FILE, merged.progress)
+        } catch { /* Local restore succeeded; SyncNotice offers a retry. */ }
+    }
+
+    return {
+        ok: true,
+        errors: [],
+        warnings: validation.warnings,
+        counts: {
+            quizzes: merged.quizzes.length,
+            folders: merged.folders.length,
+            progress: Object.keys(merged.progress).length,
+            dailyStats: Object.keys(merged.dailyStats).length,
+            quizStats: Object.keys(merged.quizStats).length
+        }
+    }
 }
