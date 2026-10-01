@@ -1,7 +1,7 @@
 import { WordProgress, QuizQuestion, SimulationStep, Word, Folder, QuizStats, CustomQuiz } from './satTypes'
 import { assetPath } from './paths'
 import { isDriveConfigured, readDriveFile as readRemoteFile, writeDriveFile as writeRemoteFile, getDriveUser, readSharedDriveQuiz } from './drive'
-import { readAccountData, writeAccountData, currentAccountId, assertAccount, setSyncMessage } from './storage'
+import { readAccountData, writeAccountData, currentAccountId, assertAccount, setSyncMessage, GUEST_ACCOUNT_ID, guestDataPresent, markGuestMigrationCompleted, guestMigrationCompleted } from './storage'
 import { BackupData, BackupValidation, ImportMode, mergeBackupData, serializeBackup, validateBackup } from './backup'
 
 /**
@@ -96,6 +96,17 @@ function queueLocalWrite<T>(key: string, fn: () => T | Promise<T>): Promise<T> {
     const next = prev.catch(() => {}).then(() => { assertAccount(owner); return fn() })
     localWriteQueues.set(queueKey, next)
     return next
+}
+
+// Collapse records that share an id, keeping the last one. Used when the same
+// record can arrive from two buckets (e.g. the account's own list plus the guest
+// copy being adopted) and must land as a single row.
+function dedupeById<T extends { id: string }>(items: T[]): T[] {
+    const byId: Record<string, T> = {}
+    for (const item of items || []) {
+        if (typeof item?.id === 'string') byId[item.id] = item
+    }
+    return Object.values(byId)
 }
 
 function withoutDeleted<T extends { id: string }>(kind: 'quizzes' | 'folders', items: T[]): T[] {
@@ -1474,6 +1485,132 @@ export async function syncLocalToCloud(): Promise<boolean> {
         setSyncMessage('Cloud sync failed. Your local data is preserved; reconnect and retry.', owner)
     }
     return synced
+}
+
+// ---------------------------------------------------------------------------
+// One-time guest -> account migration
+// ---------------------------------------------------------------------------
+
+/**
+ * Re-own guest records for `owner`.
+ *
+ * Only records whose `user_id` is the guest id are touched, so a stale guest
+ * bucket can never pull another account's rows along with it.
+ */
+function adoptGuestQuizzes(records: any[], owner: string): any[] {
+    return records.filter(q => q?.user_id === GUEST_ACCOUNT_ID).map(q => ({ ...q, user_id: owner }))
+}
+
+function adoptGuestFolders(records: any[], owner: string): any[] {
+    return records.filter(f => f?.user_id === GUEST_ACCOUNT_ID).map(f => ({ ...f, user_id: owner }))
+}
+
+/**
+ * Re-key guest daily stats (`guest:<date>`) to the signed-in account. Counts are
+ * carried over as-is; `mergeDailyStats` keeps the larger value per session, so
+ * re-running the migration cannot double a day's totals.
+ */
+function adoptGuestDailyStats(stats: Record<string, any>, owner: string): Record<string, any> {
+    const adopted: Record<string, any> = {}
+    for (const [key, entry] of Object.entries(stats || {})) {
+        if (!entry || typeof entry !== 'object') continue
+        const userId = String(entry.user_id || key.split(':')[0])
+        if (userId !== GUEST_ACCOUNT_ID) continue
+        const date = String(entry.date || key.split(':').slice(1).join(':'))
+        if (!date) continue
+        adopted[`${owner}:${date}`] = { ...entry, user_id: owner }
+    }
+    return adopted
+}
+
+/**
+ * Move this browser's guest study data into the signed-in account, once.
+ *
+ * Explicit and user-triggered: nothing is merged automatically on sign-in, and
+ * the guest bucket is never read for an owner other than the current account.
+ * Every merge is keyed (quiz id, scoped progress key, folder id, day, session
+ * id), so a retry after a partial or failed run converges on the same result
+ * instead of duplicating quizzes or inflating progress counters.
+ *
+ * The guest copy stays in localStorage: it is the user's only remaining copy
+ * until the cloud write succeeds, and it also keeps signing back out harmless.
+ * The "already migrated" marker is written only after every remote write lands,
+ * so a failure simply leaves the offer pending for the next attempt.
+ */
+export async function migrateGuestDataToAccount(): Promise<boolean> {
+    if (typeof window === 'undefined') return false
+    const owner = currentAccountId()
+    if (owner === GUEST_ACCOUNT_ID) return false
+    if (guestMigrationCompleted(owner)) return true
+    // Nothing to move: an empty guest bucket must not be turned into a
+    // no-op upload or a "migrated" marker for an account that never had data.
+    if (!guestDataPresent()) return false
+    if (!isCloudActive()) {
+        setSyncMessage('Cloud sync is unavailable. Reconnect to Google Drive to move your guest data.', owner)
+        return false
+    }
+
+    let migrated = false
+    try {
+        await queueLocalWrite('migrateGuestData', async () => {
+            // Guest records are read through an explicit guest owner, never via
+            // the ambient account, so this cannot pick up another user's data.
+            const guestQuizzes = adoptGuestQuizzes(readAccountData<any[]>(CUSTOM_QUIZZES_KEY, [], GUEST_ACCOUNT_ID), owner)
+            const guestFolders = adoptGuestFolders(readAccountData<Folder[]>(FOLDERS_KEY, [], GUEST_ACCOUNT_ID), owner)
+            const guestDailyStats = adoptGuestDailyStats(readAccountData<Record<string, any>>(DAILY_STATS_KEY, {}, GUEST_ACCOUNT_ID), owner)
+            const guestProgress = migrateScopedKeys(readAccountData<ProgressStore>(PROGRESS_KEY, {}, GUEST_ACCOUNT_ID)[GUEST_ACCOUNT_ID] || {})
+            const guestQuizStats = readAccountData<Record<string, QuizStats>>(QUIZ_STATS_KEY, {}, GUEST_ACCOUNT_ID)
+
+            const localQuizzes = readJson<any[]>(CUSTOM_QUIZZES_KEY, [])
+            const localFolders = readJson<Folder[]>(FOLDERS_KEY, [])
+            const localDailyStats = readJson<Record<string, any>>(DAILY_STATS_KEY, {})
+            const localProgress = readProgressStore()[owner] || {}
+            const localQuizStats = readJson<Record<string, QuizStats>>(QUIZ_STATS_KEY, {})
+
+            const remoteQuizzes = await readDriveFile<any[]>(CUSTOM_QUIZZES_FILE) || []
+            const remoteFolders = await readDriveFile<Folder[]>(FOLDERS_FILE) || []
+            const remoteDailyStats = await readDriveFile<Record<string, any>>(DAILY_STATS_FILE) || {}
+            const remoteProgress = await readDriveFile<ProgressMap>(PROGRESS_FILE) || {}
+            const remoteQuizStats = await readDriveFile<Record<string, QuizStats>>(QUIZ_STATS_FILE) || {}
+
+            const mergedQuizzes = withoutDeleted('quizzes',
+                reconcileQuizzes(dedupeById([...guestQuizzes, ...localQuizzes]), remoteQuizzes).quizzes)
+            // Later entries win, so the account's own folder wins.
+            const mergedFolders = withoutDeleted('folders',
+                dedupeById([...remoteFolders, ...guestFolders, ...localFolders]))
+            // Each merge takes the preferred side first, so the account's own
+            // copy outranks the adopted guest copy and the merged pair
+            // outranks Drive on equal timestamps.
+            const mergedDailyStats = mergeDailyStats(
+                mergeDailyStats(guestDailyStats, localDailyStats), remoteDailyStats)
+            const mergedProgress = mergeProgress(
+                mergeProgress(guestProgress, localProgress), remoteProgress)
+            const mergedQuizStats = mergeQuizStats(
+                mergeQuizStats(guestQuizStats, localQuizStats), remoteQuizStats)
+
+            // Cloud first: any failure here throws before the local bucket is
+            // rewritten, so the account's own data is never replaced by a
+            // migration that did not reach Drive.
+            await writeDriveFile(CUSTOM_QUIZZES_FILE, mergedQuizzes)
+            await writeDriveFile(FOLDERS_FILE, mergedFolders)
+            await writeDriveFile(DAILY_STATS_FILE, mergedDailyStats)
+            await writeDriveFile(PROGRESS_FILE, mergedProgress)
+            await writeDriveFile(QUIZ_STATS_FILE, mergedQuizStats)
+            assertAccount(owner)
+
+            writeJson(CUSTOM_QUIZZES_KEY, mergedQuizzes)
+            writeJson(FOLDERS_KEY, mergedFolders)
+            writeJson(DAILY_STATS_KEY, mergedDailyStats)
+            writeJson(PROGRESS_KEY, { [owner]: mergedProgress })
+            writeJson(QUIZ_STATS_KEY, mergedQuizStats)
+            markGuestMigrationCompleted(owner)
+            setSyncMessage('', owner)
+            migrated = true
+        })
+    } catch {
+        setSyncMessage('Could not move your guest data to Google Drive. It is still saved in this browser — retry from Profile.', owner)
+    }
+    return migrated
 }
 
 // ---------------------------------------------------------------------------
