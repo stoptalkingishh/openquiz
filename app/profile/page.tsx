@@ -1,12 +1,16 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { LogOut, Mail, Calendar, History, Trophy, BarChart3, Download } from 'lucide-react'
+import { LogOut, Mail, Calendar, History, Trophy, BarChart3, Download, Upload } from 'lucide-react'
 import BottomNav from '../components/BottomNav'
 import { useAuth } from '../contexts/AuthContext'
-import { getStreak, getRecentActivity, getStudyAnalytics, StudyAnalytics, exportQuizData, wordsToCSV } from '../lib/db'
+import {
+    getStreak, getRecentActivity, getStudyAnalytics, StudyAnalytics,
+    exportAccountBackup, importAccountBackup, inspectAccountBackup, exportQuizData, wordsToCSV
+} from '../lib/db'
+import type { ImportMode } from '../lib/backup'
 
 export default function ProfilePage() {
     const { user, loading: authLoading, signOut } = useAuth()
@@ -14,6 +18,9 @@ export default function ProfilePage() {
     const [streak, setStreak] = useState(0)
     const [recent, setRecent] = useState<any[]>([])
     const [analytics, setAnalytics] = useState<StudyAnalytics | null>(null)
+    const [importMode, setImportMode] = useState<ImportMode>('merge')
+    const [importMessage, setImportMessage] = useState<{ ok: boolean; text: string } | null>(null)
+    const fileInputRef = useRef<HTMLInputElement | null>(null)
 
     useEffect(() => {
         if (!authLoading && !user) {
@@ -62,11 +69,56 @@ export default function ProfilePage() {
     const handleExportJson = async () => {
         if (!user) return
         try {
-            const { json } = await exportQuizData(user.id)
+            const { json } = await exportAccountBackup(user.id)
             downloadBlob(new Blob([json], { type: 'application/json' }), 'openquiz-backup.json')
         } catch (err) {
             console.error('Export JSON failed:', err)
             alert('Could not export your data. Please try again.')
+        }
+    }
+
+    const handleBackupFile = async (file: File) => {
+        if (!user) return
+        setImportMessage(null)
+        let text: string
+        try {
+            text = await file.text()
+        } catch {
+            setImportMessage({ ok: false, text: 'Could not read that file. Pick the backup file again.' })
+            return
+        }
+
+        const preview = inspectAccountBackup(text, user.id)
+        if (!preview.ok) {
+            // Nothing has been written at this point, so a bad file leaves the
+            // account exactly as it was.
+            setImportMessage({ ok: false, text: preview.errors.join(' ') })
+            return
+        }
+
+        const warning = preview.warnings.length ? ` ${preview.warnings.join(' ')}` : ''
+        if (importMode === 'replace') {
+            const proceed = window.confirm(
+                'Replace everything in this account with the backup? Your current quizzes, folders, progress and history in this account will be discarded.'
+            )
+            if (!proceed) return
+        }
+
+        try {
+            const result = await importAccountBackup(user.id, text, importMode)
+            if (!result.ok) {
+                setImportMessage({ ok: false, text: result.errors.join(' ') })
+                return
+            }
+            const c = result.counts
+            setImportMessage({
+                ok: true,
+                text: `Restored ${c.quizzes} quizzes, ${c.folders} folders, ${c.progress} progress entries, ${c.dailyStats} daily stat days and ${c.quizStats} quiz histories.${warning} Reloading…`
+            })
+            window.setTimeout(() => window.location.reload(), 1200)
+        } catch (err) {
+            console.error('Import failed:', err)
+            setImportMessage({ ok: false, text: (err as Error)?.message || 'Could not restore that backup. Please try again.' })
         }
     }
 
@@ -228,29 +280,95 @@ export default function ProfilePage() {
 
                 <div className="card">
                     <h2 className="font-bold text-lg mb-4 flex items-center gap-2">
-                        <Download className="w-5 h-5 text-primary" />
-                        Export / Backup
+                    <Download className="w-5 h-5 text-primary" />
+                    Export / Backup
                     </h2>
                     <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                        Download your custom quizzes and study progress as a portable file.
+                    Download a versioned backup of everything in this account — quizzes, folders, word progress,
+                    daily stats and quiz history — and restore it on any device.
                     </p>
                     <div className="flex flex-col sm:flex-row gap-3">
-                        <button
-                            onClick={handleExportJson}
-                            className="btn-secondary flex-1 flex items-center justify-center gap-2"
-                        >
-                            <Download className="w-4 h-4" />
-                            Export JSON
-                        </button>
-                        <button
-                            onClick={handleExportCsv}
-                            className="btn-secondary flex-1 flex items-center justify-center gap-2"
-                        >
-                            <Download className="w-4 h-4" />
-                            Export CSV
-                        </button>
+                    <button
+                    onClick={handleExportJson}
+                    className="btn-secondary flex-1 flex items-center justify-center gap-2"
+                    >
+                    <Download className="w-4 h-4" />
+                    Export backup
+                    </button>
+                    <button
+                    onClick={handleExportCsv}
+                    className="btn-secondary flex-1 flex items-center justify-center gap-2"
+                    >
+                    <Download className="w-4 h-4" />
+                    Export CSV
+                    </button>
                     </div>
-                </div>
+
+                    <h3 className="font-bold text-base mt-6 mb-2 flex items-center gap-2">
+                    <Upload className="w-4 h-4 text-primary" />
+                    Restore a backup
+                    </h3>
+                    <fieldset className="mb-3">
+                    <legend className="sr-only">Restore behaviour</legend>
+                    <label className="flex items-start gap-2 text-sm mb-2 cursor-pointer">
+                    <input
+                    type="radio"
+                    name="import-mode"
+                    className="mt-1"
+                    checked={importMode === 'merge'}
+                    onChange={() => setImportMode('merge')}
+                    />
+                    <span>
+                    <span className="font-medium">Merge</span>{' '}
+                    <span className="text-gray-500 dark:text-gray-400">
+                    Restore behaviour: keep what is already here and add anything the backup has that is missing.
+                    </span>
+                    </span>
+                    </label>
+                    <label className="flex items-start gap-2 text-sm cursor-pointer">
+                    <input
+                    type="radio"
+                    name="import-mode"
+                    className="mt-1"
+                    checked={importMode === 'replace'}
+                    onChange={() => setImportMode('replace')}
+                    />
+                    <span>
+                    <span className="font-medium">Replace</span>{' '}
+                    <span className="text-gray-500 dark:text-gray-400">
+                    Restore behaviour: discard the current data in this account and restore only what the backup contains.
+                    </span>
+                    </span>
+                    </label>
+                    </fieldset>
+                    <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="application/json,.json"
+                    className="hidden"
+                    onChange={event => {
+                    const file = event.target.files?.[0]
+                    // Reset so re-picking the same file fires onChange again.
+                    event.target.value = ''
+                    if (file) handleBackupFile(file)
+                    }}
+                    />
+                    <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="btn-secondary w-full flex items-center justify-center gap-2"
+                    >
+                    <Upload className="w-4 h-4" />
+                    Choose backup file
+                    </button>
+                    {importMessage && (
+                    <p
+                    role="status"
+                    className={`mt-3 text-sm ${importMessage.ok ? 'text-green-600 dark:text-green-400' : 'text-error'}`}
+                    >
+                    {importMessage.text}
+                    </p>
+                    )}
+                    </div>
 
                 <button
                     onClick={handleSignOut}
