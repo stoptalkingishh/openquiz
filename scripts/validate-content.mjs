@@ -20,6 +20,13 @@
  *     share of their prompts                          (error)
  *   - an advertised question count (README or the sets manifest) does not match
  *     the bundled file it describes                   (error)
+ *   - a `domain` tag is present but is not one of the vendor's domains  (error)
+ *   - a file in a domain-tagged series leaves more than MAX_UNTAGGED_RATIO of
+ *     its items untagged                                       (error)
+ *
+ * A cumulative final that adds no prompts of its own is also an error, unless
+ * it is registered in KNOWN_ZERO_ORIGINAL_FINALS with the reason it ships that
+ * way (registered debt is still printed on every run).
  *
  * Thin content that is not a false claim is reported separately as a "finding"
  * (exit 0): a cumulative final that restates its practice tests without adding
@@ -79,6 +86,59 @@ const EXAM_SERIES = {
 const README_FINAL_CLAIMS = {
     netplus: { marker: 'Network+', final: 'public/netplus/netplus-final.json' },
     securityplus: { marker: 'Security+', final: 'public/securityplus/final.json' },
+}
+
+/**
+ * Vendor domain taxonomies, keyed by category. A `domain` tag on a bundled
+ * Network+ item must be one of CompTIA N10-009's five domains; anything else is
+ * a typo nobody would catch by eye but that silently corrupts any per-domain
+ * reporting built on top. Categories absent from this map have no vendor domain
+ * taxonomy (Security+ and SAT), so their files are exempt.
+ */
+const DOMAIN_TAXONOMY = {
+    netplus: {
+        label: 'CompTIA Network+ N10-009',
+        // Domain names and exam weights as published by CompTIA. The weights are
+        // the vendor's, not ours, and are only ever used to label the report.
+        domains: {
+            1: { name: 'General Networking Concepts', weight: 0.23 },
+            2: { name: 'Network Implementation', weight: 0.2 },
+            3: { name: 'Network Operations', weight: 0.19 },
+            4: { name: 'Network Security', weight: 0.14 },
+            5: { name: 'Network Troubleshooting', weight: 0.24 },
+        },
+    },
+}
+
+/**
+ * Share of a domain-tagged file's items that may legitimately lack a `domain`
+ * tag. The remaining slack is deliberate: a handful of flashcards are genuinely
+ * two domains at once (listed in public/netplus/PROVENANCE.md) and were left
+ * untagged rather than guessed. Drop this to 0 once the owner has ruled on them.
+ */
+const MAX_UNTAGGED_RATIO = 0.1
+
+/**
+ * Cumulative finals known to add no prompts of their own.
+ *
+ * This is a debt register, not an exemption list: each entry is a file that
+ * currently fails the "a final exam must contain at least one prompt the learner
+ * has not already seen" rule, listed so CI can be green while the gap stays
+ * loudly visible. Every entry is printed on every run and names the issue that
+ * owns the decision, and any final NOT listed here fails the check outright. An
+ * entry is cleared by adding licensed final-only prompts, or by the owner
+ * deciding the shipped file is honestly a cumulative retake and recording that
+ * here.
+ *
+ * This cannot be satisfied by generating questions: closing the gap is a
+ * provenance and licensing decision for the content owner (issue #61).
+ */
+const KNOWN_ZERO_ORIGINAL_FINALS = {
+    'public/netplus/netplus-final.json':
+        'issue #61 — the licensable Packt pool is 88 questions in total and all ' +
+        'of them already ship in the three practice tests. Needs new licensed ' +
+        'final-only content, or an owner decision that this file is a retake ' +
+        'rather than an exam.',
 }
 
 /** Any two variants sharing more than this fraction of prompts is a failure. */
@@ -261,6 +321,79 @@ export function checkAdvertisedCounts() {
 }
 
 /**
+ * Which category a bundled file belongs to, derived from its directory.
+ * @param {string} relPath
+ * @returns {string}
+ */
+export function categoryOf(relPath) {
+    return relPath.split('/')[1] ?? ''
+}
+
+/**
+ * Check one file's domain tags against its category's vendor taxonomy.
+ *
+ * Reports two distinct things:
+ *   - a taxonomy violation: a `domain` value that is not one of the vendor's
+ *     domains for that category. Always an error.
+ *   - coverage: how many items carry a valid tag. A file that is mostly
+ *     untagged is an error once it passes MAX_UNTAGGED_RATIO, because
+ *     per-domain reporting over such a file is fiction.
+ *
+ * @param {string} relPath
+ * @param {Array<Record<string, unknown>>} items
+ */
+export function checkDomains(relPath, items) {
+    const category = categoryOf(relPath)
+    const taxonomy = DOMAIN_TAXONOMY[category]
+    const counts = /** @type {Record<string, number>} */ ({})
+    const problems = []
+    let tagged = 0
+
+    if (!taxonomy) {
+        // No vendor taxonomy for this category: nothing to enforce. Report it as
+        // untagged rather than quietly claiming zero coverage is fine.
+        return {
+            file: relPath,
+            category,
+            total: items.length,
+            tagged: 0,
+            untagged: items.length,
+            untaggedRatio: items.length === 0 ? 0 : 1,
+            counts,
+            problems,
+        }
+    }
+
+    for (const item of items) {
+        const raw = item?.domain
+        if (raw === undefined || raw === null || raw === '') continue
+        const key = String(raw)
+        if (!(key in taxonomy.domains)) {
+            problems.push(
+                `${relPath}: item ${String(item.id ?? '?')} has domain "${key}", which is not a ` +
+                `${taxonomy.label} domain (expected ${Object.keys(taxonomy.domains).join('/')})`,
+            )
+            continue
+        }
+        tagged++
+        counts[key] = (counts[key] ?? 0) + 1
+    }
+
+    const total = items.length
+    const untagged = total - tagged
+    const untaggedRatio = total === 0 ? 0 : untagged / total
+    if (total > 0 && untaggedRatio > MAX_UNTAGGED_RATIO) {
+        problems.push(
+            `${relPath}: ${untagged} of ${total} items (${(untaggedRatio * 100).toFixed(1)}%) carry no ` +
+            `domain tag, above the ${(MAX_UNTAGGED_RATIO * 100).toFixed(0)}% allowance — per-domain ` +
+            `reporting over this file is not trustworthy`,
+        )
+    }
+
+    return { file: relPath, category, total, tagged, untagged, untaggedRatio, counts, problems }
+}
+
+/**
  * Run the full audit.
  * @param {{maxOverlap?: number}} [options]
  */
@@ -274,6 +407,8 @@ export function runValidation(options = {}) {
     const warnings = []
     /** @type {string[]} */
     const findings = []
+    /** @type {any[]} */
+    const domains = []
 
     for (const relPath of discoverQuestionFiles()) {
         const items = loadQuestions(relPath)
@@ -303,6 +438,10 @@ export function runValidation(options = {}) {
                 `(${total} questions, ${unique} unique, ${(dupRatio * 100).toFixed(1)}% duplicated)`,
             )
         }
+
+        const domainReport = checkDomains(relPath, items)
+        domains.push(domainReport)
+        errors.push(...domainReport.problems)
     }
 
     const byFile = new Map(files.map(f => [f.file, f]))
@@ -361,16 +500,27 @@ export function runValidation(options = {}) {
             let novel = 0
             for (const prompt of cumulativeSet) if (!variantSet.has(prompt)) novel++
             if (novel === 0) {
-                findings.push(
+                const message =
                     `${category}: "${cumulative}" (${cumulativeSet.size} questions) adds 0 prompts of its own — ` +
                     `it is the practice tests restated, so a "final exam" pass measures recall of questions ` +
-                    `the learner already saw`,
-                )
+                    `the learner already saw`
+                if (cumulative in KNOWN_ZERO_ORIGINAL_FINALS) {
+                    // Registered debt: still printed on every run, still naming the
+                    // issue that owns it, but does not fail CI.
+                    findings.push(
+                        `${message} [KNOWN CONTENT DEBT: ${KNOWN_ZERO_ORIGINAL_FINALS[cumulative]}]`,
+                    )
+                } else {
+                    errors.push(
+                        `${message}. Add at least one prompt the learner has not already seen, or register it ` +
+                        `in KNOWN_ZERO_ORIGINAL_FINALS with the reason it ships that way.`,
+                    )
+                }
             }
         }
     }
 
-    return { maxOverlap, files, overlaps, errors, warnings, findings, ok: errors.length === 0 }
+    return { maxOverlap, files, overlaps, domains, errors, warnings, findings, ok: errors.length === 0 }
 }
 
 function pct(value) {
@@ -403,6 +553,23 @@ function printHuman(report) {
         )
     }
 
+    const tagged = (report.domains ?? []).filter(d => DOMAIN_TAXONOMY[d.category])
+    if (tagged.length) {
+        console.log('\nDomain coverage')
+        console.log('-'.repeat(72))
+        for (const d of tagged) {
+            const taxonomy = DOMAIN_TAXONOMY[d.category]
+            const breakdown = Object.keys(taxonomy.domains)
+                .map(k => `${k}:${taxonomy.domains[k].name} ${d.counts[k] ?? 0}`)
+                .join('  ')
+            console.log(
+                `${d.file.replace('public/', '').padEnd(42)}` +
+                `${`${d.tagged}/${d.total}`.padStart(8)}  ${(100 - d.untaggedRatio * 100).toFixed(1)}%`,
+            )
+            console.log(`${''.padEnd(42)}  ${breakdown}`)
+        }
+    }
+
     if (report.findings?.length) {
         console.log('\nFindings (thin content, not a failed check)')
         for (const f of report.findings) console.log(`  * ${f}`)
@@ -418,7 +585,7 @@ function printHuman(report) {
     if (report.ok) {
         console.log(
             `PASS: no duplicate prompts within a file, no variant overlap above ${pct(report.maxOverlap)}, ` +
-            'every advertised question count matches its data file.',
+            'every advertised question count matches its data file, every domain tag is in the vendor taxonomy.',
         )
         if (report.findings?.length) {
             console.log(`${report.findings.length} finding(s) above are content debt and do not fail the check.`)
