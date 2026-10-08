@@ -18,7 +18,7 @@
 
 import {
     beginPkce, callbackUrlFor, consumePkceVerifier, exchangeCodeForTokens, isKnownState,
-    refreshWithRefreshToken, TokenError, type TokenResponse
+    readAuthResult, refreshWithRefreshToken, TokenError, type TokenResponse
 } from './googlePkce'
 import { clearRefreshToken, readRefreshToken, saveRefreshToken } from './driveTokens'
 import { BASE_PATH } from './paths'
@@ -216,55 +216,66 @@ function requestToken(prompt: 'consent' | ''): Promise<TokenGrant> {
 }
 
 /**
- * Run the Authorization Code + PKCE flow in a popup and resolve with tokens.
+ * Start the Authorization Code + PKCE flow.
  *
- * The popup lands on `public/oauth-callback.html`, which posts the code back to
- * this window. We then exchange it here, where the verifier lives.
+ * This navigates the current tab to Google rather than opening a popup. The
+ * popup version had to survive `window.opener` across a cross-origin round
+ * trip, a postMessage handshake, and polling `popup.closed` — which
+ * Cross-Origin-Opener-Policy blocks. A same-tab redirect has none of those
+ * failure modes, and sessionStorage (which holds the PKCE verifier) survives it.
+ * Google redirects to `oauth-callback.html`, which bounces back to the app
+ * root with the result in the URL for `completeAuthRedirect` to finish.
  */
-function requestTokenViaPkce(promptConsent: boolean): Promise<TokenResponse> {
-    return new Promise((resolve, reject) => {
-        const redirectUri = callbackUrlFor(window.location.origin, BASE_PATH)
+async function startPkceRedirect(): Promise<never> {
+    const redirectUri = callbackUrlFor(window.location.origin, BASE_PATH)
+    const { url } = await beginPkce({ clientId: CLIENT_ID, scope: SCOPE, redirectUri, promptConsent: true })
+    window.location.assign(url)
+    // Navigation is in flight; nothing after this point runs.
+    return new Promise<never>(() => {})
+}
 
-        void beginPkce({ clientId: CLIENT_ID, scope: SCOPE, redirectUri, promptConsent })
-            .then(({ url }) => {
-                const popup = window.open(url, 'openquiz-oauth', 'width=520,height=680,noopener=no')
-                if (!popup) {
-                    reject(new Error('The sign-in window was blocked. Allow popups for this site and try again.'))
-                    return
-                }
+/**
+ * Finish a flow started by `startPkceRedirect`, if the callback page left a
+ * result in the URL. Clears the params either way so a refresh cannot replay
+ * a spent authorization code.
+ */
+export async function completeAuthRedirect(): Promise<DriveUser | null> {
+    if (typeof window === 'undefined') return null
+    const result = readAuthResult(window.location.search)
+    if (!result) return null
 
-                let settled = false
-                const finish = (fn: () => void) => {
-                    if (settled) return
-                    settled = true
-                    window.removeEventListener('message', onMessage)
-                    window.clearInterval(closePoll)
-                    try { popup.close() } catch { /* already closed */ }
-                    fn()
-                }
-                const onMessage = (event: MessageEvent) => {
-                    if (event.origin !== window.location.origin) return
-                    const data = event.data as { source?: string, code?: string, state?: string, error?: string } | null
-                    if (!data || data.source !== 'openquiz-oauth') return
-                    if (data.error) { finish(() => reject(new Error(data.error as string))); return }
-                    const { code, state } = data
-                    if (!code || !state) { finish(() => reject(new Error('Google did not return an authorization code.'))); return }
-                    // Reject a callback whose state we did not issue.
-                    if (!isKnownState(state)) { finish(() => reject(new Error('Sign-in state did not match. Please try again.'))); return }
-                    const verifier = consumePkceVerifier(state)
-                    if (!verifier) { finish(() => reject(new Error('Sign-in expired before it completed. Please try again.'))); return }
-                    void exchangeCodeForTokens({ clientId: CLIENT_ID, code, verifier, redirectUri })
-                        .then(tokens => finish(() => resolve(tokens)))
-                        .catch(err => finish(() => reject(err)))
-                }
-                window.addEventListener('message', onMessage)
-                // If the user closes the popup without completing, stop waiting.
-                const closePoll = window.setInterval(() => {
-                    if (popup.closed) finish(() => reject(new Error('Sign-in was cancelled.')))
-                }, 500)
-            })
-            .catch(reject)
+    const clean = () => {
+        const url = new URL(window.location.href)
+        url.searchParams.delete('oq_code')
+        url.searchParams.delete('oq_state')
+        url.searchParams.delete('oq_error')
+        window.history.replaceState({}, '', url.toString())
+    }
+
+    if (result.error) {
+        clean()
+        throw new Error(result.error)
+    }
+    const { code, state } = result
+    if (!code || !state) {
+        clean()
+        throw new Error('Google did not return an authorization code.')
+    }
+    if (!isKnownState(state)) {
+        clean()
+        throw new Error('Sign-in state did not match. Please try again.')
+    }
+    const verifier = consumePkceVerifier(state)
+    clean()
+    if (!verifier) throw new Error('Sign-in expired before it completed. Please try again.')
+
+    const tokens = await exchangeCodeForTokens({
+        clientId: CLIENT_ID,
+        code,
+        verifier,
+        redirectUri: callbackUrlFor(window.location.origin, BASE_PATH)
     })
+    return applySignedInTokens(tokens)
 }
 
 function applyTokens(tokens: TokenResponse, idTokenFallback: string | null = null): TokenGrant {
@@ -497,19 +508,27 @@ export async function signInToDrive(): Promise<DriveUser> {
     // token. Prompting for consent each time is deliberate: without it, a user
     // who has already granted access gets back no refresh token, and persistence
     // silently reverts to the ~1 hour implicit-flow behaviour.
-    const tokens = await withTimeoutOrThrow(requestTokenViaPkce(true), 120000, 'Google sign-in')
+    return startPkceRedirect()
+}
+
+/** Shared by the interactive and redirect-completion paths. */
+async function applySignedInTokens(tokens: TokenResponse): Promise<DriveUser> {
+    const context = captureAuthContext()
+    const ok = await withTimeout(initGapi(), 10000, false)
+    if (!ok) throw new Error('Could not initialize Google Drive client')
     assertAuthContextCurrent(context)
+
     const grant = applyTokens(tokens)
     currentToken = grant.accessToken
     tokenExpiresAt = grant.expiresAt
     lastIdToken = grant.idToken
     window.gapi.client.setToken({ access_token: grant.accessToken })
-    currentUser = await fetchProfile(grant.accessToken, grant.idToken)
+    const user = await fetchProfile(grant.accessToken, grant.idToken)
     assertAuthContextCurrent(context)
     // Persist the long-lived credential so future loads renew silently.
-    if (tokens.refresh_token) saveRefreshToken(tokens.refresh_token, currentUser.id)
-    rememberDriveUser(currentUser)
-    return currentUser
+    if (tokens.refresh_token) saveRefreshToken(tokens.refresh_token, user.id)
+    rememberDriveUser(user)
+    return user
 }
 
 export async function restoreDriveSession(): Promise<DriveUser | null> {

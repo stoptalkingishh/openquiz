@@ -7,6 +7,7 @@ import {
     restoreDriveSession,
     signOutFromDrive,
     getStoredDriveUser,
+    completeAuthRedirect,
     DriveUser
 } from '../lib/drive'
 import { syncLocalToCloud } from '../lib/db'
@@ -73,6 +74,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const generation = transition.current
 
         const boot = async () => {
+            // A sign-in started by startPkceRedirect comes back through the
+            // callback page, which leaves the result in the URL. Finish it here
+            // before anything else, so a returning user lands already signed in.
+            try {
+                const returned = await completeAuthRedirect()
+                if (returned && mounted) {
+                    setUser(returned)
+                    setLoading(false)
+                    syncLocalToCloud().catch(() => { })
+                    return
+                }
+            } catch (err) {
+                // completeAuthRedirect clears the params either way, so a failed
+                // attempt cannot be replayed by a refresh.
+                console.error('Completing Google sign-in failed:', err)
+            }
+
             if (!isDriveConfigured()) {
                 const guest = readGuest()
                 writeGuest(guest)
