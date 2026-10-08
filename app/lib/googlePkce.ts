@@ -82,6 +82,21 @@ export function generateState(): string {
     return randomUrlSafe(16)
 }
 
+/**
+ * Absolute URL of the static callback page.
+ *
+ * Google compares redirect URIs exactly, so this has to resolve to the app
+ * root on every route. Deriving it from `location.pathname` is wrong: the app
+ * is served under a base path and can be on a nested route, so `/openquiz/auth/`
+ * would yield `/openquiz/auth/oauth-callback.html`, which is not registered and
+ * makes the token exchange fail with a 400. The base path is known exactly, so
+ * use it rather than inferring it.
+ */
+export function callbackUrlFor(origin: string, basePath: string): string {
+    const base = basePath.endsWith('/') ? basePath.slice(0, -1) : basePath
+    return `${origin}${base}/oauth-callback.html`
+}
+
 function storageKey(prefix: string, state: string): string {
     return prefix + state
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, afterEach, beforeAll } from 'vitest'
 import {
-    base64UrlEncode, decodeIdTokenPayload, generateCodeChallenge,
+    base64UrlEncode, callbackUrlFor, decodeIdTokenPayload, generateCodeChallenge,
     generateCodeVerifier, generateState, TokenError
 } from '../app/lib/googlePkce'
 
@@ -95,6 +95,35 @@ describe('id_token decoding', () => {
         expect(decodeIdTokenPayload('nonsense')).toBeNull()
         expect(decodeIdTokenPayload('a.!!!.c')).toBeNull()
         expect(decodeIdTokenPayload('')).toBeNull()
+    })
+})
+
+describe('callback URL resolution', () => {
+    // Regression: the app is served under a base path and can be on a nested
+    // route, but Google compares redirect URIs exactly. Resolving against the
+    // current directory produced /openquiz/auth/oauth-callback.html, which is
+    // not registered, and the token exchange failed with a 400.
+    const O = 'https://stoptalkingishh.github.io'
+
+    it('uses the base path, independent of the current route', () => {
+        expect(callbackUrlFor(O, '/openquiz')).toBe(`${O}/openquiz/oauth-callback.html`)
+    })
+
+    it('does not double a trailing slash on the base path', () => {
+        expect(callbackUrlFor(O, '/openquiz/')).toBe(`${O}/openquiz/oauth-callback.html`)
+    })
+
+    it('works with no base path for local development', () => {
+        expect(callbackUrlFor('http://localhost:3000', '')).toBe('http://localhost:3000/oauth-callback.html')
+    })
+
+    it('never produces a double slash or an empty path segment', () => {
+        for (const base of ['', '/', '/openquiz', '/openquiz/']) {
+            const url = callbackUrlFor(O, base)
+            expect(url).not.toContain('//o')
+            expect(url).not.toMatch(/[^:]\/\/oauth/)
+            expect(url).toBe(new URL(url).toString())
+        }
     })
 })
 

@@ -17,10 +17,11 @@
  */
 
 import {
-    beginPkce, consumePkceVerifier, exchangeCodeForTokens, isKnownState,
+    beginPkce, callbackUrlFor, consumePkceVerifier, exchangeCodeForTokens, isKnownState,
     refreshWithRefreshToken, TokenError, type TokenResponse
 } from './googlePkce'
 import { clearRefreshToken, readRefreshToken, saveRefreshToken } from './driveTokens'
+import { BASE_PATH } from './paths'
 
 declare global {
     interface Window {
@@ -222,7 +223,7 @@ function requestToken(prompt: 'consent' | ''): Promise<TokenGrant> {
  */
 function requestTokenViaPkce(promptConsent: boolean): Promise<TokenResponse> {
     return new Promise((resolve, reject) => {
-        const redirectUri = `${window.location.origin}${window.location.pathname.replace(/[^/]*$/, '')}oauth-callback.html`
+        const redirectUri = callbackUrlFor(window.location.origin, BASE_PATH)
 
         void beginPkce({ clientId: CLIENT_ID, scope: SCOPE, redirectUri, promptConsent })
             .then(({ url }) => {
