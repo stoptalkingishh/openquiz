@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex">
+<title>Completing sign-in…</title>
+<style>
+  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; margin: 0;
+         display: flex; align-items: center; justify-content: center; min-height: 100vh;
+         color: #0f172a; background: #f8fafc; text-align: center; padding: 2rem; }
+  .box { max-width: 28rem; }
+  h1 { font-size: 1.25rem; margin: 0 0 .5rem; }
+  p { margin: 0; color: #475569; font-size: .9rem; }
+  .err { color: #b91c1c; }
+</style>
+</head>
+<body>
+<div class="box">
+  <h1 id="heading">Completing sign-in…</h1>
+  <p id="detail">You can close this window.</p>
+</div>
+<script>
+  // OAuth redirect target. Deliberately dependency-free: the popup lands here
+  // after Google redirects, and all it does is hand the code back to the
+  // opener, which owns the PKCE verifier and performs the token exchange.
+  // Keeping the exchange out of this file means it stays unit-testable.
+  (function () {
+    var heading = document.getElementById('heading');
+    var detail = document.getElementById('detail');
+
+    function fail(message) {
+      heading.textContent = 'Sign-in did not complete';
+      heading.className = 'err';
+      detail.textContent = message;
+    }
+
+    if (!window.opener) {
+      fail('This page is the sign-in callback and must be opened by the OpenQuiz app.');
+      return;
+    }
+
+    var params = new URLSearchParams(window.location.search);
+    var code = params.get('code');
+    var state = params.get('state');
+    var error = params.get('error');
+
+    if (error) {
+      var description = params.get('error_description') || error;
+      window.opener.postMessage({ source: 'openquiz-oauth', error: description }, window.location.origin);
+      fail(description);
+      return;
+    }
+    if (!code || !state) {
+      window.opener.postMessage({ source: 'openquiz-oauth', error: 'Google did not return an authorization code.' }, window.location.origin);
+      fail('Google did not return an authorization code.');
+      return;
+    }
+
+    window.opener.postMessage({ source: 'openquiz-oauth', code: code, state: state }, window.location.origin);
+    heading.textContent = 'Signed in';
+    detail.textContent = 'Returning you to OpenQuiz…';
+    window.close();
+  })();
+</script>
+</body>
+</html>
