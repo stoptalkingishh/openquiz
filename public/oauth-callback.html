@@ -17,13 +17,21 @@
 <body>
 <div class="box">
   <h1 id="heading">Completing sign-in…</h1>
-  <p id="detail">You can close this window.</p>
+  <p id="detail">Returning you to OpenQuiz.</p>
 </div>
 <script>
-  // OAuth redirect target. Deliberately dependency-free: the popup lands here
-  // after Google redirects, and all it does is hand the code back to the
-  // opener, which owns the PKCE verifier and performs the token exchange.
-  // Keeping the exchange out of this file means it stays unit-testable.
+  // OAuth redirect target. It hands the result back to the app by navigating to
+  // the app root in the SAME tab, rather than postMessaging to a popup.
+  //
+  // The popup approach was fragile: it depended on window.opener surviving a
+  // cross-origin round trip, on postMessage delivery, and on being able to poll
+  // popup.closed (which Cross-Origin-Opener-Policy blocks). A same-tab
+  // navigation has none of those failure modes, and sessionStorage - which
+  // holds the PKCE verifier - survives it.
+  //
+  // The token exchange deliberately stays in the app: this file stays
+  // dependency-free, and all the security-relevant logic remains in tested
+  // TypeScript.
   (function () {
     var heading = document.getElementById('heading');
     var detail = document.getElementById('detail');
@@ -34,11 +42,6 @@
       detail.textContent = message;
     }
 
-    if (!window.opener) {
-      fail('This page is the sign-in callback and must be opened by the OpenQuiz app.');
-      return;
-    }
-
     var params = new URLSearchParams(window.location.search);
     var code = params.get('code');
     var state = params.get('state');
@@ -46,20 +49,23 @@
 
     if (error) {
       var description = params.get('error_description') || error;
-      window.opener.postMessage({ source: 'openquiz-oauth', error: description }, window.location.origin);
       fail(description);
+      // Still hand the error to the app so it can surface a retry path.
+      try {
+        window.location.replace('./?oq_error=' + encodeURIComponent(description));
+      } catch (e) { /* leaving the message on screen is enough */ }
       return;
     }
+
     if (!code || !state) {
-      window.opener.postMessage({ source: 'openquiz-oauth', error: 'Google did not return an authorization code.' }, window.location.origin);
       fail('Google did not return an authorization code.');
       return;
     }
 
-    window.opener.postMessage({ source: 'openquiz-oauth', code: code, state: state }, window.location.origin);
-    heading.textContent = 'Signed in';
-    detail.textContent = 'Returning you to OpenQuiz…';
-    window.close();
+    // Resolve the app root the same way the app does, so this works under the
+    // deployment base path as well as on localhost.
+    var base = window.location.pathname.replace(/[^/]*$/, '');
+    window.location.replace(base + '?oq_code=' + encodeURIComponent(code) + '&oq_state=' + encodeURIComponent(state));
   })();
 </script>
 </body>

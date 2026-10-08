@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, afterEach, beforeAll } from 'vitest'
 import {
     base64UrlEncode, callbackUrlFor, decodeIdTokenPayload, generateCodeChallenge,
-    generateCodeVerifier, generateState, TokenError
+    generateCodeVerifier, generateState, readAuthResult, TokenError
 } from '../app/lib/googlePkce'
 
 // Node's webcrypto backs globalThis.crypto in recent runtimes; make sure the
@@ -124,6 +124,30 @@ describe('callback URL resolution', () => {
             expect(url).not.toMatch(/[^:]\/\/oauth/)
             expect(url).toBe(new URL(url).toString())
         }
+    })
+})
+
+describe('auth result hand-off', () => {
+    // The callback page bounces back to the app root with the result in the URL,
+    // so these params are the hand-off between the two.
+    it('reads a returned code and state', () => {
+        const r = readAuthResult('?oq_code=abc123&oq_state=xyz')
+        expect(r).toEqual({ code: 'abc123', state: 'xyz', error: undefined })
+    })
+
+    it('reads a returned error', () => {
+        const r = readAuthResult('?oq_error=access_denied')
+        expect(r).toEqual({ code: undefined, state: undefined, error: 'access_denied' })
+    })
+
+    it('returns null when there is nothing to complete', () => {
+        expect(readAuthResult('')).toBeNull()
+        expect(readAuthResult('?other=1')).toBeNull()
+    })
+
+    it('does not treat an unrelated code param as a result', () => {
+        // A share link may legitimately carry ?code= for other purposes.
+        expect(readAuthResult('?code=abc&state=def')).toBeNull()
     })
 })
 

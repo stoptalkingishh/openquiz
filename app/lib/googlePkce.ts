@@ -97,7 +97,22 @@ export function callbackUrlFor(origin: string, basePath: string): string {
     return `${origin}${base}/oauth-callback.html`
 }
 
-function storageKey(prefix: string, state: string): string {
+/** Query params the callback page hands back to the app. */
+export const OAUTH_RESULT_PARAMS = { code: 'oq_code', state: 'oq_state', error: 'oq_error' } as const
+
+/**
+ * Read an in-flight authorization result that the callback page bounced back
+ * into the app URL. Returns null when there is nothing to complete.
+ */
+export function readAuthResult(search: string): { code?: string; state?: string; error?: string } | null {
+    const params = new URLSearchParams(search)
+    const code = params.get(OAUTH_RESULT_PARAMS.code) || undefined
+    const state = params.get(OAUTH_RESULT_PARAMS.state) || undefined
+    const error = params.get(OAUTH_RESULT_PARAMS.error) || undefined
+    return code || state || error ? { code, state, error } : null
+}
+
+export function storageKey(prefix: string, state: string): string {
     return prefix + state
 }
 
