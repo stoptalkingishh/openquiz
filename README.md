@@ -150,7 +150,11 @@ By default the app is a **guest-first** PWA: everything — quizzes, progress, s
 When `NEXT_PUBLIC_GOOGLE_CLIENT_ID` and `NEXT_PUBLIC_GOOGLE_API_KEY` are baked into the build, the auth screen offers **Sign in with Google**. Signed-in users get:
 
 - Data stored as JSON files in a private, per-user **"OpenQuiz"** folder in their own Google Drive, using the narrow **`drive.file`** scope (the app can only see files it created).
-- **Auto-migration** of existing guest data on first sign-in (merged, never overwritten), with a sync banner and reconnect-and-sync retry if a write fails offline.
+- **Explicit one-time migration** of guest data: after signing in, a banner offers to move this browser's guest quizzes, word progress, folders and study history into the new account. Nothing is migrated silently — you choose **Move my data** or **Not now** (remembered per account).
+- The migration is **merged, never overwritten**, and **idempotent**: re-running it after a failure converges on the same result instead of duplicating quizzes or inflating progress counters.
+- **The guest copy is kept** in `localStorage` and only the account's own bucket is rewritten, and only after every Drive write succeeds. A failed migration therefore loses nothing and the offer simply reappears.
+- Guest data belongs to the guest bucket only: another account's quizzes, folders or progress are never read or migrated.
+- A sync banner offers **reconnect and sync** retry if a write fails offline.
 
 Without the keys the same code runs in guest mode — nothing breaks, nothing is uploaded.
 

@@ -4,6 +4,7 @@ import { AuthProvider } from './contexts/AuthContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import ServiceWorker from './components/ServiceWorker'
 import SyncNotice from './components/SyncNotice'
+import GuestMigrationNotice from './components/GuestMigrationNotice'
 import AnalyticsConsent from './components/AnalyticsConsent'
 import { assetPath } from './lib/paths'
 
@@ -27,6 +28,7 @@ export default function RootLayout({
         <ThemeProvider>
           <AuthProvider>
             <SyncNotice />
+            <GuestMigrationNotice />
             {children}
           </AuthProvider>
         </ThemeProvider>
