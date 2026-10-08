@@ -191,7 +191,7 @@
   {
     "id": "netplus-final",
     "name": "Network+ Final Exam",
-    "description": "88-question cumulative CompTIA Network+ N10-009 final exam. By design it restates every question from Practice Tests 1-3, so take it after them rather than instead of them.",
+    "description": "88-question cumulative CompTIA Network+ N10-009 final exam. It restates every question from Practice Tests 1-3 and adds none of its own, so a pass measures recall of questions you have already seen. Take it after them, not instead of them.",
     "file_path": "/netplus/netplus-final.json",
     "category": "netplus",
     "category_label": "CompTIA Network+ N10-009",

@@ -95,7 +95,7 @@ The Home screen shows a daily answer goal, answers today, and lifetime mastered 
 
 - **SAT Vocabulary** — Set 1, Set 2, and Archaic & Literary words.
 - **CompTIA Security+ (SY0-701)** — 3 practice tests, a 100-question final exam, and topic flashcards (fundamentals, physical & deception, threats & attacks, crypto & PKI, incident response & compliance).
-- **CompTIA Network+ (N10-009)** — 3 practice tests with 30, 29, and 29 questions, an 88-question cumulative final, and topic flashcards (networking concepts, network implementation, network operations, network security, network troubleshooting). The current exam pool is uneven across domains; see [question provenance](public/netplus/PROVENANCE.md) for its distribution and source limitations.
+- **CompTIA Network+ (N10-009)** — 3 practice tests with 30, 29, and 29 questions, an 88-question cumulative final, and topic flashcards (networking concepts, network implementation, network operations, network security, network troubleshooting). The final adds no questions of its own (it restates the three practice tests), and the exam pool is uneven across domains; see [question provenance](public/netplus/PROVENANCE.md) for the distribution, the domain tagging, and what is deliberately left unfixed.
 - Question-shaped sets run through every mode, including Test (multiple choice / true / false) and Match.
 
 ---

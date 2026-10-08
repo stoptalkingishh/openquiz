@@ -121,6 +121,16 @@ type NetplusQuestion = {
     explanation?: string
     source: 'packt' | 'openquiz-original'
     objective?: string
+    domain?: string
+}
+
+type NetplusFlashcard = {
+    id: string
+    kind: 'flashcard'
+    prompt: string
+    answer: string
+    explanation?: string
+    domain?: string
 }
 
 type CatalogEntry = {
@@ -177,6 +187,29 @@ describe('netplus exam structure', () => {
                 expect(item.correctIndex, `${item.id} answer index`).toBeLessThan(4)
                 expect(item.explanation?.length ?? 0, `${item.id} explanation length`).toBeGreaterThan(25)
             }
+        }
+    })
+
+    it('tags every bundled Network+ exam question with a real N10-009 domain', () => {
+        for (const name of ['netplus-test1.json', 'netplus-test2.json', 'netplus-test3.json', 'netplus-final.json']) {
+            const missing = load(name).filter(i => !/^[1-5]$/.test(String(i.domain)))
+            expect(missing.map(i => i.id), `${name} items with a missing or invalid domain`).toEqual([])
+        }
+    })
+
+    it('tags flashcard decks with the domain their catalog description claims', () => {
+        const manifest = loadFrom<CatalogEntry[]>('public/sat/quiz-sets.json')
+        const decks = manifest.filter(s => s.category === 'netplus' && s.item_type === 'flashcards')
+        expect(decks.length).toBe(5)
+
+        for (const deck of decks) {
+            const cards = loadFrom<NetplusFlashcard[]>(`public${deck.file_path}`)
+            const described = /Domain (\d)/.exec(deck.description)?.[1]
+            expect(described, `${deck.id} description names a domain`).toBeTruthy()
+            // The deck's own description is the default tag; a minority of cards
+            // legitimately belong to another domain (documented in PROVENANCE.md).
+            const onClaim = cards.filter(c => c.domain === described).length
+            expect(onClaim / cards.length, `${deck.id} share tagged to its claimed domain`).toBeGreaterThan(0.5)
         }
     })
 
