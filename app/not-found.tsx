@@ -18,7 +18,9 @@ export default function NotFound() {
                 <div className="w-24 h-24 bg-white/10 backdrop-blur-sm rounded-2xl mb-6 mx-auto flex items-center justify-center text-5xl font-extrabold">
                     404
                 </div>
-                <h1 className="text-2xl font-extrabold mb-2">Page not found</h1>
+                {/* globals.css sets an explicit colour on every h1-h6 in the base
+                    layer, which beats an inherited text-white on this dark gradient. */}
+                <h1 className="text-2xl font-extrabold text-white mb-2">Page not found</h1>
                 <p className="text-blue-100 mb-6">
                     Redirecting you to the home page...
                 </p>
