@@ -208,14 +208,28 @@ export class TokenError extends Error {
     }
 }
 
+/**
+ * Google's token endpoint rejects a code exchange that lacks `client_secret`,
+ * even when PKCE is present. This is a documented Google-specific limitation
+ * rather than an RFC 7636 violation: unlike Auth0/Okta, Google has no
+ * "public client" mode for web apps that lets you omit the secret.
+ *
+ * The secret therefore ships in the client bundle. For this app that is
+ * acceptable: it is a static site with no backend, PKCE still prevents code
+ * interception, and the redirect URI is pinned, so the secret does not grant
+ * anything PKCE has not already protected. It must not be treated as proof
+ * that a request came from OpenQuiz. See docs/google-sign-in.md.
+ */
 export async function exchangeCodeForTokens(options: {
     clientId: string
+    clientSecret: string
     code: string
     verifier: string
     redirectUri: string
 }): Promise<TokenResponse> {
     const body = new URLSearchParams({
         client_id: options.clientId,
+        client_secret: options.clientSecret,
         code: options.code,
         code_verifier: options.verifier,
         grant_type: 'authorization_code',
@@ -232,10 +246,12 @@ export async function exchangeCodeForTokens(options: {
 
 export async function refreshWithRefreshToken(options: {
     clientId: string
+    clientSecret: string
     refreshToken: string
 }): Promise<TokenResponse> {
     const body = new URLSearchParams({
         client_id: options.clientId,
+        client_secret: options.clientSecret,
         refresh_token: options.refreshToken,
         grant_type: 'refresh_token',
     })

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, afterEach, beforeAll } from 'vitest'
 import {
-    base64UrlEncode, callbackUrlFor, decodeIdTokenPayload, generateCodeChallenge,
-    generateCodeVerifier, generateState, readAuthResult, TokenError
+    base64UrlEncode, callbackUrlFor, decodeIdTokenPayload, exchangeCodeForTokens,
+    generateCodeChallenge, generateCodeVerifier, generateState, readAuthResult, refreshWithRefreshToken, TokenError
 } from '../app/lib/googlePkce'
 
 // Node's webcrypto backs globalThis.crypto in recent runtimes; make sure the
@@ -159,5 +159,50 @@ describe('TokenError', () => {
         expect(err).toBeInstanceOf(Error)
         expect(err.status).toBe(400)
         expect(err.code).toBe('invalid_grant')
+    })
+})
+describe('token exchange sends the client secret', () => {
+    afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks() })
+
+    const okTokens = () => new Response(JSON.stringify({
+        access_token: 'at', refresh_token: 'rt', expires_in: 3600, id_token: 'h.e30.s'
+    }), { status: 200 })
+
+    it('includes client_secret in the authorization_code exchange', async () => {
+        const fetchMock = vi.fn(async () => okTokens())
+        vi.stubGlobal('fetch', fetchMock)
+
+        await exchangeCodeForTokens({ clientId: 'cid', clientSecret: 'SECRET', code: 'c', verifier: 'v', redirectUri: 'https://x/cb' })
+
+        const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
+        expect(url).toBe('https://oauth2.googleapis.com/token')
+        const body = String(init.body)
+        expect(body).toContain('client_secret=SECRET')
+        expect(body).toContain('client_id=cid')
+        expect(body).toContain('code_verifier=v')
+        expect(body).toContain('grant_type=authorization_code')
+    })
+
+    it('includes client_secret in the refresh_token grant', async () => {
+        const fetchMock = vi.fn(async () => okTokens())
+        vi.stubGlobal('fetch', fetchMock)
+
+        await refreshWithRefreshToken({ clientId: 'cid', clientSecret: 'SECRET', refreshToken: 'rt' })
+
+        const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
+        const body = String(init.body)
+        expect(body).toContain('client_secret=SECRET')
+        expect(body).toContain('refresh_token=rt')
+        expect(body).toContain('grant_type=refresh_token')
+    })
+
+    it('surfaces Google error detail on failure', async () => {
+        vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({
+            error: 'invalid_request', error_description: 'client_secret is missing.'
+        }), { status: 400 })))
+
+        await expect(
+            exchangeCodeForTokens({ clientId: 'cid', clientSecret: '', code: 'c', verifier: 'v', redirectUri: 'https://x/cb' })
+        ).rejects.toThrow(/client_secret is missing/)
     })
 })
