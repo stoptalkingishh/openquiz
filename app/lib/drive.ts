@@ -32,6 +32,10 @@ declare global {
 
 const CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ''
 const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_API_KEY || ''
+// Google requires the client secret for the code/refresh token exchange even
+// with PKCE (see googlePkce.ts). It ships in the bundle; for this static,
+// backend-less app PKCE + the pinned redirect URI still bound the flow.
+const CLIENT_SECRET = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_SECRET || ''
 
 const SCOPE = 'openid email profile https://www.googleapis.com/auth/drive.file'
 const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'
@@ -271,6 +275,7 @@ export async function completeAuthRedirect(): Promise<DriveUser | null> {
 
     const tokens = await exchangeCodeForTokens({
         clientId: CLIENT_ID,
+        clientSecret: CLIENT_SECRET,
         code,
         verifier,
         redirectUri: callbackUrlFor(window.location.origin, BASE_PATH)
@@ -298,7 +303,7 @@ async function renewFromRefreshToken(accountId: string): Promise<TokenGrant | nu
     const refreshToken = readRefreshToken(accountId)
     if (!refreshToken) return null
     try {
-        const tokens = await refreshWithRefreshToken({ clientId: CLIENT_ID, refreshToken })
+        const tokens = await refreshWithRefreshToken({ clientId: CLIENT_ID, clientSecret: CLIENT_SECRET, refreshToken })
         // Google rotates the refresh token on some responses; persist if it does.
         if (tokens.refresh_token) saveRefreshToken(tokens.refresh_token, accountId)
         return applyTokens(tokens, lastIdToken)

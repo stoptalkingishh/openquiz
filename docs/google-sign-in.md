@@ -39,13 +39,21 @@ and no reliance on Google's session cookie.
 |---|---|
 | `app/lib/googlePkce.ts` | Verifier/challenge/state generation, auth URL, code exchange, refresh |
 | `app/lib/driveTokens.ts` | Stores the refresh token bound to an account id |
-| `public/oauth-callback.html` | Popup target; forwards the code to the opener |
+| `public/oauth-callback.html` | Same-tab redirect target; bounces the code back to the app |
 
-There is no server, so this is a public client and there is no client secret —
-PKCE provides the protection a secret otherwise would.
+There is no server. The OAuth flow is Authorization Code + PKCE, so in principle
+the client secret is unnecessary. **In practice Google still rejects a code or
+refresh exchange that omits `client_secret`** — this is a documented
+Google-specific limitation (unlike Auth0/Okta, Google has no "public client"
+mode for web apps). The secret is therefore read from
+`NEXT_PUBLIC_GOOGLE_CLIENT_SECRET` and included in the token requests.
 
 ### Security notes
 
+- The client secret ships in the client bundle. For this app that is acceptable:
+  PKCE still prevents code interception, the redirect URI is pinned, and the
+  secret does not grant anything PKCE has not already protected. It must **not**
+  be treated as proof that a request came from OpenQuiz.
 - The refresh token is a long-lived credential in `localStorage`, readable by any script on the origin. That is acceptable **because** the app is fully static with no backend, and because #48 removed the Google Fonts request and made analytics opt-in, leaving very little third-party script surface. **Adding any third-party script re-opens this risk** — re-evaluate before doing so.
 - The refresh token is bound to the account id that minted it, so one account cannot reuse another's credential.
 - Sign-out clears the credential *first*, then attempts revocation, so a hanging network round-trip cannot leave a working token behind.
@@ -61,10 +69,13 @@ See #89 for the Console walkthrough. Short version:
 2. **Verify your domain** to remove the "Google hasn't verified this app" warning users currently hit.
 3. Confirm the web client ID has:
    - Authorized JavaScript origins: `https://stoptalkingishh.github.io`
-   - Authorized redirect URIs: **`https://stoptalkingishh.github.io/openquiz/oauth-callback.html`** ← new, required by the code flow
+   - Authorized redirect URIs: **`https://stoptalkingishh.github.io/openquiz/oauth-callback.html`** ← required by the code flow
    - Google Drive API enabled, API key restricted to it plus your site referrer
+4. Add the **client secret** as a repository secret so the deploy injects it:
+   - Copy **Client secret** from the same OAuth client in Cloud Console
+   - GitHub → Settings → Secrets and variables → Actions → **`NEXT_PUBLIC_GOOGLE_CLIENT_SECRET`**
 
-The redirect URI is the one thing that is genuinely new — the implicit flow never needed one.
+Both the redirect URI and the client secret are genuinely new — the implicit flow needed neither.
 
 ## Refresh-token lifetime
 
