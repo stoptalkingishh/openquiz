@@ -665,20 +665,19 @@ For more information on this, and how to apply and follow the GNU AGPL, see
 
 COMMERCIAL LICENSING
 
-OpenQuiz is free for individuals, personal, educational, and non-commercial
-use under the GNU Affero General Public License v3.0 (AGPL-3.0) above.
+OpenQuiz is offered to every user under the GNU Affero General Public License
+v3.0 (AGPL-3.0) above, including commercial users. The AGPL conditions apply
+to use, modification, distribution, and network deployment of the software.
 
-The AGPL requires that, if you modify OpenQuiz and make it available to users
-over a network, you offer those users the corresponding source code of your
-modified version. If you prefer to use OpenQuiz in a corporate, business, or
-other for-profit environment without the copyleft obligations of the AGPL, a
-paid commercial license is available.
+The copyright holders may offer separate commercial terms for people who need
+an alternative to the AGPL. Those terms, if offered, are optional and do not
+restrict the AGPL grant above.
 
-A commercial license can be purchased by contacting the creator. Open an issue
-in the GitHub repository to request one:
+To ask whether alternative terms are available, open an issue in the GitHub
+repository:
 
 https://github.com/stoptalkingishh/openquiz/issues
 
 Third-party content (quiz sets, practice tests, flashcards) included in this
 repository is licensed separately by its original authors and is attributed
-in THIRD-PARTY-NOTICES.md.
+in THIRD_PARTY_NOTICES.md.
